@@ -680,14 +680,14 @@ Sources:
 
 Mục này tách Phase 1 (mục 8.6) thành các đơn vị công việc nhỏ, có thứ tự rõ ràng, để khi bắt đầu build có thể giao/thực hiện từng việc một mà không cần suy nghĩ lại kiến trúc. Mỗi bước lớn (11.x) nên hoàn thành trước khi qua bước sau, vì bước sau thường phụ thuộc bước trước.
 
-### 11.0 Bước 0 — Khởi tạo project & hạ tầng nền
-- [ ] Tạo project Astro mới (`npm create astro@latest`), dọn theo đúng cấu trúc thư mục mục 8.2
-- [ ] Tạo project Supabase mới (chọn region **Singapore** — gần VN nhất, độ trễ thấp), lưu lại `SUPABASE_URL` + `SUPABASE_ANON_KEY`
-- [ ] Tạo file `.env` chứa 2 biến trên; thêm `.env` vào `.gitignore` (không commit secret, dù anon key không quá nhạy cảm nhưng vẫn nên tách config)
-- [ ] Copy `icon.jpg` → `public/images/brand/logo.jpg`, `anh bìa.jpg` → `public/images/brand/cover-5-set-detox.jpg` (đổi tên không dấu/không khoảng trắng để tránh lỗi encode URL)
-- [ ] Tạo favicon từ `icon.jpg` (dùng công cụ như realfavicongenerator.net, xuất ra `public/favicon.ico` + các size cần thiết)
-- [ ] Đăng ký font Fraunces + Be Vietnam Pro (Google Fonts, subset `vietnamese`) trong `BaseLayout.astro`
-- [ ] Khởi tạo `src/styles/global.css` với **design tokens** dạng CSS variables (xem mẫu ở 11.0.1)
+### 11.0 Bước 0 — Khởi tạo project & hạ tầng nền ✅ XONG (11/09/2026)
+- [x] Tạo project Astro mới (`npm create astro@latest`), dọn theo đúng cấu trúc thư mục mục 8.2 — build + dev server đã xác nhận chạy đúng
+- [x] Tạo project Supabase mới — project `gungdetox`, ref `bjenawwpxwivocsmsmzd`, region thực tế là **Tokyo** (không phải Singapore như đề xuất — chọn nhầm lúc tạo, chấp nhận được, không đáng để tạo lại)
+- [x] Tạo file `.env` chứa `PUBLIC_SUPABASE_URL` + `PUBLIC_SUPABASE_ANON_KEY` (đổi tên có tiền tố `PUBLIC_` theo đúng quy ước Astro để dùng được ở client) + `SUPABASE_SERVICE_ROLE_KEY` (chỉ dùng cho script cục bộ, không dùng trong code web) — đã xác nhận nằm trong `.gitignore`
+- [x] Copy `icon.jpg` → `public/images/brand/logo.jpg`, `anh bìa.jpg` → `public/images/brand/cover-5-set-detox.jpg`
+- [x] Tạo favicon từ `icon.jpg` bằng `sharp` (favicon-32.png, apple-touch-icon.png) thay vì công cụ web ngoài
+- [x] Đăng ký font Fraunces + Be Vietnam Pro trong `BaseLayout.astro`
+- [x] Khởi tạo `src/styles/global.css` với design tokens (giữ nguyên mã hex ước lượng ở 11.0.1, **vẫn cần lấy lại bằng color picker thật trước khi chốt thiết kế cuối**)
 
 #### 11.0.1 Design tokens đề xuất (giá trị cụ thể để code, chỉnh lại khi có bảng màu chính xác từ file gốc)
 ```css
@@ -705,8 +705,9 @@ Mục này tách Phase 1 (mục 8.6) thành các đơn vị công việc nhỏ, 
 ```
 ⚠️ Các mã hex trên là **ước lượng bằng mắt** từ mô tả ảnh, không phải lấy bằng công cụ hút màu (color picker) chính xác — bước đầu tiên khi code nên mở `icon.jpg` bằng công cụ hút màu thật (Photoshop/Figma/eyedropper) để lấy đúng mã hex trước khi đưa vào code chính thức.
 
-### 11.1 Bước 1 — Supabase: tạo bảng & phân quyền (SQL cụ thể)
-- [ ] Chạy SQL tạo bảng `products` (schema đầy đủ ở mục 8.3):
+### 11.1 Bước 1 — Supabase: tạo bảng & phân quyền (SQL cụ thể) ✅ XONG (11/09/2026)
+SQL đầy đủ đã lưu tại `supabase/schema.sql`, chạy qua Supabase Management API (không cần mật khẩu DB). Đã kiểm chứng bằng script thật: RLS chặn đúng (anon không insert được `products`, insert được `orders`), tài khoản admin đăng nhập được và sau khi đăng nhập insert `products` thành công, 2 storage bucket tồn tại. Dữ liệu demo (15 sản phẩm + 5 bài blog) đã seed qua `supabase/seed.mjs` và đọc lại được bằng anon key.
+- [x] Chạy SQL tạo bảng `products` (schema đầy đủ ở mục 8.3):
 ```sql
 create table products (
   id uuid primary key default gen_random_uuid(),
@@ -732,7 +733,7 @@ create table products (
   created_at timestamptz default now()
 );
 ```
-- [ ] Chạy SQL tạo bảng `posts` (schema đầy đủ ở mục 8.4):
+- [x] Chạy SQL tạo bảng `posts` (schema đầy đủ ở mục 8.4):
 ```sql
 create table posts (
   id uuid primary key default gen_random_uuid(),
@@ -746,7 +747,7 @@ create table posts (
   published_at timestamptz default now()
 );
 ```
-- [ ] Chạy SQL tạo bảng `orders` (schema đầy đủ ở mục 8.5, đã gồm `bottlesReturned`):
+- [x] Chạy SQL tạo bảng `orders` (schema đầy đủ ở mục 8.5, đã gồm `bottlesReturned`):
 ```sql
 create table orders (
   id uuid primary key default gen_random_uuid(),
@@ -763,7 +764,7 @@ create table orders (
   created_at timestamptz not null default now()
 );
 ```
-- [ ] Bật **Row Level Security (RLS)** trên cả 3 bảng, phân quyền như sau:
+- [x] Bật **Row Level Security (RLS)** trên cả 3 bảng, phân quyền như sau:
 
 | Bảng | Đọc (select) | Ghi (insert/update/delete) |
 |---|---|---|
@@ -771,9 +772,9 @@ create table orders (
 | `posts` | Công khai (để hiển thị `/blog`) | Chỉ chủ tiệm đã đăng nhập (qua `/admin/blog`) |
 | `orders` | Công khai nhưng **lọc theo đúng SĐT** ở phía client (tra cứu đơn, mục 6.3) — đánh đổi bảo mật nhẹ chấp nhận được cho Phase 1, siết chặt hơn ở Phase 3 nếu cần | **Insert**: công khai (khách đặt hàng không cần đăng nhập). **Update/Delete**: chỉ chủ tiệm đã đăng nhập (qua `/admin/don-hang`, để cập nhật `status`) |
 
-- [ ] Tạo **1 tài khoản Supabase Auth duy nhất cho chủ tiệm** (email/password), dùng chung cho cả 3 trang quản trị `/admin/don-hang`, `/admin/san-pham`, `/admin/blog` (mục 6.2.2) — không cần hệ thống đăng ký công khai
-- [ ] Tạo **Storage bucket** `product-images` và `post-images` trong Supabase Storage để trang admin upload ảnh trực tiếp (thay vì phải nhờ dev bỏ ảnh vào `public/images/`)
-- [ ] Nhập **dữ liệu khởi tạo (demo/placeholder)** vào bảng `products` — dùng đúng danh sách/giá đã biết chắc ở mục 9.1 và 6.2.1, để trang `/san-pham` không bị trống lúc mới lên; và vào bảng `posts` — dùng 5 bài nháp ở mục 6.5.1
+- [x] Tạo **1 tài khoản Supabase Auth duy nhất cho chủ tiệm** (`buitheu698@gmail.com`) dùng chung cho cả 3 trang quản trị `/admin/don-hang`, `/admin/san-pham`, `/admin/blog` (mục 6.2.2) — đã test đăng nhập thành công
+- [x] Tạo **Storage bucket** `product-images` và `post-images` trong Supabase Storage
+- [x] Nhập **dữ liệu khởi tạo (demo/placeholder)** vào bảng `products` (15 sản phẩm: 8 đồ uống lẻ + 2 combo + 5 Set Detox) và `posts` (5 bài nháp mục 6.5.1) qua `supabase/seed.mjs`
 
 ### 11.2 Bước 2 — Component dùng chung (`src/components/`, `src/layouts/`)
 | File | Việc cụ thể |
