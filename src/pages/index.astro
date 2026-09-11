@@ -235,6 +235,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     background: linear-gradient(135deg, var(--color-bg-warm), var(--color-bg) 55%, #fff8e8);
   }
 
+  @media (max-width: 640px) {
+    .hero {
+      min-height: 340px;
+      padding: 2rem 1.2rem 1.5rem;
+    }
+  }
+
   .hero > .hero-bg {
     position: absolute;
     inset: 0;
@@ -253,7 +260,19 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     );
   }
 
-  .hero-blob {
+  @media (max-width: 640px) {
+    .hero > .hero-overlay {
+      background: linear-gradient(
+        180deg,
+        rgba(255, 253, 248, 0.35) 0%,
+        rgba(255, 253, 248, 0.8) 35%,
+        rgba(255, 248, 232, 0.96) 65%,
+        var(--color-bg-warm) 100%
+      );
+    }
+  }
+
+  .hero > .hero-blob {
     position: absolute;
     border-radius: 50%;
     filter: blur(50px);
