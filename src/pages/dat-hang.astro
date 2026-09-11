@@ -23,13 +23,18 @@ import OrderLookup from "../components/OrderLookup.astro";
         <h2>Bước 1 — Sản phẩm</h2>
         <label>
           Chọn sản phẩm
-          <select id="product-select" required></select>
+          <select id="product-select"></select>
         </label>
         <label>
           Số lượng
-          <input type="number" id="quantity" min="1" value="1" required />
+          <input type="number" id="quantity" min="1" value="1" />
         </label>
-        <button type="button" class="next" data-next="2">Tiếp tục</button>
+        <button type="button" id="add-to-cart" class="add-cart-btn">+ Thêm vào giỏ hàng</button>
+
+        <div id="cart-list" class="cart-list"></div>
+        <p id="cart-empty-hint" class="cart-empty-hint">Giỏ hàng đang trống — thêm ít nhất 1 sản phẩm để tiếp tục.</p>
+
+        <button type="button" class="next" data-next="2" id="step1-next">Tiếp tục</button>
       </section>
 
       <!-- Bước 2 — Tuỳ chọn -->
@@ -103,7 +108,19 @@ import OrderLookup from "../components/OrderLookup.astro";
           báo lại qua Zalo trước khi giao.
         </p>
 
-        <div class="bank-info">
+        <fieldset id="payment-method-fieldset" class="payment-method">
+          <legend>Hình thức thanh toán</legend>
+          <label>
+            <input type="radio" name="payment-method" value="bank_transfer" checked />
+            Chuyển khoản trước
+          </label>
+          <label>
+            <input type="radio" name="payment-method" value="cod" />
+            Tiền mặt khi nhận hàng (COD)
+          </label>
+        </fieldset>
+
+        <div class="bank-info" id="bank-info">
           <strong>💳 Thông tin chuyển khoản</strong>
           <img
             class="qr-code"
@@ -149,13 +166,22 @@ import OrderLookup from "../components/OrderLookup.astro";
     bottle_options?: string[] | null;
   }
 
+  interface CartItem {
+    slug: string;
+    quantity: number;
+  }
+
   const bottleLabel: Record<string, string> = { glass: "Thủy tinh", plastic: "Nhựa" };
 
   let products: ProductRow[] = [];
-  let selectedProduct: ProductRow | null = null;
+  let cart: CartItem[] = [];
 
   const productSelect = document.getElementById("product-select") as HTMLSelectElement;
   const quantityInput = document.getElementById("quantity") as HTMLInputElement;
+  const addToCartBtn = document.getElementById("add-to-cart") as HTMLButtonElement;
+  const cartList = document.getElementById("cart-list") as HTMLDivElement;
+  const cartEmptyHint = document.getElementById("cart-empty-hint") as HTMLElement;
+  const step1Next = document.getElementById("step1-next") as HTMLButtonElement;
   const bottleFieldset = document.getElementById("bottle-fieldset") as HTMLFieldSetElement;
   const deliveryDayWrap = document.getElementById("delivery-day-wrap") as HTMLElement;
   const districtSelect = document.getElementById("district") as HTMLSelectElement;
@@ -164,6 +190,9 @@ import OrderLookup from "../components/OrderLookup.astro";
   const form = document.getElementById("order-form") as HTMLFormElement;
   const thankYou = document.getElementById("thank-you") as HTMLElement;
   const stepsIndicator = document.getElementById("steps-indicator")!;
+  const bankInfo = document.getElementById("bank-info") as HTMLElement;
+  const paymentMethodInputs =
+    document.querySelectorAll<HTMLInputElement>('input[name="payment-method"]');
 
   function money(n?: number | null) {
     return n != null ? `${n.toLocaleString("vi-VN")}đ` : "Đang cập nhật giá";
@@ -173,19 +202,87 @@ import OrderLookup from "../components/OrderLookup.astro";
     return p.type === "single" ? p.price_retail : p.price;
   }
 
-  function renderBottleOptions(p: ProductRow) {
-    const options = p.bottle_options ?? [];
-    bottleFieldset.innerHTML = "<legend>Loại chai</legend>";
-    if (options.length === 0) {
-      bottleFieldset.innerHTML += "<p>Không áp dụng cho sản phẩm này.</p>";
-      return;
+  function findProduct(slug: string) {
+    return products.find((p) => p.slug === slug) ?? null;
+  }
+
+  // null nghĩa là chưa có giá cho ít nhất 1 sản phẩm trong giỏ — không cộng dồn thành 0,
+  // vì "0đ" dễ hiểu nhầm là miễn phí thay vì "chưa có giá".
+  function cartTotal(): number | null {
+    let hasUnknownPrice = false;
+    const total = cart.reduce((sum, item) => {
+      const p = findProduct(item.slug);
+      const price = p ? unitPrice(p) : null;
+      if (price == null) hasUnknownPrice = true;
+      return sum + (price ?? 0) * item.quantity;
+    }, 0);
+    return hasUnknownPrice ? null : total;
+  }
+
+  function renderCart() {
+    cartEmptyHint.hidden = cart.length > 0;
+    step1Next.hidden = cart.length === 0;
+
+    cartList.innerHTML = cart
+      .map((item) => {
+        const p = findProduct(item.slug);
+        if (!p) return "";
+        const price = unitPrice(p);
+        const priceLabel = price != null ? money(price * item.quantity) : "Đang cập nhật giá";
+        return `
+          <div class="cart-item" data-slug="${item.slug}">
+            <span class="cart-item-name">${p.name} × ${item.quantity}</span>
+            <span class="cart-item-price">${priceLabel}</span>
+            <button type="button" class="remove-item" data-slug="${item.slug}" aria-label="Xoá khỏi giỏ">✕</button>
+          </div>
+        `;
+      })
+      .join("");
+
+    if (cart.length > 0) {
+      const total = cartTotal();
+      cartList.innerHTML += `<div class="cart-total">Tổng tạm tính: <strong>${total != null ? money(total) : "Đang cập nhật giá"}</strong></div>`;
     }
-    options.forEach((opt, i) => {
-      const label = document.createElement("label");
-      label.innerHTML = `<input type="radio" name="bottle-type" value="${opt}" ${i === 0 ? "checked" : ""}/> ${bottleLabel[opt] ?? opt}`;
-      bottleFieldset.appendChild(label);
+
+    cartList.querySelectorAll<HTMLButtonElement>(".remove-item").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        cart = cart.filter((item) => item.slug !== btn.dataset.slug);
+        renderCart();
+        renderStep2Options();
+      });
     });
-    deliveryDayWrap.hidden = p.type === "single";
+  }
+
+  function addToCart() {
+    const slug = productSelect.value;
+    const qty = Math.max(1, Number(quantityInput.value) || 1);
+    if (!slug) return;
+    const existing = cart.find((item) => item.slug === slug);
+    if (existing) existing.quantity += qty;
+    else cart.push({ slug, quantity: qty });
+    renderCart();
+    renderStep2Options();
+  }
+
+  // Bước 2 áp dụng chung cho cả đơn (khách chọn 1 loại chai cho toàn bộ đơn thay vì
+  // từng sản phẩm riêng) — tuỳ chọn hiện ra dựa trên các sản phẩm đang có trong giỏ.
+  function renderStep2Options() {
+    const cartProducts = cart.map((item) => findProduct(item.slug)).filter(Boolean) as ProductRow[];
+    const allOptions = new Set<string>();
+    cartProducts.forEach((p) => (p.bottle_options ?? []).forEach((o) => allOptions.add(o)));
+
+    bottleFieldset.innerHTML = "<legend>Loại chai</legend>";
+    if (allOptions.size === 0) {
+      bottleFieldset.innerHTML += "<p>Không áp dụng cho các sản phẩm trong giỏ.</p>";
+    } else {
+      Array.from(allOptions).forEach((opt, i) => {
+        const label = document.createElement("label");
+        label.innerHTML = `<input type="radio" name="bottle-type" value="${opt}" ${i === 0 ? "checked" : ""}/> ${bottleLabel[opt] ?? opt}`;
+        bottleFieldset.appendChild(label);
+      });
+    }
+
+    deliveryDayWrap.hidden = !cartProducts.some((p) => p.type !== "single");
   }
 
   function goToStep(step: number) {
@@ -199,44 +296,57 @@ import OrderLookup from "../components/OrderLookup.astro";
   }
 
   function renderSummary() {
-    if (!selectedProduct) return;
-    const qty = Number(quantityInput.value) || 1;
-    const price = unitPrice(selectedProduct) ?? 0;
+    if (cart.length === 0) return;
     const bottleType =
       (form.querySelector('input[name="bottle-type"]:checked') as HTMLInputElement)?.value ??
       "";
+    const itemLines = cart
+      .map((item) => {
+        const p = findProduct(item.slug);
+        return p ? `<p><strong>${p.name}</strong> × ${item.quantity}</p>` : "";
+      })
+      .join("");
     orderSummary.innerHTML = `
-      <p><strong>${selectedProduct.name}</strong> × ${qty}</p>
+      ${itemLines}
       ${bottleType ? `<p>Loại chai: ${bottleLabel[bottleType] ?? bottleType}</p>` : ""}
-      <p>Tạm tính: ${money(price * qty)} (chưa gồm phí ship)</p>
+      <p>Tạm tính: ${money(cartTotal())} (chưa gồm phí ship)</p>
       <p>Giao tới: ${(document.getElementById("address") as HTMLInputElement).value},
       ${districtSelect.value}</p>
     `;
   }
 
   document.querySelectorAll<HTMLButtonElement>("[data-next]").forEach((btn) => {
-    btn.addEventListener("click", () => goToStep(Number(btn.dataset.next)));
+    btn.addEventListener("click", () => {
+      if (Number(btn.dataset.next) === 2 && cart.length === 0) return;
+      goToStep(Number(btn.dataset.next));
+    });
   });
   document.querySelectorAll<HTMLButtonElement>("[data-back]").forEach((btn) => {
     btn.addEventListener("click", () => goToStep(Number(btn.dataset.back)));
   });
 
-  productSelect.addEventListener("change", () => {
-    selectedProduct = products.find((p) => p.slug === productSelect.value) ?? null;
-    if (selectedProduct) renderBottleOptions(selectedProduct);
-  });
+  addToCartBtn.addEventListener("click", addToCart);
 
   districtSelect.addEventListener("change", () => {
     districtWarning.hidden = districtSelect.value !== "Khác";
   });
 
+  paymentMethodInputs.forEach((input) => {
+    input.addEventListener("change", () => {
+      bankInfo.hidden = input.value !== "bank_transfer" || !input.checked;
+    });
+  });
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (!selectedProduct) return;
+    if (cart.length === 0) return;
 
     const bottleType =
       (form.querySelector('input[name="bottle-type"]:checked') as HTMLInputElement)?.value ??
       "glass";
+    const paymentMethod =
+      (form.querySelector('input[name="payment-method"]:checked') as HTMLInputElement)?.value ??
+      "cod";
 
     const { data, error } = await supabase
       .from("orders")
@@ -245,10 +355,11 @@ import OrderLookup from "../components/OrderLookup.astro";
         customer_name: (document.getElementById("customer-name") as HTMLInputElement).value,
         address: (document.getElementById("address") as HTMLInputElement).value,
         district: districtSelect.value,
-        items: [{ productSlug: selectedProduct.slug, quantity: Number(quantityInput.value) }],
+        items: cart.map((item) => ({ productSlug: item.slug, quantity: item.quantity })),
         bottle_type: bottleType,
         bottles_returned:
           Number((document.getElementById("bottles-returned") as HTMLInputElement).value) || 0,
+        payment_method: paymentMethod,
       })
       .select()
       .single();
@@ -276,14 +387,14 @@ import OrderLookup from "../components/OrderLookup.astro";
     .join("");
 
   const preselectedSlug = new URLSearchParams(location.search).get("product");
-  const initial =
-    products.find((p) => p.slug === preselectedSlug) ?? products[0] ?? null;
+  const initial = products.find((p) => p.slug === preselectedSlug) ?? null;
 
   if (initial) {
     productSelect.value = initial.slug;
-    selectedProduct = initial;
-    renderBottleOptions(initial);
+    cart.push({ slug: initial.slug, quantity: 1 });
   }
+  renderCart();
+  renderStep2Options();
 </script>
 
 <style>
@@ -353,6 +464,60 @@ import OrderLookup from "../components/OrderLookup.astro";
     border-color: var(--color-primary);
   }
 
+  .add-cart-btn {
+    align-self: flex-start;
+    background: #fff;
+    color: var(--color-primary);
+    border: 1.5px solid var(--color-primary);
+  }
+
+  .cart-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .cart-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 0.7rem;
+    font-size: 0.9rem;
+  }
+
+  .cart-item-name {
+    flex: 1;
+    font-weight: 600;
+  }
+
+  .cart-item-price {
+    color: var(--color-secondary);
+    white-space: nowrap;
+  }
+
+  .remove-item {
+    background: none;
+    border: none;
+    padding: 0.2rem 0.4rem;
+    color: var(--color-accent);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .cart-total {
+    text-align: right;
+    font-weight: 700;
+    padding: 0.3rem 0.2rem 0;
+  }
+
+  .cart-empty-hint {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    margin: 0;
+  }
+
   #bottle-fieldset {
     border: none;
     padding: 0;
@@ -365,6 +530,29 @@ import OrderLookup from "../components/OrderLookup.astro";
     font-weight: 600;
     font-size: 0.9rem;
     padding: 0;
+  }
+
+  .payment-method {
+    border: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .payment-method legend {
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0;
+    margin-bottom: 0.3rem;
+  }
+
+  .payment-method label {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 400;
   }
 
   .nav-row {
@@ -432,6 +620,15 @@ import OrderLookup from "../components/OrderLookup.astro";
 
   .bank-info p {
     margin: 0.2rem 0;
+  }
+
+  .bank-info .qr-code {
+    display: block;
+    max-width: 220px;
+    width: 100%;
+    height: auto;
+    margin: 0.5rem 0;
+    border-radius: 8px;
   }
 
   #thank-you {
