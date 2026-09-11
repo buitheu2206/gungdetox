@@ -869,7 +869,7 @@ Phát hiện qua Playwright: bất kỳ phần tử nào có CSS tự đặt `di
 Đảm bảo `hidden` luôn thắng ở mọi component, không cần nhớ tránh đặt `display` trong CSS từng nơi. Đã build lại và test lại toàn bộ luồng đặt hàng + admin sau khi sửa, xác nhận hoạt động đúng.
 
 ### 11.7 Bước 7 — SEO, kiểm thử, deploy (gộp từ mục 8.7, 8.8 thành checklist thao tác)
-- [x] Viết title/description riêng cho 5 trang đã build (Trang chủ, Sản phẩm, Đặt hàng, Quy trình, Liên hệ) — Blog để Phase 2
+- [x] Viết title/description riêng cho các trang đã build (Trang chủ, Sản phẩm, Đặt hàng, Liên hệ, Blog + chi tiết bài viết) — Quy trình đã gộp vào Trang chủ (mục 6.4)
 - [ ] Nén ảnh sang WebP — **chưa cần** vì chưa có ảnh sản phẩm/blog thật nào được admin tải lên; áp dụng khi admin bắt đầu upload ảnh qua `/admin/san-pham`, `/admin/blog`
 - [x] Tạo `sitemap.xml` (`@astrojs/sitemap`, đã set `site` trong `astro.config.mjs`, loại trừ `/admin/*`) + `robots.txt` (chặn crawl `/admin/`)
 - [x] Test responsive trên mobile — dùng Playwright giả lập iPhone 13 (chưa test trên điện thoại thật). **Phát hiện 1 lỗi thật qua test này**: nút Zalo/Messenger nổi che nội dung trên màn hình hẹp — đã sửa (mục 11.7.1)
@@ -890,6 +890,19 @@ Toàn bộ 8 trang (chủ, sản phẩm, đặt hàng, quy trình, liên hệ, 3
 - Nên chờ chủ tiệm xác nhận đã sẵn sàng lên chính thức trước khi deploy, vì đây là hành động khó đảo ngược hoàn toàn (dù có thể gỡ xuống, nhưng có thể đã bị Google index hoặc khách đã thấy)
 
 Khi đã sẵn sàng: làm theo quy trình deploy ở mục 8.8 (build → upload `dist/` qua FTP/File Manager → cấu hình SSL).
+
+### 11.7.3 Rà soát dữ liệu thiếu (11/09/2026) — phát hiện & sửa
+
+Chủ tiệm yêu cầu rà lại toàn bộ trang xem còn thiếu data không. Viết script `.verify/check-missing-data.mjs` query trực tiếp Supabase để đối chiếu, phát hiện:
+
+- **7 sản phẩm chưa có `image_url`**: 2 combo Ginger Shot, Coco Matcha, Sữa hạt tươi, cả 5 Set Detox. Đã lấy ảnh thật từ kho ảnh quảng cáo Facebook của tiệm (ảnh chính chủ, không phải ảnh chụp lại) — mỗi Set Detox hoá ra đã có ảnh quảng cáo riêng đẹp sẵn (bộ 7 chai theo màu), coi như "trúng số" so với kỳ vọng ban đầu là chỉ tìm được ảnh tương đối.
+- **5 sản phẩm Set Detox chưa có `description`**: viết mới dựa theo `set_goal` có sẵn.
+- **5 bài blog chưa có ảnh cover (`image_url`)**: đã gán ảnh chủ đề phù hợp từ cùng kho ảnh Facebook.
+- **⚠️ Lỗi nghiêm trọng hơn phát hiện được**: trang `/blog` và `/blog/[slug]` (chi tiết bài viết) **chưa từng được code** — chỉ có `/admin/blog` (CRUD). Link "Blog" trên menu điều hướng dẫn tới trang 404 thật sự trên site đang chạy. Đã build cả 2 trang này theo đúng pattern của `/san-pham` và `/san-pham/[slug]` (getStaticPaths + script client tự fetch lại để cập nhật nội dung không cần rebuild).
+- **Lỗi thứ 2 phát hiện khi build trang blog**: hàm `blogCardHtml()` trong `src/lib/templates.ts` dùng tên class chung (`media`, `body`, `hover-video`) nhưng `cards.css` chỉ định nghĩa style cho `.blog-media`, `.blog-body`, `.blog-hover-video` (khớp với `BlogCard.astro`) — cùng loại lỗi với lỗi CSS card ở mục 11.2, nếu không phát hiện thì thẻ blog trên trang chủ/trang Blog sẽ hiển thị không có style. Đã sửa để khớp tên class.
+- Lưu ý kỹ thuật: update Supabase từ script phải dùng `SUPABASE_SERVICE_ROLE_KEY` (như `seed.mjs`) chứ không phải anon key — dùng anon key thì RLS chặn âm thầm (trả về thành công, 0 dòng bị sửa), ban đầu tưởng đã lưu xong nhưng kiểm tra lại mới phát hiện chưa có gì thay đổi.
+- Đã cập nhật `supabase/seed.mjs` khớp với dữ liệu mới để lần seed sau (nếu cần) không bị lệch.
+- `gallery_images` (ảnh phụ) vẫn đang trống cho tất cả sản phẩm — không phải lỗi, chỉ là chưa có nhu cầu thêm ảnh phụ; chủ tiệm có thể tự thêm qua `/admin/san-pham` bất cứ lúc nào.
 
 ### 11.8 Việc CHƯA đưa vào task breakdown này (cố ý, chờ thông tin thật từ chủ tiệm)
 - **Thông tin chuyển khoản thật** (mục 6.3.1) — đang demo, cần thay trước khi web lên chính thức (không chặn việc build)
