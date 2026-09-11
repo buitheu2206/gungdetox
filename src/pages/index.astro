@@ -10,6 +10,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <section class="hero">
       <div class="hero-blob hero-blob-1"></div>
       <div class="hero-blob hero-blob-2"></div>
+      <div class="hero-blob hero-blob-3"></div>
       <p class="eyebrow">🫚 Detox tự nhiên · Sài Gòn</p>
       <h1>Tiệm GỪNG xin chào!</h1>
       <p class="lead">
@@ -23,21 +24,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <div class="socials">
         <a href="https://facebook.com/gungdetox" target="_blank" rel="noopener">Facebook</a>
         <a href="https://instagram.com/gungdetox.saigon" target="_blank" rel="noopener">Instagram</a>
-      </div>
-    </section>
-
-    <section class="story" id="cau-chuyen">
-      <div class="story-photo">
-        <img src="/images/hero/kitchen-lifestyle.webp" alt="Góc pha chế GỪNG DETOX" />
-      </div>
-      <div class="story-text">
-        <p class="eyebrow eyebrow-alt">Câu chuyện GỪNG DETOX</p>
-        <h2>Từ mong muốn đơn giản</h2>
-        <p>
-          GỪNG DETOX bắt đầu từ mong muốn đơn giản: mang đến những chai đồ uống lên
-          men/detox từ gừng tươi, làm mới mỗi ngày, để việc chăm sóc sức khỏe trở nên
-          dễ dàng và gần gũi hơn với "chị em" bận rộn ở Sài Gòn.
-        </p>
       </div>
     </section>
 
@@ -123,11 +109,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </section>
 
     <section class="quote">
-      <blockquote>
-        "GỪNG không nghĩ Ginger Shot là 'thuốc' hay uống một chai là khỏe ngay — một
-        thói quen nhỏ mỗi sáng, kết hợp ăn uống cân bằng, mới tạo nên kết quả bền
-        vững." 💚
-      </blockquote>
+      <div class="quote-card">
+        <blockquote>
+          "GỪNG không nghĩ Ginger Shot là 'thuốc' hay uống một chai là khỏe ngay — một
+          thói quen nhỏ mỗi sáng, kết hợp ăn uống cân bằng, mới tạo nên kết quả bền
+          vững." 💚
+        </blockquote>
+      </div>
     </section>
 
     <section class="quick-contact">
@@ -167,6 +155,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     max-width: 1100px;
     margin: 0 auto;
     padding: 1.5rem;
+    --c-green: #2e7d32;
+    --c-yellow: #d4a017;
+    --c-red: var(--color-accent);
+    --c-orange: #e07b1a;
+    --c-purple: #7c3aed;
   }
 
   section {
@@ -179,7 +172,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     padding: 3.5rem 1.5rem 2rem;
     overflow: hidden;
     border-radius: var(--radius-lg);
-    background: linear-gradient(180deg, var(--color-bg-warm), var(--color-bg));
+    background: linear-gradient(135deg, var(--color-bg-warm), var(--color-bg) 55%, #fff8e8);
   }
 
   .hero-blob {
@@ -202,9 +195,18 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     width: 220px;
     height: 220px;
     background: var(--color-accent);
-    opacity: 0.15;
+    opacity: 0.18;
     bottom: -60px;
     right: -40px;
+  }
+
+  .hero-blob-3 {
+    width: 180px;
+    height: 180px;
+    background: var(--c-yellow);
+    opacity: 0.2;
+    top: 20%;
+    right: 8%;
   }
 
   .hero > * {
@@ -287,43 +289,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     text-decoration: none;
   }
 
-  /* Câu chuyện */
-  .story {
-    display: grid;
-    grid-template-columns: 1fr 1.1fr;
-    gap: 2.5rem;
-    align-items: center;
-    scroll-margin-top: 90px;
-  }
-
-  .story-photo img {
-    width: 100%;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    display: block;
-  }
-
-  .eyebrow-alt {
-    background: none;
-    padding: 0;
-    color: var(--color-accent);
-  }
-
-  .story-text p {
-    color: var(--color-text-muted);
-    font-size: 1.02rem;
-  }
-
-  @media (max-width: 760px) {
-    .story {
-      grid-template-columns: 1fr;
-    }
-
-    .story-photo {
-      order: -1;
-    }
-  }
-
   .why-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -344,6 +309,30 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     background: var(--color-primary-light);
     font-size: 1.4rem;
     margin-bottom: 0.7rem;
+  }
+
+  .why-grid > div:nth-child(1) .why-icon {
+    background: color-mix(in srgb, var(--c-green) 22%, #fff);
+  }
+
+  .why-grid > div:nth-child(2) .why-icon {
+    background: color-mix(in srgb, var(--c-yellow) 25%, #fff);
+  }
+
+  .why-grid > div:nth-child(3) .why-icon {
+    background: color-mix(in srgb, var(--c-orange) 22%, #fff);
+  }
+
+  .why-grid > div:nth-child(1) {
+    border-top: 3px solid var(--c-green);
+  }
+
+  .why-grid > div:nth-child(2) {
+    border-top: 3px solid var(--c-yellow);
+  }
+
+  .why-grid > div:nth-child(3) {
+    border-top: 3px solid var(--c-orange);
   }
 
   .why-grid h3 {
@@ -400,6 +389,19 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     font-size: 0.85rem;
   }
 
+  .process-steps li:nth-child(1)::before {
+    background: var(--c-green);
+  }
+  .process-steps li:nth-child(2)::before {
+    background: var(--c-yellow);
+  }
+  .process-steps li:nth-child(3)::before {
+    background: var(--c-orange);
+  }
+  .process-steps li:nth-child(4)::before {
+    background: var(--c-purple);
+  }
+
   .process-steps strong {
     display: block;
     margin-bottom: 0.3rem;
@@ -421,6 +423,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   .bottle-grid > div {
     padding: 1.2rem;
+    border-left: 4px solid var(--c-green);
+  }
+
+  .bottle-grid > div:nth-child(2) {
+    border-left-color: var(--c-orange);
   }
 
   .two-notes {
@@ -457,6 +464,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   }
 
   .set-detox-promo {
+    position: relative;
     display: grid;
     grid-template-columns: 1.2fr 1fr;
     gap: 1.5rem;
@@ -465,6 +473,23 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: var(--shadow-md);
+  }
+
+  .set-detox-promo::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(
+      90deg,
+      var(--c-green),
+      var(--c-yellow),
+      var(--c-red),
+      var(--c-orange),
+      var(--c-purple)
+    );
   }
 
   .set-detox-promo img {
@@ -488,6 +513,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     text-align: center;
     max-width: 640px;
     margin: 0 auto 3.5rem;
+  }
+
+  .quote-card {
+    background: linear-gradient(120deg, var(--color-primary-light), #fff 60%, #fdf3d9);
+    border-radius: var(--radius-lg);
+    padding: 2rem 1.8rem;
+    box-shadow: var(--shadow-sm);
   }
 
   .quote blockquote {
