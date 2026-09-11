@@ -128,7 +128,7 @@ const products = [
     servings: 84,
     delivery_schedule: "Giao theo tuần",
     bottle_options: ["glass", "plastic"],
-    image_url: "/images/products/ginger-shot.webp",
+    image_url: "/images/products/combo-3-thang-ginger-shot.webp",
     sort_order: 10,
   },
 
