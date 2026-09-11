@@ -113,9 +113,9 @@ const jsonLd = locations.map((loc) => ({
 
   .location-card {
     background: #fff;
-    border: 1px solid var(--color-bg-alt);
-    border-radius: 12px;
-    padding: 1rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 1.2rem;
   }
 
   .location-card iframe {
@@ -130,9 +130,9 @@ const jsonLd = locations.map((loc) => ({
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
-    background: var(--color-bg-alt);
-    border-radius: 12px;
-    padding: 1.5rem;
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-lg);
+    padding: 1.8rem;
     margin-bottom: 1.5rem;
   }
 
@@ -165,9 +165,15 @@ const jsonLd = locations.map((loc) => ({
     display: inline-block;
     text-decoration: none;
     color: #fff;
-    padding: 0.7rem 1.4rem;
+    padding: 0.8rem 1.6rem;
     border-radius: 999px;
     font-weight: 600;
+    transition: transform 0.15s ease;
+  }
+
+  .btn-zalo:hover,
+  .btn-messenger:hover {
+    transform: translateY(-2px);
   }
 
   .btn-zalo {

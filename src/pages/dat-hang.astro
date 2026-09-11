@@ -284,6 +284,13 @@ import OrderLookup from "../components/OrderLookup.astro";
     padding: 1.5rem;
   }
 
+  #order-form {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 1.8rem;
+  }
+
   .steps-indicator {
     display: flex;
     justify-content: space-between;
@@ -323,11 +330,18 @@ import OrderLookup from "../components/OrderLookup.astro";
 
   .step input,
   .step select {
-    padding: 0.55rem 0.7rem;
-    border-radius: 8px;
-    border: 1px solid #d1d5db;
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid #e2ddd0;
     font-weight: 400;
     font-family: var(--font-body);
+    transition: border-color 0.15s ease;
+  }
+
+  .step input:focus,
+  .step select:focus {
+    outline: none;
+    border-color: var(--color-primary);
   }
 
   #bottle-fieldset {
@@ -351,11 +365,12 @@ import OrderLookup from "../components/OrderLookup.astro";
   }
 
   button {
-    padding: 0.6rem 1.2rem;
+    padding: 0.65rem 1.3rem;
     border-radius: 999px;
     border: none;
     font-weight: 600;
     cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
 
   .next,
@@ -363,11 +378,17 @@ import OrderLookup from "../components/OrderLookup.astro";
     background: var(--color-primary);
     color: #fff;
     margin-left: auto;
+    box-shadow: 0 6px 16px rgba(78, 103, 53, 0.28);
+  }
+
+  .next:hover,
+  .submit:hover {
+    transform: translateY(-2px);
   }
 
   .back {
     background: #fff;
-    border: 1px solid var(--color-bg-alt);
+    border: 1.5px solid var(--color-bg-alt);
   }
 
   .warning {
@@ -376,10 +397,11 @@ import OrderLookup from "../components/OrderLookup.astro";
   }
 
   .order-summary {
-    background: var(--color-bg-alt);
-    border-radius: 12px;
-    padding: 1rem;
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-md);
+    padding: 1.1rem;
     font-size: 0.9rem;
+    border-left: 4px solid var(--color-primary);
   }
 
   .order-summary p {

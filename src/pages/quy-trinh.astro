@@ -97,9 +97,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   .process-steps li {
     counter-increment: step;
     background: #fff;
-    border: 1px solid var(--color-bg-alt);
-    border-radius: 12px;
-    padding: 1rem 1rem 1rem 3rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 1.1rem 1.2rem 1.1rem 3.2rem;
     position: relative;
   }
 
@@ -139,23 +139,24 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   .bottle-grid > div {
     background: #fff;
-    border: 1px solid var(--color-bg-alt);
-    border-radius: 12px;
-    padding: 1rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 1.2rem;
   }
 
   .return-note {
-    background: var(--color-bg-alt);
-    border-radius: 12px;
-    padding: 1rem;
+    background: var(--color-primary-light);
+    border-radius: var(--radius-md);
+    padding: 1.2rem;
     font-size: 0.9rem;
     margin: 0;
   }
 
   .hygiene {
-    background: var(--color-bg-alt);
-    border-radius: 12px;
-    padding: 1.2rem;
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-md);
+    padding: 1.3rem;
+    border-left: 4px solid var(--color-accent);
   }
 
   .hygiene h3 {
@@ -175,8 +176,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     background: var(--color-primary);
     color: #fff;
     text-decoration: none;
-    padding: 0.7rem 1.4rem;
+    padding: 0.8rem 1.6rem;
     border-radius: 999px;
     font-weight: 600;
+    box-shadow: 0 8px 20px rgba(78, 103, 53, 0.3);
+    transition: transform 0.15s ease;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
   }
 </style>
