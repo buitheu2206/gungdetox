@@ -1,0 +1,88 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Chính sách đổi trả chai refill — GỪNG DETOX"
+  description="Chính sách đổi trả chai thủy tinh/nhựa refill, quy trình vệ sinh chai tại GỪNG DETOX."
+>
+  <main class="policy-page">
+    <nav class="breadcrumb"><a href="/">Trang chủ</a> / <span>Đổi trả chai refill</span></nav>
+    <h1>Đổi trả chai refill</h1>
+
+    <section>
+      <h2>♻️ Đổi chai cũ, nhận ưu đãi</h2>
+      <p>
+        Trả lại chai cũ (thủy tinh/nhựa) khi nhận đơn mới để được giảm giá/tặng điểm cho
+        lần đặt sau. Chi tiết mức ưu đãi sẽ được tiệm cập nhật sớm.
+      </p>
+      <p>
+        Bạn có thể đăng ký số chai muốn trả ngay ở bước 3 của form
+        <a href="/dat-hang">Đặt hàng</a> khi đặt đơn tiếp theo.
+      </p>
+    </section>
+
+    <section>
+      <h2>Chọn loại chai phù hợp</h2>
+      <div class="compare-cols">
+        <div>
+          <h3>Chai thủy tinh</h3>
+          <p>Sang, chắc, dùng lâu dài. Phù hợp để tại nhà, không mang đi xa nhiều.</p>
+        </div>
+        <div>
+          <h3>Chai nhựa</h3>
+          <p>Gọn, nhẹ, dễ trữ đông và mang đi xa. Phù hợp người bận rộn, hay di chuyển.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Vệ sinh chai refill</h2>
+      <p>Chai được khử khuẩn bằng nước sôi trước khi tái sử dụng, đảm bảo an toàn vệ sinh cho lần giao tiếp theo.</p>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .policy-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+
+  .breadcrumb {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1.2rem;
+  }
+
+  .breadcrumb a {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  section {
+    margin-bottom: 2rem;
+  }
+
+  section h2 {
+    margin-bottom: 0.6rem;
+  }
+
+  .compare-cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .compare-cols > div {
+    background: #fff;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 1rem;
+  }
+
+  .compare-cols h3 {
+    margin: 0 0 0.4rem;
+  }
+</style>
