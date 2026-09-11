@@ -11,4 +11,8 @@ export default defineConfig({
       filter: (page) => !page.includes('/admin/'),
     }),
   ],
+  redirects: {
+    // Nội dung "Quy trình/Giới thiệu" đã gộp vào trang chủ (mục #cau-chuyen)
+    '/quy-trinh': '/',
+  },
 });

@@ -26,6 +26,21 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       </div>
     </section>
 
+    <section class="story" id="cau-chuyen">
+      <div class="story-photo">
+        <img src="/images/hero/kitchen-lifestyle.webp" alt="Góc pha chế GỪNG DETOX" />
+      </div>
+      <div class="story-text">
+        <p class="eyebrow eyebrow-alt">Câu chuyện GỪNG DETOX</p>
+        <h2>Từ mong muốn đơn giản</h2>
+        <p>
+          GỪNG DETOX bắt đầu từ mong muốn đơn giản: mang đến những chai đồ uống lên
+          men/detox từ gừng tươi, làm mới mỗi ngày, để việc chăm sóc sức khỏe trở nên
+          dễ dàng và gần gũi hơn với "chị em" bận rộn ở Sài Gòn.
+        </p>
+      </div>
+    </section>
+
     <section class="why">
       <h2>Vì sao chọn GỪNG</h2>
       <div class="why-grid">
@@ -44,6 +59,50 @@ import BaseLayout from "../layouts/BaseLayout.astro";
           <h3>Hệ chai refill sạch</h3>
           <p>Chai thủy tinh hoặc nhựa, khử khuẩn bằng nước sôi trước khi tái sử dụng.</p>
         </div>
+      </div>
+    </section>
+
+    <section class="process-section">
+      <h2>Quy trình làm mới mỗi ngày</h2>
+      <ol class="process-steps">
+        <li>
+          <strong>Chọn nguyên liệu tươi mỗi sáng</strong>
+          <p>Gừng, nghệ, chanh vàng, mật ong, muối hồng và rau củ trái cây theo mùa.</p>
+        </li>
+        <li>
+          <strong>Sơ chế và ép/ủ/nấu theo đơn</strong>
+          <p>Không sản xuất hàng loạt trữ sẵn — mỗi loại đồ uống được làm mới sát giờ giao.</p>
+        </li>
+        <li>
+          <strong>Đóng chai và kiểm tra chất lượng</strong>
+          <p>Không đường tinh luyện, không chất bảo quản, không hương liệu.</p>
+        </li>
+        <li>
+          <strong>Giao tận nhà theo lịch đã hẹn</strong>
+          <p>Theo tuần với combo thuê bao, hoặc theo đơn lẻ trong khu vực giao hàng.</p>
+        </li>
+      </ol>
+
+      <div class="bottle-grid">
+        <div class="surface-card">
+          <h3>Chai thủy tinh</h3>
+          <p>Sang, chắc, dùng được lâu dài — phù hợp để tại nhà, giữ trọn vị tươi ngon.</p>
+        </div>
+        <div class="surface-card">
+          <h3>Chai nhựa</h3>
+          <p>Gọn, nhẹ, dễ trữ đông và mang đi xa — phù hợp người bận rộn, hay di chuyển.</p>
+        </div>
+      </div>
+
+      <div class="two-notes">
+        <p class="return-note">
+          ♻️ Khi nhận đơn mới, chị em có thể gửi lại chai cũ (thủy tinh hoặc nhựa) cho tiệm
+          để tái sử dụng — vừa gọn nhà, vừa góp phần giảm rác thải nhựa.
+        </p>
+        <p class="hygiene-note">
+          ✅ <strong>Cam kết vệ sinh:</strong> mọi chai refill được khử khuẩn bằng nước sôi
+          trước khi tái sử dụng, đảm bảo an toàn cho lần đóng chai tiếp theo.
+        </p>
       </div>
     </section>
 
@@ -111,7 +170,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   }
 
   section {
-    margin-bottom: 3rem;
+    margin-bottom: 3.5rem;
   }
 
   .hero {
@@ -228,6 +287,43 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     text-decoration: none;
   }
 
+  /* Câu chuyện */
+  .story {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 2.5rem;
+    align-items: center;
+    scroll-margin-top: 90px;
+  }
+
+  .story-photo img {
+    width: 100%;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    display: block;
+  }
+
+  .eyebrow-alt {
+    background: none;
+    padding: 0;
+    color: var(--color-accent);
+  }
+
+  .story-text p {
+    color: var(--color-text-muted);
+    font-size: 1.02rem;
+  }
+
+  @media (max-width: 760px) {
+    .story {
+      grid-template-columns: 1fr;
+    }
+
+    .story-photo {
+      order: -1;
+    }
+  }
+
   .why-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -259,6 +355,95 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     margin: 0;
     font-size: 0.9rem;
     color: var(--color-text-muted);
+  }
+
+  /* Quy trình + chai refill */
+  .process-section {
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+  }
+
+  .process-steps {
+    list-style: none;
+    counter-reset: step;
+    padding: 0;
+    margin: 0 0 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .process-steps li {
+    counter-increment: step;
+    background: #fff;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 1.1rem 1.2rem 1.1rem 3.2rem;
+    position: relative;
+  }
+
+  .process-steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: #fff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+  }
+
+  .process-steps strong {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.95rem;
+  }
+
+  .process-steps p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+  }
+
+  .bottle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .bottle-grid > div {
+    padding: 1.2rem;
+  }
+
+  .two-notes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .return-note,
+  .hygiene-note {
+    border-radius: var(--radius-md);
+    padding: 1.1rem;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .return-note {
+    background: var(--color-primary-light);
+  }
+
+  .hygiene-note {
+    background: #fff;
+    border-left: 4px solid var(--color-accent);
   }
 
   .grid {
@@ -302,7 +487,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   .quote {
     text-align: center;
     max-width: 640px;
-    margin: 0 auto 3rem;
+    margin: 0 auto 3.5rem;
   }
 
   .quote blockquote {
@@ -324,6 +509,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   .quick-contact .btn-primary {
     background: #fff;
     color: var(--color-primary);
+    margin-top: 0.8rem;
   }
 
   .quick-contact .btn-primary:hover {
@@ -332,9 +518,5 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   .quick-contact p {
     margin: 0.2rem 0;
-  }
-
-  .quick-contact .btn-primary {
-    margin-top: 0.8rem;
   }
 </style>
