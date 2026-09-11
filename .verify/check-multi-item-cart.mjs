@@ -39,7 +39,7 @@ await page.selectOption("#product-select", "bia-gung");
 await page.fill("#quantity", "1");
 await page.click("#add-to-cart");
 await page.waitForTimeout(200);
-await page.click('.remove-item[data-slug="bia-gung"]');
+await page.click('.cart-item:has-text("Bia Gừng") .remove-item');
 await page.waitForTimeout(200);
 
 const cartTextAfterRemove = await page.locator("#cart-list").innerText();
