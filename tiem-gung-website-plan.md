@@ -796,12 +796,12 @@ create table orders (
 | `pages/admin/blog.astro` | Tương tự: danh sách bài viết + form thêm/sửa bài (tiêu đề, nội dung, ảnh, tag) + upload ảnh lên bucket `post-images` |
 | `pages/admin/don-hang.astro` | Danh sách đơn hàng (lọc theo trạng thái) + đổi `status` từng đơn (dropdown), tự động ghi thêm vào `status_history` |
 
-### 11.3 Bước 3 — Trang chủ `/` (`src/pages/index.astro`)
-Build đúng thứ tự 9 section ở mục 6.1, ghép từ các component ở 11.2. Việc riêng cho trang này:
-- [ ] Viết nội dung thật cho "Vì sao chọn GỪNG" (3-4 điểm, dựa nội dung thật mục 1/9)
-- [ ] Chọn 3 sản phẩm nổi bật cho section 5 (đề xuất: Ginger Shot, 1 Set trong 5 SET DETOX, Kombucha — đại diện đủ dòng sản phẩm)
-- [ ] Trích 1 câu quote thương hiệu từ bài đăng thật (mục 9), giữ giọng "chị em" — **không gắn tên khách hàng cụ thể** (đã huỷ, mục 10.1)
-- [ ] Nhúng ảnh bìa `anh bìa.jpg` vào section 6 (Combo/Set Detox) làm ảnh minh hoạ chính, vì đây là ảnh marketing đẹp nhất hiện có
+### 11.3 Bước 3 — Trang chủ `/` (`src/pages/index.astro`) ✅ XONG (11/09/2026)
+Đã kiểm chứng bằng Playwright: 0 lỗi console, 3 sản phẩm nổi bật fetch đúng từ Supabase theo đúng thứ tự đã chọn.
+- [x] Viết nội dung thật cho "Vì sao chọn GỪNG" (3-4 điểm, dựa nội dung thật mục 1/9)
+- [x] Chọn 3 sản phẩm nổi bật cho section 5: Ginger Shot, Set 2 — Ginger Thơm Tái Tạo, Kombucha (fetch động theo slug, không hard-code nội dung)
+- [x] Trích 1 câu quote thương hiệu từ bài đăng thật (mục 9), giữ giọng "chị em" — không gắn tên khách hàng cụ thể
+- [x] Nhúng ảnh bìa `anh bìa.jpg` vào section 6 (5 Set Detox) làm ảnh minh hoạ chính
 
 ### 11.4 Bước 4 — Trang Sản phẩm `/san-pham` (`src/pages/san-pham.astro`) ✅ XONG (11/09/2026)
 Đã kiểm chứng bằng Playwright (script `.verify/check-page.mjs`): build production chạy `npm run preview`, mở `/san-pham`, chụp ảnh, **0 lỗi console**. Toàn bộ 8 sản phẩm lẻ, 5 Set Detox, 2 combo hiển thị đúng dữ liệu thật từ Supabase, bộ lọc danh mục hoạt động (client-side, không gọi lại Supabase mỗi lần đổi tab).
@@ -815,14 +815,14 @@ Build đúng thứ tự 9 section ở mục 6.1, ghép từ các component ở 1
 - [x] FAQ accordion (dùng `<details>/<summary>` HTML thuần)
 - [x] Dòng CTA "Đặt cho văn phòng"
 
-### 11.5 Bước 5 — Trang Đặt hàng `/dat-hang` (`src/pages/dat-hang.astro`)
-Form 4 bước theo Phương án B (mục 6.3) — có thể làm dạng single-page với JS ẩn/hiện từng bước (không cần multi-page riêng):
-- [ ] **Bước 1 — Sản phẩm**: đọc query string (`?product=ginger-shot&type=combo-thang`) truyền từ nút "Đặt món này"/"Chọn combo này" ở trang Sản phẩm, hiển thị lại lựa chọn, cho sửa số lượng
-- [ ] **Bước 2 — Tuỳ chọn**: radio chai thủy tinh/nhựa, chọn lịch giao (nếu là combo thuê bao)
-- [ ] **Bước 3 — Thông tin giao hàng**: input tên, SĐT (validate), địa chỉ, dropdown Quận (Q.1/Q.3/Bình Thạnh — theo mục 6.3.2, nếu chọn ngoài danh sách thì hiện cảnh báo thay vì chặn), ô "Số chai cũ muốn trả" (liên kết chương trình đổi chai)
-- [ ] **Bước 4 — Xác nhận**: tóm tắt đơn, ghi chú "phí ship tính theo khoảng cách, tiệm báo lại qua Zalo" (Cách B mục 6.3.2), hiển thị thông tin chuyển khoản (⚠️ demo, mục 6.3.1 — thay thật trước khi lên site), nút "Đặt hàng" → insert vào bảng `orders` qua Supabase client
-- [ ] Trang cảm ơn (`/dat-hang/cam-on` hoặc hiện inline sau submit): hiện mã đơn (id rút gọn) + link tới `OrderLookup`
-- [ ] Gắn `OrderLookup` component vào cuối trang `/dat-hang` luôn (không cần trang riêng)
+### 11.5 Bước 5 — Trang Đặt hàng `/dat-hang` (`src/pages/dat-hang.astro`) ✅ XONG (11/09/2026)
+Đã kiểm chứng toàn bộ luồng bằng Playwright thao tác thật (không chỉ build): mở với `?product=combo-thang-ginger-shot` → sản phẩm được chọn sẵn đúng → đi qua đủ 4 bước → tóm tắt tính giá đúng (550.000đ) → bấm Đặt hàng → **đơn thật được tạo trong Supabase** → trang cảm ơn hiện đúng mã đơn → **tra cứu lại bằng đúng SĐT vừa đặt ở `OrderLookup` cuối trang cũng ra đúng kết quả**. 0 lỗi console trong toàn bộ luồng. Dữ liệu test đã được dọn sạch sau khi xác nhận.
+- [x] **Bước 1 — Sản phẩm**: đọc query string (`?product=slug`) truyền từ nút "Đặt món này"/"Chọn combo này" ở trang Sản phẩm, hiển thị lại lựa chọn (dropdown fetch từ Supabase), cho sửa số lượng
+- [x] **Bước 2 — Tuỳ chọn**: radio chai thủy tinh/nhựa (render động theo `bottle_options` của sản phẩm), chọn ngày giao ưu tiên (nếu là combo/set)
+- [x] **Bước 3 — Thông tin giao hàng**: tên, SĐT, địa chỉ, dropdown Quận (Q.1/Q.3/Bình Thạnh/Khác — chọn "Khác" hiện cảnh báo thay vì chặn), ô "Số chai cũ muốn trả"
+- [x] **Bước 4 — Xác nhận**: tóm tắt đơn tính giá đúng, ghi chú phí ship theo khoảng cách (Cách B), hiển thị thông tin chuyển khoản demo (⚠️ rõ ràng), nút "Đặt hàng" → insert vào bảng `orders` qua Supabase client
+- [x] Trang cảm ơn hiện inline sau submit: hiện mã đơn (8 ký tự đầu) + `OrderLookup` ngay bên dưới
+- [x] Gắn `OrderLookup` vào cuối trang `/dat-hang`
 
 ### 11.6 Bước 6 — Trang Quy trình `/quy-trinh`, Liên hệ `/lien-he`
 - [ ] Quy trình: viết nội dung theo 5 section mục 6.4, dùng ảnh/video thật từ kho export (mục 9.3)
