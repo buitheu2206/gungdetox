@@ -1,0 +1,45 @@
+/* Design tokens — GỪNG DETOX
+   Màu lấy theo logo thật (icon.jpg): xanh lá rừng đậm + nâu đậm,
+   nền trắng/kem nhạt, đỏ mận làm accent (nước ép beetroot / Set 3 Đỏ Giảm Cân).
+   Xem mục 5 và 11.0.1 trong tiem-gung-website-plan.md.
+   ⚠️ Mã hex dưới đây là ước lượng bằng mắt — cần lấy lại bằng color picker
+   thật từ icon.jpg trước khi chốt bản thiết kế cuối cùng. */
+
+:root {
+  --color-primary: #1b4d2e;
+  --color-primary-dark: #0f331d;
+  --color-secondary: #4a2c1a;
+  --color-accent: #7a1f2b;
+  --color-bg: #fffdf8;
+  --color-bg-alt: #f5f0e6;
+  --color-text: #2a2a2a;
+
+  --font-display: "Fraunces", serif;
+  --font-body: "Be Vietnam Pro", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  color: var(--color-secondary);
+  margin: 0 0 0.5em;
+}
