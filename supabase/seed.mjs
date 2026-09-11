@@ -20,6 +20,7 @@ const products = [
     volume: "30ml/lần",
     price_retail: null,
     badge: "best-seller",
+    image_url: "/images/products/ginger-shot.webp",
     sort_order: 1,
   },
   {
@@ -30,6 +31,7 @@ const products = [
     description: "Gừng tươi + chanh + đường mía, lên men tự nhiên, không cồn",
     volume: "1 lon",
     price_retail: 49000,
+    image_url: "/images/products/bia-gung.webp",
     sort_order: 2,
   },
   {
@@ -40,6 +42,7 @@ const products = [
     description: "21 vị (J1-J21), chia 3 nhóm theo mục tiêu sức khỏe",
     volume: "1 chai",
     price_retail: 69000,
+    image_url: "/images/products/juice-ep-tuoi.webp",
     sort_order: 3,
   },
   {
@@ -50,6 +53,7 @@ const products = [
     description: "18-20 vị, chỉ cần thêm nước/sữa hạt rồi xay",
     volume: "1 gói",
     price_retail: 49000,
+    image_url: "/images/products/smoothies-dong-lanh.webp",
     sort_order: 4,
   },
   {
@@ -61,7 +65,7 @@ const products = [
       "Hạnh nhân/óc chó/macca/hạt điều/hạt sen/yến mạch, nấu mới sau khi đặt",
     volume: "1 chai",
     price_retail: 79000,
-    sort_order: 5,
+    sort_order: 5, // chưa có ảnh thật phù hợp — chờ bổ sung qua /admin/san-pham
   },
   {
     slug: "kombucha",
@@ -71,6 +75,7 @@ const products = [
     description: "Lên men trà tự nhiên với SCOBY, đủ vị",
     volume: "1 lon",
     price_retail: null, // chờ chủ tiệm nhập giá lẻ từng vị qua /admin/san-pham
+    image_url: "/images/products/kombucha.webp",
     sort_order: 6,
   },
   {
@@ -81,6 +86,7 @@ const products = [
     description: "Hũ dùng cho cả gia đình, phù hợp làm quà biếu",
     volume: "1 hũ",
     price_retail: 199000,
+    image_url: "/images/products/cu-den-gung-ngam.webp",
     sort_order: 7,
   },
   {
@@ -92,7 +98,7 @@ const products = [
     volume: "1 chai",
     price_retail: 79000,
     badge: "new",
-    sort_order: 8,
+    sort_order: 8, // chưa có ảnh thật phù hợp — chờ bổ sung qua /admin/san-pham
   },
 
   // ---- Combo thuê bao (type: combo) ----

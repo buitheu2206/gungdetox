@@ -14,6 +14,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         men/detox từ gừng tươi, làm mới mỗi ngày, để việc chăm sóc sức khỏe trở nên
         dễ dàng và gần gũi hơn với "chị em" bận rộn ở Sài Gòn.
       </p>
+      <img
+        class="hero-photo"
+        src="/images/hero/kitchen-lifestyle.webp"
+        alt="Góc pha chế GỪNG DETOX"
+      />
     </section>
 
     <section>
@@ -83,6 +88,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   .hero {
     text-align: center;
+  }
+
+  .hero-photo {
+    width: 100%;
+    max-width: 420px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    margin-top: 1.5rem;
   }
 
   .process-steps {
