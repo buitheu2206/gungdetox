@@ -321,13 +321,15 @@ import OrderLookup from "../components/OrderLookup.astro";
     });
   }
 
-  // Mỗi lần bấm "Thêm vào giỏ hàng" luôn tạo 1 dòng riêng — kể cả chọn trùng sản phẩm —
-  // thay vì tự cộng dồn số lượng vào dòng đã có, theo đúng yêu cầu của chủ tiệm.
+  // Thêm trùng sản phẩm sẽ cộng dồn số lượng vào dòng đã có trong giỏ, không tạo
+  // dòng riêng — số lượng từng dòng vẫn chỉnh được trực tiếp qua nút +/-.
   function addToCart() {
     const slug = productSelect.value;
     const qty = Math.max(1, Number(quantityInput.value) || 1);
     if (!slug) return;
-    cart.push({ slug, quantity: qty });
+    const existing = cart.find((item) => item.slug === slug);
+    if (existing) existing.quantity += qty;
+    else cart.push({ slug, quantity: qty });
     renderCart();
     renderStep2Options();
   }
