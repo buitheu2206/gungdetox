@@ -25,3 +25,6 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# local verification screenshots (not part of the site)
+.verify/*.png

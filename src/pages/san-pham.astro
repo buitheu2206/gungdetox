@@ -1,0 +1,254 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Sản phẩm — GỪNG DETOX"
+  description="Toàn bộ đồ uống lẻ, combo thuê bao và 5 Set Detox tự nhiên của GỪNG DETOX."
+>
+  <main class="san-pham-page">
+    <section class="page-header">
+      <h1>Sản phẩm</h1>
+      <p>Đồ uống lẻ, combo thuê bao và 5 Set Detox tự nhiên — làm mới mỗi ngày.</p>
+    </section>
+
+    <div class="filter-chips" id="filter-chips">
+      <button data-filter="all" class="chip active">Tất cả</button>
+      <button data-filter="ginger-shot" class="chip">Ginger Shot</button>
+      <button data-filter="bia-gung" class="chip">Bia Gừng</button>
+      <button data-filter="kombucha" class="chip">Kombucha</button>
+      <button data-filter="set-detox" class="chip">5 Set Detox</button>
+      <button data-filter="combo" class="chip">Combo thuê bao</button>
+    </div>
+
+    <section>
+      <h2>Đồ uống lẻ</h2>
+      <div class="grid" id="single-grid">
+        <p class="loading">Đang tải sản phẩm...</p>
+      </div>
+    </section>
+
+    <section id="combo">
+      <h2>5 Set Detox tự nhiên</h2>
+      <div class="grid" id="set-grid">
+        <p class="loading">Đang tải...</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Combo thuê bao</h2>
+      <div class="grid" id="combo-grid">
+        <p class="loading">Đang tải...</p>
+      </div>
+    </section>
+
+    <section class="bottle-compare">
+      <h3>Chọn loại chai phù hợp</h3>
+      <div class="compare-cols">
+        <div>
+          <h4>Chai thủy tinh</h4>
+          <p>Sang, chắc, dùng lâu dài. Phù hợp để tại nhà, không mang đi xa nhiều.</p>
+        </div>
+        <div>
+          <h4>Chai nhựa</h4>
+          <p>Gọn, nhẹ, dễ trữ đông và mang đi xa. Phù hợp người bận rộn, hay di chuyển.</p>
+        </div>
+      </div>
+      <div class="bottle-return-box">
+        <strong>♻️ Đổi chai cũ, nhận ưu đãi</strong>
+        <p>
+          Trả lại chai cũ (thủy tinh/nhựa) khi nhận đơn mới để được giảm giá/tặng điểm cho
+          lần đặt sau. Chi tiết mức ưu đãi sẽ được cập nhật sớm.
+        </p>
+      </div>
+    </section>
+
+    <section class="faq">
+      <h3>Câu hỏi thường gặp</h3>
+      <details>
+        <summary>Có đổi vị giữa chừng combo được không?</summary>
+        <p>Được, nhắn Zalo/Messenger cho tiệm để đổi vị theo đợt giao tiếp theo.</p>
+      </details>
+      <details>
+        <summary>Giao hàng trễ giờ thì sao?</summary>
+        <p>Tiệm sẽ báo trước qua Zalo nếu có trễ ngoài dự kiến do thời tiết/giao thông.</p>
+      </details>
+      <details>
+        <summary>Chai refill có được vệ sinh kỹ không?</summary>
+        <p>Chai được khử khuẩn bằng nước sôi trước khi tái sử dụng — xem chi tiết ở trang Quy trình.</p>
+      </details>
+    </section>
+
+    <section class="office-cta">
+      <p>🏢 Đặt combo cho cả văn phòng/team? <a href="/dat-hang">Liên hệ tiệm tư vấn ngay</a>.</p>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import { supabase } from "../lib/supabase";
+  import { productCardHtml, comboCardHtml, setDetoxCardHtml, type ProductRow } from "../lib/templates";
+
+  const singleGrid = document.getElementById("single-grid")!;
+  const setGrid = document.getElementById("set-grid")!;
+  const comboGrid = document.getElementById("combo-grid")!;
+  const chips = document.querySelectorAll<HTMLButtonElement>(".chip");
+
+  let allProducts: ProductRow[] = [];
+
+  function render(products: ProductRow[]) {
+    const singles = products.filter((p) => p.type === "single");
+    const sets = products
+      .filter((p) => p.type === "set")
+      .sort((a, b) => (a.category === b.category ? 0 : 0));
+    const combos = products.filter((p) => p.type === "combo");
+
+    singleGrid.innerHTML = singles.length
+      ? singles.map(productCardHtml).join("")
+      : "<p>Chưa có sản phẩm.</p>";
+
+    setGrid.innerHTML = sets.length
+      ? sets.map((p, i) => setDetoxCardHtml(p, i + 1)).join("")
+      : "<p>Chưa có sản phẩm.</p>";
+
+    comboGrid.innerHTML = combos.length
+      ? combos.map(comboCardHtml).join("")
+      : "<p>Chưa có sản phẩm.</p>";
+  }
+
+  function applyFilter(filter: string) {
+    if (filter === "all") {
+      render(allProducts);
+      return;
+    }
+    if (filter === "set-detox") {
+      render(allProducts.filter((p) => p.type === "set"));
+      return;
+    }
+    if (filter === "combo") {
+      render(allProducts.filter((p) => p.type === "combo"));
+      return;
+    }
+    render(allProducts.filter((p) => p.category === filter));
+  }
+
+  chips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      chips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      applyFilter(chip.dataset.filter ?? "all");
+    });
+  });
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    singleGrid.innerHTML = `<p class="error">Không tải được sản phẩm: ${error.message}</p>`;
+  } else {
+    allProducts = data ?? [];
+    render(allProducts);
+  }
+</script>
+
+<style>
+  .san-pham-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+  }
+
+  .chip {
+    border: 1px solid var(--color-bg-alt);
+    background: #fff;
+    border-radius: 999px;
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-family: var(--font-body);
+  }
+
+  .chip.active {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+  }
+
+  section {
+    margin-bottom: 2.5rem;
+  }
+
+  section h2 {
+    margin-bottom: 1rem;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .loading {
+    color: #6b7280;
+  }
+
+  .bottle-compare .compare-cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .bottle-compare .compare-cols > div {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid var(--color-bg-alt);
+  }
+
+  .bottle-return-box {
+    background: var(--color-bg-alt);
+    border-radius: 12px;
+    padding: 1rem;
+  }
+
+  .faq details {
+    background: #fff;
+    border: 1px solid var(--color-bg-alt);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .faq summary {
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .office-cta {
+    text-align: center;
+    background: var(--color-bg-alt);
+    border-radius: 12px;
+    padding: 1rem;
+  }
+
+  .office-cta a {
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+</style>
