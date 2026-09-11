@@ -1,0 +1,180 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const locations = [
+  {
+    name: "GỪNG DETOX — Quận 3",
+    address: "60M Nguyễn Thông, Quận 3, TP.HCM",
+  },
+  {
+    name: "GỪNG DETOX — Bình Thạnh",
+    address: "Nguyễn Hữu Cảnh, Bình Thạnh, TP.HCM",
+  },
+];
+
+const jsonLd = locations.map((loc) => ({
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  name: loc.name,
+  address: loc.address,
+  telephone: "+84888267009",
+  openingHours: "Mo-Su 07:00-22:00",
+  url: "https://gungdetox.com",
+}));
+---
+
+<BaseLayout
+  title="Liên hệ — GỪNG DETOX"
+  description="Địa chỉ, giờ hoạt động và kênh liên hệ của GỪNG DETOX tại TP.HCM."
+>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+  <main class="contact-page">
+    <h1>Liên hệ GỪNG DETOX</h1>
+
+    <section class="contact-grid">
+      {
+        locations.map((loc) => (
+          <div class="location-card">
+            <h3>{loc.name}</h3>
+            <p>{loc.address}</p>
+            <iframe
+              src={`https://www.google.com/maps?q=${encodeURIComponent(loc.address)}&output=embed`}
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              title={loc.name}
+            />
+          </div>
+        ))
+      }
+    </section>
+
+    <section class="info-row">
+      <div>
+        <h3>Giờ hoạt động</h3>
+        <table>
+          <tbody>
+            <tr>
+              <td>Thứ 2 - Chủ nhật</td>
+              <td>7:00 - 22:00</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">Nghỉ ngày 30 hàng tháng để dọn dẹp/chuẩn bị.</p>
+      </div>
+
+      <div>
+        <h3>Liên hệ</h3>
+        <p>📞 Hotline/Zalo: 0888 267 009</p>
+        <p>✉️ Email: gingera.ltd@gmail.com</p>
+      </div>
+
+      <div>
+        <h3>Mạng xã hội</h3>
+        <p>
+          <a href="https://facebook.com/gungdetox" target="_blank" rel="noopener">Facebook</a>
+        </p>
+        <p>
+          <a href="https://instagram.com/gungdetox.saigon" target="_blank" rel="noopener">
+            Instagram
+          </a>
+        </p>
+      </div>
+    </section>
+
+    <section class="cta-row">
+      <a class="btn-zalo" href="https://zalo.me/0888267009" target="_blank" rel="noopener">
+        Chat Zalo
+      </a>
+      <a class="btn-messenger" href="https://m.me/gungdetox" target="_blank" rel="noopener">
+        Nhắn Messenger
+      </a>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .contact-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+
+  h1 {
+    text-align: center;
+  }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .location-card {
+    background: #fff;
+    border: 1px solid var(--color-bg-alt);
+    border-radius: 12px;
+    padding: 1rem;
+  }
+
+  .location-card iframe {
+    width: 100%;
+    height: 200px;
+    border: none;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+  }
+
+  .info-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    background: var(--color-bg-alt);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .info-row h3 {
+    margin-top: 0;
+  }
+
+  table {
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  td {
+    padding: 0.2rem 0.6rem 0.2rem 0;
+  }
+
+  .note {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+
+  .cta-row {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .btn-zalo,
+  .btn-messenger {
+    display: inline-block;
+    text-decoration: none;
+    color: #fff;
+    padding: 0.7rem 1.4rem;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  .btn-zalo {
+    background: #0068ff;
+  }
+
+  .btn-messenger {
+    background: var(--color-primary);
+  }
+</style>
