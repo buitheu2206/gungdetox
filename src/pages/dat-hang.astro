@@ -518,8 +518,21 @@ import OrderLookup from "../components/OrderLookup.astro";
     .order("sort_order");
 
   products = allProducts ?? [];
-  productSelect.innerHTML = products
-    .map((p) => `<option value="${p.slug}">${p.name} — ${money(unitPrice(p))}</option>`)
+
+  const typeGroupLabel: Record<ProductRow["type"], string> = {
+    single: "Đồ uống lẻ",
+    combo: "Combo thuê bao",
+    set: "5 Set Detox",
+  };
+  const optionHtml = (p: ProductRow) =>
+    `<option value="${p.slug}">${p.name} — ${money(unitPrice(p))}</option>`;
+
+  productSelect.innerHTML = (["single", "combo", "set"] as const)
+    .map((type) => {
+      const group = products.filter((p) => p.type === type);
+      if (group.length === 0) return "";
+      return `<optgroup label="${typeGroupLabel[type]}">${group.map(optionHtml).join("")}</optgroup>`;
+    })
     .join("");
 
   const preselectedSlug = new URLSearchParams(location.search).get("product");
