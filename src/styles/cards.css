@@ -269,6 +269,24 @@
   box-shadow: var(--shadow-lg);
 }
 
+.set-card .media {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  margin: -1.3rem -1.3rem 0.6rem;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-primary-light), var(--color-bg-warm));
+}
+
+.set-card .media img,
+.set-card .media-placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .set-card.theme-green {
   --theme-color: #2e7d32;
 }

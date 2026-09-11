@@ -111,6 +111,9 @@ export function comboCardHtml(p: ProductRow): string {
 export function setDetoxCardHtml(p: ProductRow, setNumber: number): string {
   return `
     <article class="set-card theme-${p.color_theme ?? "green"}">
+      <a class="media" href="/san-pham/${encodeURIComponent(p.slug)}">
+        ${p.image_url ? `<img src="${p.image_url}" alt="${esc(p.name)}" loading="lazy" />` : `<div class="media-placeholder"></div>`}
+      </a>
       <span class="set-number">SET ${setNumber}</span>
       ${p.badge ? `<span class="badge">${p.badge === "best-seller" ? "Best Seller" : p.badge}</span>` : ""}
       <h3><a href="/san-pham/${encodeURIComponent(p.slug)}">${esc(p.name)}</a></h3>
