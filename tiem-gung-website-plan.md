@@ -204,6 +204,17 @@ Nên hiển thị 5 set này thành 1 lưới riêng trên trang `/san-pham` (gi
 
 Có thể gộp cả 3 vào 1 trang `/admin` dạng dashboard với tab chuyển qua lại, hoặc để 3 route riêng — quyết định lúc code, không ảnh hưởng kiến trúc dữ liệu.
 
+### 6.2.3 ✅ Trang chi tiết sản phẩm + nhiều ảnh mỗi sản phẩm (bổ sung 11/09/2026)
+
+Theo yêu cầu: mỗi sản phẩm giờ hỗ trợ **nhiều ảnh** (không chỉ 1 ảnh đại diện), và có **trang chi tiết riêng** `/san-pham/[slug]` (thay vì chỉ có card tóm tắt ở trang danh sách).
+
+- **Schema**: thêm cột `gallery_images text[]` vào bảng `products` (mục 8.3) — `image_url` cũ vẫn giữ nguyên vai trò ảnh đại diện/thumbnail cho card ở `/san-pham` và trang chủ; `gallery_images` là ảnh phụ chỉ hiện ở trang chi tiết.
+- **Trang chi tiết** (`src/pages/san-pham/[slug].astro`): dùng `getStaticPaths()` để **pre-render sẵn 1 trang tĩnh cho mỗi sản phẩm hiện có lúc build** — cho URL đẹp (`/san-pham/ginger-shot`), tốt cho SEO, có nội dung ngay cả khi chưa chạy JS. Có gallery ảnh dạng thumbnail bấm để đổi ảnh chính.
+  - ⚠️ **Đánh đổi cần biết**: vì đây là site tĩnh (không có server để route "bất kỳ slug nào" thật sự động), **sản phẩm thêm MỚI sau lần build gần nhất sẽ chưa có trang chi tiết cho tới khi build+deploy lại** — khác với trang danh sách `/san-pham` (luôn tự cập nhật ngay vì fetch toàn bộ danh sách lúc tải trang, không cần biết trước slug). Để giảm nhẹ vấn đề này: trang chi tiết có kèm 1 đoạn JS tự fetch lại đúng sản phẩm đó lúc tải trang, nên nếu chủ tiệm **sửa** giá/mô tả/ảnh của sản phẩm **đã có trang** thì cập nhật ngay, không cần rebuild — chỉ có sản phẩm **hoàn toàn mới** mới cần đợi lần build kế tiếp mới có trang riêng.
+- **Card sản phẩm** (`templates.ts`): ảnh + tên sản phẩm giờ bấm vào sẽ dẫn tới trang chi tiết; nút "Đặt món này"/"Chọn combo này"/"Chọn set này" vẫn dẫn thẳng tới `/dat-hang` như cũ (không đổi hành vi đặt hàng nhanh).
+- **Trang admin `/admin/san-pham`**: thêm ô upload **nhiều ảnh phụ** cùng lúc (ngoài ô ảnh đại diện đã có), có preview + nút xoá từng ảnh phụ riêng lẻ trước khi lưu.
+- Đã kiểm chứng bằng Playwright: build sinh đủ trang chi tiết cho tất cả sản phẩm hiện có, gallery đổi ảnh khi bấm thumbnail hoạt động đúng, admin thêm/xoá ảnh phụ lưu đúng vào Supabase (xác minh trực tiếp trong DB, không chỉ qua giao diện).
+
 **Cấu trúc 1 card combo thuê bao:**
 - Tên gói (Combo tháng / Combo 3 tháng)
 - Giá trọn gói (500K / 1.500K)
@@ -508,7 +519,8 @@ create table products (
   set_goal text,                 -- mục tiêu sức khỏe, chỉ dùng cho type='set' (vd. "Thải độc – Làm mát – Giảm đầy bụng")
   color_theme text,              -- màu badge cho Set Detox (mục 11.2 SetDetoxCard)
   badge text check (badge in ('best-seller','new','sale','out-of-stock')),
-  image_url text,
+  image_url text,                -- ảnh đại diện/thumbnail, dùng cho card ở /san-pham và trang chủ
+  gallery_images text[],         -- ảnh phụ, CHỈ hiện ở trang chi tiết /san-pham/[slug]
   video_url text,
   in_stock boolean default true,
   sort_order int default 0,
@@ -729,7 +741,8 @@ create table products (
   set_goal text,
   color_theme text,
   badge text check (badge in ('best-seller','new','sale','out-of-stock')),
-  image_url text,
+  image_url text,                -- ảnh đại diện/thumbnail, dùng cho card ở /san-pham và trang chủ
+  gallery_images text[],         -- ảnh phụ, CHỈ hiện ở trang chi tiết /san-pham/[slug]
   video_url text,
   in_stock boolean default true,
   sort_order int default 0,
