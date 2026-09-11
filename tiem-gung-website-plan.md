@@ -776,7 +776,10 @@ create table orders (
 - [x] Tạo **Storage bucket** `product-images` và `post-images` trong Supabase Storage
 - [x] Nhập **dữ liệu khởi tạo (demo/placeholder)** vào bảng `products` (15 sản phẩm: 8 đồ uống lẻ + 2 combo + 5 Set Detox) và `posts` (5 bài nháp mục 6.5.1) qua `supabase/seed.mjs`
 
-### 11.2 Bước 2 — Component dùng chung (`src/components/`, `src/layouts/`)
+### 11.2 Bước 2 — Component dùng chung (`src/components/`, `src/layouts/`) ✅ XONG (11/09/2026)
+
+⚠️ **Điều chỉnh kiến trúc phát hiện lúc code**: các thẻ `ProductCard`/`ComboCard`/`SetDetoxCard`/`BlogCard` viết dạng component `.astro` **chỉ render được lúc build/server**, không gọi được từ JS phía trình duyệt. Vì kiến trúc yêu cầu fetch dữ liệu Supabase ở client (để admin sửa không cần rebuild), đã bổ sung `src/lib/templates.ts` chứa hàm JS thuần (`productCardHtml`, `comboCardHtml`, `setDetoxCardHtml`, `blogCardHtml`) tạo đúng HTML tương ứng để dùng lúc fetch động. Các file `.astro` giữ lại làm tài liệu tham chiếu UI, style chuyển sang `<style is:global>` để class CSS dùng chung được cho cả HTML dựng từ `templates.ts`.
+
 | File | Việc cụ thể |
 |---|---|
 | `layouts/BaseLayout.astro` | `<head>` với meta tag, `<title>` động theo prop, font links, import `global.css`, `<slot />` cho nội dung trang, include `<ZaloButton />` cố định |
@@ -800,16 +803,17 @@ Build đúng thứ tự 9 section ở mục 6.1, ghép từ các component ở 1
 - [ ] Trích 1 câu quote thương hiệu từ bài đăng thật (mục 9), giữ giọng "chị em" — **không gắn tên khách hàng cụ thể** (đã huỷ, mục 10.1)
 - [ ] Nhúng ảnh bìa `anh bìa.jpg` vào section 6 (Combo/Set Detox) làm ảnh minh hoạ chính, vì đây là ảnh marketing đẹp nhất hiện có
 
-### 11.4 Bước 4 — Trang Sản phẩm `/san-pham` (`src/pages/san-pham.astro`)
-- [ ] Gọi Supabase `select * from products order by sort_order` lúc trang tải (client-side JS, giống cơ chế `OrderLookup`) — **không hard-code sản phẩm vào file** — để chủ tiệm sửa/thêm qua `/admin/san-pham` là thấy thay đổi ngay, không cần build lại
-- [ ] Nhóm kết quả trả về theo `type` (`single`/`combo`/`set`) và `category` để render đúng lưới tương ứng bên dưới
-- [ ] Tab lọc danh mục (client-side filter trên dữ liệu đã fetch, không gọi lại Supabase mỗi lần đổi tab): Tất cả · Ginger Shot · Bia Gừng · Kombucha · 5 Set Detox · Combo thuê bao
-- [ ] Lưới sản phẩm lẻ: dùng `ProductCard` cho từng sản phẩm `type='single'` — dữ liệu khởi tạo lấy từ bảng mục 6.2 (Ginger Shot, Bia Gừng, Juice, Smoothies, Sữa hạt, Kombucha, Củ Dền ngâm, Matcha)
-- [ ] Lưới **5 SET DETOX TỰ NHIÊN**: dùng `SetDetoxCard`, 5 card theo đúng bảng mục 6.2.1 — đây là lưới **mới, ưu tiên vị trí đẹp** vì có ảnh bìa marketing chuyên nghiệp nhất
-- [ ] Lưới combo thuê bao: `ComboCard` cho Combo tháng + Combo 3 tháng
-- [ ] Section so sánh chai thủy tinh/nhựa + box chương trình đổi/hoàn chai cũ (nội dung cụ thể: "Trả lại chai cũ (thủy tinh/nhựa) khi nhận đơn mới → giảm giá/tặng điểm cho lần đặt sau" — số tiền/điểm cụ thể **cần hỏi chủ tiệm**, để placeholder trước)
-- [ ] FAQ accordion (collapsible, dùng `<details>/<summary>` HTML thuần là đủ, không cần JS framework)
-- [ ] Dòng CTA "Đặt cho văn phòng"
+### 11.4 Bước 4 — Trang Sản phẩm `/san-pham` (`src/pages/san-pham.astro`) ✅ XONG (11/09/2026)
+Đã kiểm chứng bằng Playwright (script `.verify/check-page.mjs`): build production chạy `npm run preview`, mở `/san-pham`, chụp ảnh, **0 lỗi console**. Toàn bộ 8 sản phẩm lẻ, 5 Set Detox, 2 combo hiển thị đúng dữ liệu thật từ Supabase, bộ lọc danh mục hoạt động (client-side, không gọi lại Supabase mỗi lần đổi tab).
+- [x] Gọi Supabase `select * from products order by sort_order` lúc trang tải (client-side JS, giống cơ chế `OrderLookup`) — **không hard-code sản phẩm vào file** — để chủ tiệm sửa/thêm qua `/admin/san-pham` là thấy thay đổi ngay, không cần build lại
+- [x] Nhóm kết quả trả về theo `type` (`single`/`combo`/`set`) và `category` để render đúng lưới tương ứng bên dưới
+- [x] Tab lọc danh mục (client-side filter trên dữ liệu đã fetch, không gọi lại Supabase mỗi lần đổi tab): Tất cả · Ginger Shot · Bia Gừng · Kombucha · 5 Set Detox · Combo thuê bao
+- [x] Lưới sản phẩm lẻ: dùng `productCardHtml` cho từng sản phẩm `type='single'` — dữ liệu khởi tạo lấy từ bảng mục 6.2 (Ginger Shot, Bia Gừng, Juice, Smoothies, Sữa hạt, Kombucha, Củ Dền ngâm, Matcha)
+- [x] Lưới **5 SET DETOX TỰ NHIÊN**: dùng `setDetoxCardHtml`, 5 card theo đúng bảng mục 6.2.1
+- [x] Lưới combo thuê bao: `comboCardHtml` cho Combo tháng + Combo 3 tháng
+- [x] Section so sánh chai thủy tinh/nhựa + box chương trình đổi/hoàn chai cũ — đã lên giao diện, **số tiền/điểm cụ thể vẫn là placeholder**, chờ chủ tiệm cung cấp
+- [x] FAQ accordion (dùng `<details>/<summary>` HTML thuần)
+- [x] Dòng CTA "Đặt cho văn phòng"
 
 ### 11.5 Bước 5 — Trang Đặt hàng `/dat-hang` (`src/pages/dat-hang.astro`)
 Form 4 bước theo Phương án B (mục 6.3) — có thể làm dạng single-page với JS ẩn/hiện từng bước (không cần multi-page riêng):
