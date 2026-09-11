@@ -8,6 +8,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 >
   <main class="home-page">
     <section class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-overlay"></div>
       <div class="hero-blob hero-blob-1"></div>
       <div class="hero-blob hero-blob-2"></div>
       <div class="hero-blob hero-blob-3"></div>
@@ -170,9 +172,31 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     position: relative;
     text-align: center;
     padding: 3.5rem 1.5rem 2rem;
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
     overflow: hidden;
     border-radius: var(--radius-lg);
     background: linear-gradient(135deg, var(--color-bg-warm), var(--color-bg) 55%, #fff8e8);
+  }
+
+  .hero > .hero-bg {
+    position: absolute;
+    inset: 0;
+    background: url("/images/hero/kitchen-lifestyle.webp") center 25% / cover no-repeat;
+  }
+
+  .hero > .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 253, 248, 0.08) 0%,
+      rgba(255, 253, 248, 0.55) 60%,
+      rgba(255, 248, 232, 0.94) 80%,
+      var(--color-bg-warm) 100%
+    );
   }
 
   .hero-blob {
