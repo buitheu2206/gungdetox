@@ -23,6 +23,7 @@
 
 <script>
   import { supabase } from "../lib/supabase";
+  import { orderCode } from "../lib/templates";
 
   const statusLabel: Record<string, string> = {
     processing: "Đang xử lý",
@@ -30,6 +31,13 @@
     delivered: "Đã giao",
     cancelled: "Đã huỷ",
   };
+
+  // Thứ tự nhóm hiển thị — đơn đang chờ xử lý/giao lên trước để khách thấy ngay việc cần quan tâm.
+  const statusOrder = ["processing", "delivering", "delivered", "cancelled"];
+
+  function itemsSummary(items: any[]) {
+    return (items ?? []).map((i) => `${i.productSlug} × ${i.quantity}`).join(", ");
+  }
 
   const form = document.getElementById("lookup-form") as HTMLFormElement;
   const resultBox = document.getElementById("lookup-result") as HTMLDivElement;
@@ -42,31 +50,49 @@
     resultBox.hidden = false;
     resultBox.textContent = "Đang tra cứu...";
 
-    const { data: latestOrder, error: latestError } = await supabase
+    const { data: orders, error } = await supabase
       .from("orders")
       .select("*")
       .eq("phone", phone)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .order("created_at", { ascending: false });
 
-    const { data: allOrders } = await supabase
-      .from("orders")
-      .select("bottles_returned")
-      .eq("phone", phone);
-
-    const totalBottlesReturned =
-      allOrders?.reduce((sum, o) => sum + (o.bottles_returned ?? 0), 0) ?? 0;
-
-    if (latestError || !latestOrder) {
+    if (error || !orders || orders.length === 0) {
       resultBox.innerHTML = `<p class="not-found">Không tìm thấy đơn hàng nào với số điện thoại này.</p>`;
       return;
     }
 
+    const totalBottlesReturned = orders.reduce((sum, o) => sum + (o.bottles_returned ?? 0), 0);
+
+    const groups = statusOrder
+      .map((status) => ({ status, orders: orders.filter((o) => o.status === status) }))
+      .filter((g) => g.orders.length > 0);
+
     resultBox.innerHTML = `
-      <p><strong>Đơn gần nhất:</strong> ${statusLabel[latestOrder.status] ?? latestOrder.status}</p>
-      <p><strong>Đặt lúc:</strong> ${new Date(latestOrder.created_at).toLocaleString("vi-VN")}</p>
-      <p><strong>Tổng số chai đã trả:</strong> ${totalBottlesReturned}</p>
+      <p class="summary">
+        <strong>${orders.length}</strong> đơn đã đặt · <strong>${totalBottlesReturned}</strong> chai đã trả
+      </p>
+      ${groups
+        .map(
+          (g) => `
+        <div class="status-group">
+          <p class="status-group-title status-${g.status}">${statusLabel[g.status] ?? g.status} (${g.orders.length})</p>
+          <ul class="order-list">
+            ${g.orders
+              .map(
+                (o) => `
+              <li>
+                <span class="order-code">${orderCode(o.phone, o.id)}</span>
+                <span class="order-date">${new Date(o.created_at).toLocaleDateString("vi-VN")}</span>
+                <span class="order-items">${itemsSummary(o.items)}</span>
+              </li>
+            `
+              )
+              .join("")}
+          </ul>
+        </div>
+      `
+        )
+        .join("")}
     `;
   });
 </script>
@@ -124,5 +150,71 @@
 
   .not-found {
     color: var(--color-accent);
+  }
+
+  .summary {
+    margin-bottom: 0.9rem !important;
+  }
+
+  .status-group {
+    margin-bottom: 0.9rem;
+  }
+
+  .status-group-title {
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin: 0 0 0.4rem !important;
+  }
+
+  .status-processing {
+    color: var(--color-accent);
+  }
+
+  .status-delivering {
+    color: #2563eb;
+  }
+
+  .status-delivered {
+    color: var(--color-primary);
+  }
+
+  .status-cancelled {
+    color: #6b7280;
+  }
+
+  .order-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .order-list li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: baseline;
+    background: #fff;
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.7rem;
+    font-size: 0.85rem;
+  }
+
+  .order-code {
+    font-family: monospace;
+    font-weight: 700;
+    color: var(--color-secondary);
+  }
+
+  .order-date {
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+  }
+
+  .order-items {
+    color: var(--color-text);
   }
 </style>

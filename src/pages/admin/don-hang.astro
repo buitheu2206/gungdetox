@@ -16,10 +16,17 @@ import AdminLogin from "../../components/AdminLogin.astro";
         <button data-status="cancelled" class="chip">Đã huỷ</button>
       </div>
 
+      <div class="status-filter" id="customer-filter">
+        <button data-customer="all" class="chip active">Mọi khách</button>
+        <button data-customer="new" class="chip">Khách mới</button>
+        <button data-customer="returning" class="chip">Khách quen</button>
+      </div>
+
       <div class="table-wrap">
         <table id="orders-table">
           <thead>
             <tr>
+              <th>Mã đơn</th>
               <th>Ngày đặt</th>
               <th>Khách</th>
               <th>SĐT</th>
@@ -31,7 +38,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
             </tr>
           </thead>
           <tbody id="orders-body">
-            <tr><td colspan="8">Đang tải...</td></tr>
+            <tr><td colspan="9">Đang tải...</td></tr>
           </tbody>
         </table>
       </div>
@@ -41,6 +48,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
 
 <script>
   import { supabase } from "../../lib/supabase";
+  import { orderCode } from "../../lib/templates";
 
   const statusLabel: Record<string, string> = {
     processing: "Đang xử lý",
@@ -52,25 +60,40 @@ import AdminLogin from "../../components/AdminLogin.astro";
   const bottleLabel: Record<string, string> = { glass: "Thủy tinh", plastic: "Nhựa" };
 
   const tbody = document.getElementById("orders-body")!;
-  const chips = document.querySelectorAll<HTMLButtonElement>(".chip");
+  const statusChips = document.querySelectorAll<HTMLButtonElement>("#status-filter .chip");
+  const customerChips = document.querySelectorAll<HTMLButtonElement>("#customer-filter .chip");
 
   let allOrders: any[] = [];
+  let activeStatus = "all";
+  let activeCustomerType: "all" | "new" | "returning" = "all";
 
   function itemsSummary(items: any[]) {
     return items.map((i) => `${i.productSlug} × ${i.quantity}`).join(", ");
   }
 
+  // Khách "quen" = đã có từ 2 đơn trở lên tính đến thời điểm đơn này (kể cả đơn này) — dựa theo
+  // toàn bộ đơn trong hệ thống (allOrders), không phải chỉ danh sách đang hiển thị sau khi lọc.
+  function orderCountByPhoneUpTo(phone: string, createdAt: string): number {
+    return allOrders.filter((o) => o.phone === phone && o.created_at <= createdAt).length;
+  }
+
   function render(orders: any[]) {
     if (orders.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8">Chưa có đơn hàng nào.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9">Không có đơn nào khớp bộ lọc.</td></tr>`;
       return;
     }
     tbody.innerHTML = orders
-      .map(
-        (o) => `
+      .map((o) => {
+        const orderCountSoFar = orderCountByPhoneUpTo(o.phone, o.created_at);
+        const customerBadge =
+          orderCountSoFar > 1
+            ? `<span class="badge badge-returning">Khách quen (${orderCountSoFar})</span>`
+            : `<span class="badge badge-new">Khách mới</span>`;
+        return `
       <tr data-id="${o.id}">
+        <td class="code">${orderCode(o.phone, o.id)}</td>
         <td>${new Date(o.created_at).toLocaleString("vi-VN")}</td>
-        <td>${o.customer_name}</td>
+        <td>${o.customer_name}<br />${customerBadge}</td>
         <td>${o.phone}</td>
         <td>${o.address}, ${o.district}</td>
         <td>${itemsSummary(o.items)}</td>
@@ -87,8 +110,8 @@ import AdminLogin from "../../components/AdminLogin.astro";
           </select>
         </td>
       </tr>
-    `
-      )
+    `;
+      })
       .join("");
 
     document.querySelectorAll<HTMLSelectElement>(".status-select").forEach((sel) => {
@@ -113,15 +136,34 @@ import AdminLogin from "../../components/AdminLogin.astro";
     });
   }
 
-  function applyFilter(status: string) {
-    render(status === "all" ? allOrders : allOrders.filter((o) => o.status === status));
+  function applyFilters() {
+    const filtered = allOrders.filter((o) => {
+      if (activeStatus !== "all" && o.status !== activeStatus) return false;
+      if (activeCustomerType !== "all") {
+        const isReturning = orderCountByPhoneUpTo(o.phone, o.created_at) > 1;
+        if (activeCustomerType === "returning" && !isReturning) return false;
+        if (activeCustomerType === "new" && isReturning) return false;
+      }
+      return true;
+    });
+    render(filtered);
   }
 
-  chips.forEach((chip) => {
+  statusChips.forEach((chip) => {
     chip.addEventListener("click", () => {
-      chips.forEach((c) => c.classList.remove("active"));
+      statusChips.forEach((c) => c.classList.remove("active"));
       chip.classList.add("active");
-      applyFilter(chip.dataset.status ?? "all");
+      activeStatus = chip.dataset.status ?? "all";
+      applyFilters();
+    });
+  });
+
+  customerChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      customerChips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      activeCustomerType = (chip.dataset.customer as "all" | "new" | "returning") ?? "all";
+      applyFilters();
     });
   });
 
@@ -131,11 +173,11 @@ import AdminLogin from "../../components/AdminLogin.astro";
       .select("*")
       .order("created_at", { ascending: false });
     if (error) {
-      tbody.innerHTML = `<tr><td colspan="8">Lỗi tải đơn hàng: ${error.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9">Lỗi tải đơn hàng: ${error.message}</td></tr>`;
       return;
     }
     allOrders = data ?? [];
-    render(allOrders);
+    applyFilters();
   }
 
   loadOrders();
@@ -191,5 +233,30 @@ import AdminLogin from "../../components/AdminLogin.astro";
     padding: 0.3rem 0.5rem;
     border-radius: 6px;
     border: 1px solid #d1d5db;
+  }
+
+  .code {
+    font-family: monospace;
+    font-weight: 600;
+    color: var(--color-secondary);
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .badge-new {
+    background: color-mix(in srgb, var(--color-primary) 16%, #fff);
+    color: var(--color-primary);
+  }
+
+  .badge-returning {
+    background: color-mix(in srgb, var(--color-accent) 16%, #fff);
+    color: var(--color-accent);
   }
 </style>

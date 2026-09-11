@@ -2,6 +2,14 @@
 // phía trình duyệt (Astro component .astro không gọi được từ client-side JS).
 // Markup/class phải khớp với CSS global trong src/components/*.astro tương ứng.
 
+// Mã đơn hiển thị cho khách/admin — không phải khoá chính thật (vẫn là uuid `orders.id`),
+// chỉ để dễ đọc/dễ nói qua điện thoại: 4 số cuối SĐT + 4 ký tự đầu của id.
+export function orderCode(phone: string, id: string): string {
+  const phoneSuffix = phone.replace(/\D/g, "").slice(-4);
+  const idPrefix = id.replace(/-/g, "").slice(0, 4).toUpperCase();
+  return `${phoneSuffix}-${idPrefix}`;
+}
+
 export interface ProductRow {
   slug: string;
   type: "single" | "combo" | "set";
@@ -31,6 +39,7 @@ export interface PostRow {
   tag?: string | null;
   read_time?: string | null;
   image_url?: string | null;
+  gallery_images?: string[] | null;
   video_url?: string | null;
   published_at?: string | null;
 }
@@ -45,6 +54,13 @@ const badgeLabel: Record<string, string> = {
 const bottleLabel: Record<string, string> = {
   glass: "Thủy tinh",
   plastic: "Nhựa",
+};
+
+export const tagLabel: Record<string, string> = {
+  "eat-clean": "Eat Clean",
+  detox: "Detox",
+  "cong-thuc": "Công thức",
+  "song-khoe": "Sống khỏe",
 };
 
 function money(n?: number | null) {
@@ -135,7 +151,7 @@ export function blogCardHtml(post: PostRow): string {
         ${post.video_url ? `<video src="${post.video_url}" muted loop playsinline class="blog-hover-video"></video>` : ""}
       </div>
       <div class="blog-body">
-        ${post.tag ? `<span class="tag">${esc(post.tag)}</span>` : ""}
+        ${post.tag ? `<span class="tag">${esc(tagLabel[post.tag] ?? post.tag)}</span>` : ""}
         <h3>${esc(post.title)}</h3>
         <p class="blog-meta">${formattedDate}${post.read_time ? ` · ${esc(post.read_time)}` : ""}</p>
       </div>

@@ -104,10 +104,18 @@ import OrderLookup from "../components/OrderLookup.astro";
         </p>
 
         <div class="bank-info">
-          <strong>⚠️ Thông tin chuyển khoản (demo, sẽ cập nhật thông tin thật)</strong>
-          <p>Ngân hàng: Vietcombank (demo)</p>
-          <p>Số tài khoản: 0000000000 (demo)</p>
-          <p>Chủ tài khoản: NGUYEN VAN DEMO (demo)</p>
+          <strong>💳 Thông tin chuyển khoản</strong>
+          <img
+            class="qr-code"
+            src="https://img.vietqr.io/image/970436-1065425789-compact2.png?accountName=HKD%20GUNG%20DETOX"
+            alt="Mã QR chuyển khoản Vietcombank HKD GUNG DETOX"
+            width="220"
+            height="308"
+            loading="lazy"
+          />
+          <p>Ngân hàng: Vietcombank</p>
+          <p>Số tài khoản: 1065425789</p>
+          <p>Chủ tài khoản: HKD GUNG DETOX</p>
         </div>
 
         <div class="nav-row">
@@ -130,6 +138,7 @@ import OrderLookup from "../components/OrderLookup.astro";
 
 <script>
   import { supabase } from "../lib/supabase";
+  import { orderCode } from "../lib/templates";
 
   interface ProductRow {
     slug: string;
@@ -252,7 +261,7 @@ import OrderLookup from "../components/OrderLookup.astro";
     form.hidden = true;
     stepsIndicator.hidden = true;
     thankYou.hidden = false;
-    (document.getElementById("order-id") as HTMLElement).textContent = data.id.slice(0, 8);
+    (document.getElementById("order-id") as HTMLElement).textContent = orderCode(data.phone, data.id);
   });
 
   // Load danh sách sản phẩm + đọc query string ?product=slug
