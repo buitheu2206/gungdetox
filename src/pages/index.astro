@@ -71,20 +71,35 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <section class="why">
       <h2>Vì sao chọn GỪNG</h2>
       <div class="why-grid">
-        <div class="surface-card">
-          <span class="why-icon">🫚</span>
-          <h3>Nguyên liệu thật</h3>
-          <p>Gừng tươi, nghệ, chanh vàng, mật ong, muối hồng — không hương liệu, không chất bảo quản.</p>
+        <div class="surface-card why-card">
+          <div class="why-media">
+            <img src="/images/hero/feature-ingredients.webp" alt="Nguyên liệu tươi thật: ổi, cần tây, cà rốt, cà chua, gừng" loading="lazy" />
+            <span class="why-icon">🫚</span>
+          </div>
+          <div class="why-body">
+            <h3>Nguyên liệu thật</h3>
+            <p>Gừng tươi, nghệ, chanh vàng, mật ong, muối hồng — không hương liệu, không chất bảo quản.</p>
+          </div>
         </div>
-        <div class="surface-card">
-          <span class="why-icon">🌿</span>
-          <h3>Làm mới mỗi ngày</h3>
-          <p>Ép/ủ/nấu mới theo đơn mỗi ngày, không sản xuất hàng loạt trữ sẵn.</p>
+        <div class="surface-card why-card">
+          <div class="why-media">
+            <img src="/images/hero/feature-fresh.webp" alt="Pha chế đồ uống mới mỗi ngày tại tiệm" loading="lazy" />
+            <span class="why-icon">🌿</span>
+          </div>
+          <div class="why-body">
+            <h3>Làm mới mỗi ngày</h3>
+            <p>Ép/ủ/nấu mới theo đơn mỗi ngày, không sản xuất hàng loạt trữ sẵn.</p>
+          </div>
         </div>
-        <div class="surface-card">
-          <span class="why-icon">♻️</span>
-          <h3>Hệ chai refill sạch</h3>
-          <p>Chai thủy tinh hoặc nhựa, khử khuẩn bằng nước sôi trước khi tái sử dụng.</p>
+        <div class="surface-card why-card">
+          <div class="why-media">
+            <img src="/images/hero/feature-bottles.webp" alt="Chai thủy tinh sạch sẵn sàng đóng chai" loading="lazy" />
+            <span class="why-icon">♻️</span>
+          </div>
+          <div class="why-body">
+            <h3>Hệ chai refill sạch</h3>
+            <p>Chai thủy tinh hoặc nhựa, khử khuẩn bằng nước sôi trước khi tái sử dụng.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -430,32 +445,42 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     gap: 1.2rem;
   }
 
-  .why-grid > div {
-    padding: 1.4rem;
+  .why-card {
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .why-media {
+    position: relative;
+    aspect-ratio: 4 / 3;
+  }
+
+  .why-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .why-body {
+    padding: 1.1rem 1.4rem 1.4rem;
   }
 
   .why-icon {
+    position: absolute;
+    bottom: -1rem;
+    left: 1rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 3rem;
-    height: 3rem;
+    width: 2.6rem;
+    height: 2.6rem;
     border-radius: 50%;
-    background: var(--color-primary-light);
-    font-size: 1.4rem;
-    margin-bottom: 0.7rem;
-  }
-
-  .why-grid > div:nth-child(1) .why-icon {
-    background: color-mix(in srgb, var(--c-green) 22%, #fff);
-  }
-
-  .why-grid > div:nth-child(2) .why-icon {
-    background: color-mix(in srgb, var(--c-yellow) 25%, #fff);
-  }
-
-  .why-grid > div:nth-child(3) .why-icon {
-    background: color-mix(in srgb, var(--c-orange) 22%, #fff);
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    font-size: 1.3rem;
   }
 
   .why-grid > div:nth-child(1) {
@@ -470,12 +495,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     border-top: 3px solid var(--c-orange);
   }
 
-  .why-grid h3 {
-    margin: 0 0 0.4rem;
+  .why-body h3 {
+    margin: 0.6rem 0 0.4rem;
     font-size: 1.1rem;
   }
 
-  .why-grid p {
+  .why-body p {
     margin: 0;
     font-size: 0.9rem;
     color: var(--color-text-muted);
