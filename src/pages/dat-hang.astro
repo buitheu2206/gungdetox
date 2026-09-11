@@ -178,10 +178,25 @@ import OrderLookup from "../components/OrderLookup.astro";
     </form>
 
     <!-- Trang cảm ơn -->
-    <section id="thank-you" hidden>
-      <h2>🎉 Đặt hàng thành công!</h2>
-      <p>Mã đơn của bạn: <strong id="order-id"></strong></p>
-      <p>Tiệm sẽ liên hệ qua Zalo/hotline để xác nhận và báo phí ship cụ thể.</p>
+    <section id="thank-you" class="thank-you-card" hidden>
+      <div class="success-icon">✓</div>
+      <h2>Đặt hàng thành công!</h2>
+      <p class="thank-you-sub">Cảm ơn bạn đã ủng hộ GỪNG DETOX 💚</p>
+
+      <div class="order-id-box">
+        <span class="order-id-label">Mã đơn của bạn</span>
+        <div class="order-id-row">
+          <strong id="order-id"></strong>
+          <button type="button" class="copy-btn" id="copy-order-id">Sao chép</button>
+        </div>
+      </div>
+
+      <p class="thank-you-note">📞 Tiệm sẽ liên hệ qua Zalo/hotline để xác nhận và báo phí ship cụ thể.</p>
+
+      <div class="thank-you-actions">
+        <a class="thank-you-btn thank-you-btn-secondary" href="/">Về trang chủ</a>
+        <a class="thank-you-btn thank-you-btn-primary" href="/san-pham">Tiếp tục mua sắm</a>
+      </div>
     </section>
 
     <OrderLookup />
@@ -491,7 +506,9 @@ import OrderLookup from "../components/OrderLookup.astro";
     form.hidden = true;
     stepsIndicator.hidden = true;
     thankYou.hidden = false;
-    (document.getElementById("order-id") as HTMLElement).textContent = orderCode(data.phone, data.id);
+    const code = orderCode(data.phone, data.id);
+    (document.getElementById("order-id") as HTMLElement).textContent = code;
+    (document.getElementById("copy-order-id") as HTMLElement).dataset.copy = code;
   });
 
   // Load danh sách sản phẩm + đọc query string ?product=slug
@@ -937,8 +954,111 @@ import OrderLookup from "../components/OrderLookup.astro";
     color: #fff;
   }
 
-  #thank-you {
+  .thank-you-card {
     text-align: center;
-    padding: 2rem 0;
+    padding: 2.5rem 1.8rem;
+    background: linear-gradient(160deg, color-mix(in srgb, var(--color-primary) 10%, #fff), #fff 60%);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+  }
+
+  .thank-you-card h2::after {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .success-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    box-shadow: 0 8px 20px rgba(78, 103, 53, 0.35);
+  }
+
+  .thank-you-sub {
+    color: var(--color-text-muted);
+    margin: 0 0 1.5rem;
+  }
+
+  .order-id-box {
+    max-width: 320px;
+    margin: 0 auto 1.5rem;
+    background: var(--color-bg-warm);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.2rem;
+  }
+
+  .order-id-label {
+    display: block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .order-id-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .order-id-row strong {
+    font-family: monospace;
+    font-size: 1.2rem;
+    letter-spacing: 0.02em;
+    color: var(--color-secondary);
+  }
+
+  .thank-you-note {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin: 0 0 1.5rem;
+  }
+
+  .thank-you-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .thank-you-btn {
+    display: inline-block;
+    padding: 0.65rem 1.4rem;
+    border-radius: 999px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .thank-you-btn-primary {
+    background: var(--color-primary);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(78, 103, 53, 0.28);
+  }
+
+  .thank-you-btn-primary:hover {
+    background: var(--color-primary-dark);
+    transform: translateY(-2px);
+  }
+
+  .thank-you-btn-secondary {
+    background: #fff;
+    color: var(--color-primary);
+    border: 1.5px solid var(--color-bg-alt);
+  }
+
+  .thank-you-btn-secondary:hover {
+    transform: translateY(-2px);
   }
 </style>
