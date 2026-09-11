@@ -1,0 +1,407 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import AdminLogin from "../../components/AdminLogin.astro";
+---
+
+<BaseLayout title="Quản trị sản phẩm — GỪNG DETOX">
+  <main class="admin-page">
+    <AdminLogin>
+      <h1>Quản trị sản phẩm</h1>
+
+      <form id="product-form" class="product-form">
+        <input type="hidden" id="edit-id" />
+        <div class="grid-2">
+          <label>
+            Slug (định danh, không dấu)
+            <input type="text" id="f-slug" required />
+          </label>
+          <label>
+            Loại
+            <select id="f-type" required>
+              <option value="single">Đồ uống lẻ</option>
+              <option value="combo">Combo thuê bao</option>
+              <option value="set">Set Detox</option>
+            </select>
+          </label>
+          <label>
+            Tên sản phẩm
+            <input type="text" id="f-name" required />
+          </label>
+          <label>
+            Danh mục (category)
+            <input type="text" id="f-category" placeholder="ginger-shot, kombucha..." />
+          </label>
+          <label>
+            Giá lẻ (đồ uống lẻ)
+            <input type="number" id="f-price-retail" />
+          </label>
+          <label>
+            Giá trọn gói (combo/set)
+            <input type="number" id="f-price" />
+          </label>
+          <label>
+            Dung tích/quy cách
+            <input type="text" id="f-volume" placeholder="30ml/lần, 1 chai..." />
+          </label>
+          <label>
+            Số lần uống/chai (servings)
+            <input type="number" id="f-servings" />
+          </label>
+          <label>
+            Lịch giao (combo)
+            <input type="text" id="f-delivery" placeholder="4 đợt/tuần" />
+          </label>
+          <label>
+            Mục tiêu (chỉ Set Detox)
+            <input type="text" id="f-goal" placeholder="Thải độc – Làm mát..." />
+          </label>
+          <label>
+            Màu chủ đề (chỉ Set Detox)
+            <select id="f-color">
+              <option value="">— Không —</option>
+              <option value="green">Xanh</option>
+              <option value="yellow">Vàng</option>
+              <option value="red">Đỏ</option>
+              <option value="orange">Cam</option>
+              <option value="mix">Mix</option>
+            </select>
+          </label>
+          <label>
+            Nhãn
+            <select id="f-badge">
+              <option value="">— Không —</option>
+              <option value="best-seller">Best-seller</option>
+              <option value="new">Mới</option>
+              <option value="sale">Sale</option>
+              <option value="out-of-stock">Tạm hết</option>
+            </select>
+          </label>
+        </div>
+
+        <label>
+          Mô tả ngắn
+          <textarea id="f-description" rows="2"></textarea>
+        </label>
+        <label>
+          Nguồn gốc (1-2 câu)
+          <textarea id="f-origin" rows="2"></textarea>
+        </label>
+
+        <fieldset>
+          <legend>Loại chai áp dụng</legend>
+          <label class="inline"><input type="checkbox" id="f-bottle-glass" /> Thủy tinh</label>
+          <label class="inline"><input type="checkbox" id="f-bottle-plastic" /> Nhựa</label>
+        </fieldset>
+
+        <label>
+          Ảnh sản phẩm
+          <input type="file" id="f-image" accept="image/*" />
+        </label>
+        <p id="current-image" class="current-image"></p>
+
+        <label class="inline"><input type="checkbox" id="f-in-stock" checked /> Còn hàng</label>
+
+        <div class="form-actions">
+          <button type="submit" class="save-btn">Lưu sản phẩm</button>
+          <button type="button" id="cancel-edit" class="cancel-btn" hidden>Huỷ sửa</button>
+        </div>
+      </form>
+
+      <h2>Danh sách sản phẩm</h2>
+      <div class="table-wrap">
+        <table id="products-table">
+          <thead>
+            <tr>
+              <th>Ảnh</th>
+              <th>Tên</th>
+              <th>Loại</th>
+              <th>Giá</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="products-body">
+            <tr><td colspan="5">Đang tải...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </AdminLogin>
+  </main>
+</BaseLayout>
+
+<script>
+  import { supabase } from "../../lib/supabase";
+
+  const form = document.getElementById("product-form") as HTMLFormElement;
+  const editIdInput = document.getElementById("edit-id") as HTMLInputElement;
+  const currentImageEl = document.getElementById("current-image") as HTMLElement;
+  const cancelBtn = document.getElementById("cancel-edit") as HTMLButtonElement;
+  const tbody = document.getElementById("products-body")!;
+
+  const field = (id: string) => document.getElementById(id) as HTMLInputElement;
+
+  let products: any[] = [];
+  let currentImageUrl: string | null = null;
+
+  function resetForm() {
+    form.reset();
+    editIdInput.value = "";
+    currentImageUrl = null;
+    currentImageEl.textContent = "";
+    cancelBtn.hidden = true;
+  }
+
+  function fillForm(p: any) {
+    editIdInput.value = p.id;
+    field("f-slug").value = p.slug;
+    (document.getElementById("f-type") as HTMLSelectElement).value = p.type;
+    field("f-name").value = p.name;
+    field("f-category").value = p.category ?? "";
+    field("f-price-retail").value = p.price_retail ?? "";
+    field("f-price").value = p.price ?? "";
+    field("f-volume").value = p.volume ?? "";
+    field("f-servings").value = p.servings ?? "";
+    field("f-delivery").value = p.delivery_schedule ?? "";
+    field("f-goal").value = p.set_goal ?? "";
+    (document.getElementById("f-color") as HTMLSelectElement).value = p.color_theme ?? "";
+    (document.getElementById("f-badge") as HTMLSelectElement).value = p.badge ?? "";
+    (document.getElementById("f-description") as HTMLTextAreaElement).value = p.description ?? "";
+    (document.getElementById("f-origin") as HTMLTextAreaElement).value = p.origin_story ?? "";
+    (document.getElementById("f-bottle-glass") as HTMLInputElement).checked = (
+      p.bottle_options ?? []
+    ).includes("glass");
+    (document.getElementById("f-bottle-plastic") as HTMLInputElement).checked = (
+      p.bottle_options ?? []
+    ).includes("plastic");
+    (document.getElementById("f-in-stock") as HTMLInputElement).checked = p.in_stock !== false;
+    currentImageUrl = p.image_url ?? null;
+    currentImageEl.textContent = currentImageUrl ? `Ảnh hiện tại: ${currentImageUrl}` : "Chưa có ảnh";
+    cancelBtn.hidden = false;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function renderTable() {
+    tbody.innerHTML = products
+      .map(
+        (p) => `
+      <tr data-id="${p.id}">
+        <td>${p.image_url ? `<img src="${p.image_url}" width="50" height="50" style="object-fit:cover;border-radius:6px" />` : "—"}</td>
+        <td>${p.name}</td>
+        <td>${p.type}</td>
+        <td>${(p.price ?? p.price_retail ?? 0).toLocaleString("vi-VN")}đ</td>
+        <td>
+          <button class="edit-btn" data-id="${p.id}">Sửa</button>
+          <button class="delete-btn" data-id="${p.id}">Xoá</button>
+        </td>
+      </tr>
+    `
+      )
+      .join("");
+
+    document.querySelectorAll<HTMLButtonElement>(".edit-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const p = products.find((x) => x.id === btn.dataset.id);
+        if (p) fillForm(p);
+      });
+    });
+    document.querySelectorAll<HTMLButtonElement>(".delete-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("Xoá sản phẩm này?")) return;
+        const { error } = await supabase.from("products").delete().eq("id", btn.dataset.id);
+        if (error) alert("Lỗi xoá: " + error.message);
+        else await loadProducts();
+      });
+    });
+  }
+
+  async function loadProducts() {
+    const { data, error } = await supabase.from("products").select("*").order("sort_order");
+    if (error) {
+      tbody.innerHTML = `<tr><td colspan="5">Lỗi: ${error.message}</td></tr>`;
+      return;
+    }
+    products = data ?? [];
+    renderTable();
+  }
+
+  cancelBtn.addEventListener("click", resetForm);
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const bottleOptions = [
+      (document.getElementById("f-bottle-glass") as HTMLInputElement).checked ? "glass" : null,
+      (document.getElementById("f-bottle-plastic") as HTMLInputElement).checked ? "plastic" : null,
+    ].filter(Boolean);
+
+    let imageUrl = currentImageUrl;
+    const fileInput = document.getElementById("f-image") as HTMLInputElement;
+    const file = fileInput.files?.[0];
+    if (file) {
+      const path = `${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(path, file);
+      if (uploadError) {
+        alert("Lỗi tải ảnh: " + uploadError.message);
+        return;
+      }
+      imageUrl = supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl;
+    }
+
+    const payload = {
+      slug: field("f-slug").value,
+      type: (document.getElementById("f-type") as HTMLSelectElement).value,
+      name: field("f-name").value,
+      category: field("f-category").value || null,
+      description: (document.getElementById("f-description") as HTMLTextAreaElement).value || null,
+      origin_story: (document.getElementById("f-origin") as HTMLTextAreaElement).value || null,
+      volume: field("f-volume").value || null,
+      price_retail: field("f-price-retail").value ? Number(field("f-price-retail").value) : null,
+      price: field("f-price").value ? Number(field("f-price").value) : null,
+      servings: field("f-servings").value ? Number(field("f-servings").value) : null,
+      delivery_schedule: field("f-delivery").value || null,
+      bottle_options: bottleOptions.length ? bottleOptions : null,
+      set_goal: field("f-goal").value || null,
+      color_theme: (document.getElementById("f-color") as HTMLSelectElement).value || null,
+      badge: (document.getElementById("f-badge") as HTMLSelectElement).value || null,
+      image_url: imageUrl,
+      in_stock: (document.getElementById("f-in-stock") as HTMLInputElement).checked,
+    };
+
+    const editId = editIdInput.value;
+    const { error } = editId
+      ? await supabase.from("products").update(payload).eq("id", editId)
+      : await supabase.from("products").insert(payload);
+
+    if (error) {
+      alert("Lỗi lưu sản phẩm: " + error.message);
+      return;
+    }
+
+    resetForm();
+    await loadProducts();
+  });
+
+  loadProducts();
+</script>
+
+<style>
+  .admin-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+
+  .product-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    background: var(--color-bg-alt);
+    border-radius: 12px;
+    padding: 1.2rem;
+    margin-bottom: 2rem;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.8rem;
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  label.inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  input,
+  select,
+  textarea {
+    padding: 0.5rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-family: var(--font-body);
+    font-weight: 400;
+  }
+
+  fieldset {
+    border: none;
+    padding: 0;
+    display: flex;
+    gap: 1rem;
+  }
+
+  fieldset legend {
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0;
+    margin-bottom: 0.3rem;
+  }
+
+  .current-image {
+    font-size: 0.75rem;
+    color: #6b7280;
+    word-break: break-all;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 0.6rem;
+  }
+
+  .save-btn,
+  .cancel-btn,
+  .edit-btn,
+  .delete-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+
+  .save-btn {
+    background: var(--color-primary);
+    color: #fff;
+  }
+
+  .cancel-btn {
+    background: #fff;
+    border: 1px solid var(--color-bg-alt);
+  }
+
+  .edit-btn {
+    background: #e5e7eb;
+  }
+
+  .delete-btn {
+    background: var(--color-accent);
+    color: #fff;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  th,
+  td {
+    border-bottom: 1px solid var(--color-bg-alt);
+    padding: 0.5rem;
+    text-align: left;
+  }
+</style>
