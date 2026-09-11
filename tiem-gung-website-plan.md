@@ -108,7 +108,9 @@ Tổng hợp các chức năng phổ biến ở những trang bán hàng nhỏ l
 
 ## 6. Kế hoạch chi tiết từng trang (wireframe theo section + heading)
 
-Sitemap đề xuất: `/` (Trang chủ) · `/san-pham` (Sản phẩm) · `/dat-hang` (Đặt hàng + tra cứu đơn) · `/quy-trinh` (Giới thiệu) · `/blog` (Bí kíp sức khỏe) · `/lien-he` (Liên hệ) · `/thanh-vien` (Thành viên, Phase 2)
+Sitemap: `/` (Trang chủ — **gồm cả nội dung Giới thiệu/Quy trình**, xem mục 6.4) · `/san-pham` (Sản phẩm) · `/dat-hang` (Đặt hàng + tra cứu đơn) · `/blog` (Bí kíp sức khỏe) · `/lien-he` (Liên hệ) · `/thanh-vien` (Thành viên, Phase 2)
+
+**✅ Thay đổi 11/09/2026 — gộp trang Giới thiệu/Quy trình vào trang chủ**: theo yêu cầu, nội dung mục 6.4 bên dưới (câu chuyện, quy trình làm mới mỗi ngày, hệ chai refill, cam kết vệ sinh) không còn là trang `/quy-trinh` riêng nữa — đã chuyển thành 1 phần của trang chủ `/` (section `#cau-chuyen` và các section theo sau), để trang chủ trở thành 1 trang storytelling dài giống sát với tinh thần trang tham chiếu ban đầu **mexoaikechuyen.vn** (mục 2) hơn. `/quy-trinh` cũ giờ tự động redirect về `/` (dùng `redirects` config của Astro, an toàn trên mọi static host). Nav "Giới thiệu" trỏ vào `/#cau-chuyen`.
 
 ### 6.1 Trang chủ — `/`
 | # | Section | Heading | Nội dung/thành phần |
@@ -282,14 +284,14 @@ Phí ship tính theo khoảng cách (5K/km từ tiệm gần nhất: 60M Nguyễ
 
 **Bán kính giao tối đa và miễn phí ship theo mức đơn hàng**: chưa chốt, dự kiến gắn kèm chương trình khuyến mãi sau này (ví dụ "Miễn phí ship đơn từ X" có thể ra mắt như 1 campaign riêng) — Phase 1 tạm chưa áp dụng, chỉ tính phí ship 5K/km thuần túy.
 
-### 6.4 Trang Giới thiệu / Quy trình — `/quy-trinh`
-| # | Section | Heading | Nội dung |
+### 6.4 Giới thiệu / Quy trình — ⚠️ ĐÃ GỘP VÀO TRANG CHỦ `/` (không còn là trang riêng `/quy-trinh`)
+| # | Section (giờ nằm trong `/`) | Heading | Nội dung |
 |---|---|---|---|
-| 1 | Hero | H1 | Câu chuyện thương hiệu Tiệm GỪNG |
-| 2 | Quy trình làm mới mỗi ngày | H2 | Các bước từ nguyên liệu tươi đến thành phẩm |
-| 3 | Hệ chai refill | H2 | Giải thích thủy tinh vs nhựa, hướng dẫn súc rửa chai khi gửi lại (theo đúng nội dung bài đăng thật) |
-| 4 | Cam kết vệ sinh | H3 | Khử khuẩn bằng nước sôi trước khi tái sử dụng chai |
-| 5 | CTA | — | "Xem sản phẩm" → `/san-pham` |
+| 1 | Câu chuyện (`#cau-chuyen`) | H2 | Câu chuyện thương hiệu GỪNG DETOX, kèm ảnh thật (nhân viên pha chế) bố cục song song trên desktop |
+| 2 | Quy trình làm mới mỗi ngày | H2 | 4 bước từ nguyên liệu tươi đến giao hàng, đặt trên nền màu ấm (`--color-bg-warm`) để tách biệt khỏi các section khác |
+| 3 | Hệ chai refill | (cùng section 2) | So sánh thủy tinh vs nhựa + box đổi/hoàn chai cũ + cam kết vệ sinh (khử khuẩn nước sôi) |
+
+Trang chủ giờ có thứ tự đầy đủ: Hero → Câu chuyện → Vì sao chọn GỪNG → Quy trình + Hệ chai refill → Sản phẩm nổi bật → 5 Set Detox → Quote → Liên hệ nhanh — gần với cấu trúc storytelling 1 trang của mexoaikechuyen.vn (mục 2) hơn bản nháp nhiều trang ban đầu.
 
 ### 6.5 Trang Bí kíp / Blog sức khỏe — `/blog`
 | # | Section | Heading | Nội dung |
@@ -476,10 +478,11 @@ gungdetox/
 │   │   ├── ZaloButton.astro
 │   │   └── OrderLookup.astro
 │   ├── pages/
-│   │   ├── index.astro          → /
-│   │   ├── san-pham.astro       → /san-pham
+│   │   ├── index.astro          → / (gồm cả nội dung Giới thiệu/Quy trình)
+│   │   ├── san-pham/
+│   │   │   ├── index.astro      → /san-pham
+│   │   │   └── [slug].astro     → /san-pham/:slug (trang chi tiết, mục 6.2.3)
 │   │   ├── dat-hang.astro       → /dat-hang (đặt + tra cứu đơn)
-│   │   ├── quy-trinh.astro      → /quy-trinh
 │   │   ├── lien-he.astro        → /lien-he
 │   │   ├── thanh-vien.astro     → /thanh-vien (Phase 2)
 │   │   ├── admin/
@@ -824,6 +827,7 @@ create table orders (
 - [x] Chọn 3 sản phẩm nổi bật cho section 5: Ginger Shot, Set 2 — Ginger Thơm Tái Tạo, Kombucha (fetch động theo slug, không hard-code nội dung)
 - [x] Trích 1 câu quote thương hiệu từ bài đăng thật (mục 9), giữ giọng "chị em" — không gắn tên khách hàng cụ thể
 - [x] Nhúng ảnh bìa `anh bìa.jpg` vào section 6 (5 Set Detox) làm ảnh minh hoạ chính
+- [x] **(Bổ sung sau, cùng ngày)** Gộp toàn bộ nội dung trang Giới thiệu/Quy trình vào ngay sau Hero (section `#cau-chuyen`, xem mục 6.4) — trang chủ giờ dài và đầy đủ storytelling hơn, `/quy-trinh` redirect về `/`
 
 ### 11.4 Bước 4 — Trang Sản phẩm `/san-pham` (`src/pages/san-pham.astro`) ✅ XONG (11/09/2026)
 Đã kiểm chứng bằng Playwright (script `.verify/check-page.mjs`): build production chạy `npm run preview`, mở `/san-pham`, chụp ảnh, **0 lỗi console**. Toàn bộ 8 sản phẩm lẻ, 5 Set Detox, 2 combo hiển thị đúng dữ liệu thật từ Supabase, bộ lọc danh mục hoạt động (client-side, không gọi lại Supabase mỗi lần đổi tab).
@@ -846,9 +850,9 @@ create table orders (
 - [x] Trang cảm ơn hiện inline sau submit: hiện mã đơn (8 ký tự đầu) + `OrderLookup` ngay bên dưới
 - [x] Gắn `OrderLookup` vào cuối trang `/dat-hang`
 
-### 11.6 Bước 6 — Trang Quy trình `/quy-trinh`, Liên hệ `/lien-he` ✅ XONG (11/09/2026)
-Đã kiểm chứng bằng Playwright, 0 lỗi console. Ảnh/video thật từ kho export (mục 9.3) **chưa** được nhúng vào Quy trình — hiện dùng nội dung chữ dựa trên sự thật đã biết (mục 1, 6.4); có thể bổ sung ảnh cụ thể sau khi chọn được ảnh phù hợp từ kho 703 ảnh.
-- [x] Quy trình: viết nội dung theo 5 section mục 6.4
+### 11.6 Bước 6 — Trang Quy trình `/quy-trinh` (⚠️ sau đó đã gộp vào `/`, xem mục 6.4), Liên hệ `/lien-he` ✅ XONG (11/09/2026)
+Đã kiểm chứng bằng Playwright, 0 lỗi console.
+- [x] Quy trình: viết nội dung theo 5 section mục 6.4 — **sau đó (cùng ngày) đã gộp toàn bộ nội dung này vào trang chủ `/`** theo yêu cầu, kèm ảnh thật `kitchen-lifestyle.webp` bố cục song song; `/quy-trinh` giờ redirect về `/` qua `redirects` config
 - [x] Liên hệ: nhúng Google Maps cho **cả 2 địa điểm** (2 iframe riêng), hiển thị giờ hoạt động dạng bảng
 - [x] Thêm Schema.org `LocalBusiness` JSON-LD cho **cả 2 địa điểm** (1 block JSON-LD riêng mỗi địa điểm)
 
