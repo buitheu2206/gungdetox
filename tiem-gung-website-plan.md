@@ -93,11 +93,12 @@ Tổng hợp các chức năng phổ biến ở những trang bán hàng nhỏ l
   - **Logo** (`icon.jpg`): hình tròn viền xanh lá đậm, họa tiết lá 2 đầu (trên/dưới), chữ **"GỪNG"** màu nâu đậm kiểu chữ bo tròn, chữ **"DETOX"** màu xanh lá, tagline **"SỐNG XANH - SỐNG KHỎE"**, nền trắng. Ghi chú "4CM" trên file có vẻ là kích thước in (sticker/tem), không phải một phần thiết kế.
   - **Ảnh bìa** (`anh bìa.jpg`): banner giới thiệu **"Set trải nghiệm 5 SET DETOX TỰ NHIÊN"** — xem chi tiết sản phẩm mới ở mục 6.2.1 bên dưới. Logo góc trái trên nền xanh lá đậm (chữ "GỪNG DETOX" màu trắng), badge lá "100% TỰ NHIÊN" góc phải.
 - ⚠️ **Tên thương hiệu trên tài liệu chính thức là "GỪNG DETOX"**, không phải "Tiệm GỪNG" như plan đang dùng — cần hỏi lại chủ tiệm tên chính thức nào dùng cho website (có thể "Tiệm GỪNG" là cách gọi thân mật trên Facebook, còn "GỪNG DETOX" là tên thương hiệu/logo chính thức). Trước mắt, mọi vị trí dùng logo (header, favicon) nên dùng đúng "GỪNG DETOX" theo file logo thật; phần văn phong/nội dung có thể vẫn giữ "Tiệm GỪNG" như giọng điệu quen thuộc.
-- **Màu sắc — đã điều chỉnh lại theo đúng logo thật** (ưu tiên hơn suy đoán từ ảnh sản phẩm trước đó):
-  - **Xanh lá rừng đậm** (forest green) — màu chủ đạo, lấy trực tiếp từ viền logo + chữ "DETOX" + nền ảnh bìa → dùng cho header, nút CTA chính, logo
-  - **Nâu đậm** (dark brown) — lấy từ chữ "GỪNG" trong logo → dùng cho heading/text nhấn mạnh, thay cho "vàng hổ phách" đã đề xuất trước đó (hạ vàng hổ phách xuống làm màu phụ/badge thay vì màu văn bản chính)
-  - **Đỏ mận/đỏ củ dền** (deep berry red) — từ nước ép beetroot thật (đúng như "SET 3 ĐỎ GIẢM CÂN" trong ảnh bìa dùng tông đỏ) → accent cho tag/giá
-  - **Nền trắng/kem nhạt** — theo đúng nền logo và ảnh bìa (trắng/kem sáng), không dùng nền kem đậm như đề xuất ban đầu
+- **Màu sắc — ĐÃ CHỐT FINAL bằng cách quét pixel thật** (không còn ước lượng bằng mắt như trước): dùng `sharp` quét toàn bộ `icon.jpg` và `anh bìa.jpg`, gom pixel theo điều kiện màu (nâu/xanh/đỏ), tính trung bình:
+  - **`#4e6735`** — xanh olive thật (không phải forest green đậm như ước lượng ban đầu) → màu chủ đạo (`--color-primary`)
+  - **`#4e2914`** — nâu thật từ chữ "GỪNG" → `--color-secondary`
+  - **`#b54311`** — đỏ cam đất thật, lấy từ badge "SET 3 ĐỎ GIẢM CÂN" trong `anh bìa.jpg` (không phải "đỏ mận" như ước lượng ban đầu — màu thật ấm/cam hơn nhiều) → `--color-accent`
+  - Nền trắng/kem `#fffdf8` giữ nguyên (khớp quan sát ban đầu)
+  - Đã build đủ bộ token phụ trợ: `--color-primary-light` (tint nhạt cho badge/nền placeholder), `--color-bg-warm`, `--color-text-muted`, thang bo góc (`--radius-sm/md/lg`) và đổ bóng (`--shadow-sm/md/lg`) — xem `src/styles/global.css`
   - Vẫn giữ lưu ý cũ: ảnh poster "ANH NGỌC" tiếng Nga trong kho ảnh **không phải bộ nhận diện chính**, không dùng làm nguồn màu.
 - **Font chữ**: đã xác nhận 2 font hỗ trợ đầy đủ dấu tiếng Việt (subset vietnamese trên Google Fonts):
   - **Fraunces** (serif có cá tính) — dùng cho heading/display
@@ -778,7 +779,13 @@ create table orders (
 
 ### 11.2 Bước 2 — Component dùng chung (`src/components/`, `src/layouts/`) ✅ XONG (11/09/2026)
 
-⚠️ **Điều chỉnh kiến trúc phát hiện lúc code**: các thẻ `ProductCard`/`ComboCard`/`SetDetoxCard`/`BlogCard` viết dạng component `.astro` **chỉ render được lúc build/server**, không gọi được từ JS phía trình duyệt. Vì kiến trúc yêu cầu fetch dữ liệu Supabase ở client (để admin sửa không cần rebuild), đã bổ sung `src/lib/templates.ts` chứa hàm JS thuần (`productCardHtml`, `comboCardHtml`, `setDetoxCardHtml`, `blogCardHtml`) tạo đúng HTML tương ứng để dùng lúc fetch động. Các file `.astro` giữ lại làm tài liệu tham chiếu UI, style chuyển sang `<style is:global>` để class CSS dùng chung được cho cả HTML dựng từ `templates.ts`.
+⚠️ **Điều chỉnh kiến trúc phát hiện lúc code**: các thẻ `ProductCard`/`ComboCard`/`SetDetoxCard`/`BlogCard` viết dạng component `.astro` **chỉ render được lúc build/server**, không gọi được từ JS phía trình duyệt. Vì kiến trúc yêu cầu fetch dữ liệu Supabase ở client (để admin sửa không cần rebuild), đã bổ sung `src/lib/templates.ts` chứa hàm JS thuần (`productCardHtml`, `comboCardHtml`, `setDetoxCardHtml`, `blogCardHtml`) tạo đúng HTML tương ứng để dùng lúc fetch động.
+
+⚠️⚠️ **Lỗi nghiêm trọng phát hiện SAU đó (khi rà lại vì "web nhìn xấu")**: chỉ đổi `<style>` → `<style is:global>` trong các file `.astro` đó **KHÔNG ĐỦ**. Astro chỉ bundle CSS của 1 file `.astro` nếu có **trang nào import file đó** — mà không trang nào import `ProductCard.astro`/`ComboCard.astro`/`SetDetoxCard.astro`/`BlogCard.astro` (chỉ gọi hàm trong `templates.ts`), nên **toàn bộ CSS của 4 file này chưa bao giờ được đưa vào bundle**, dù cú pháp đúng và server dev không báo lỗi gì. Hệ quả: mọi card trên mọi trang hiển thị dạng chữ trần, không màu nền/bo góc/shadow — đây là nguyên nhân chính khiến trang có cảm giác "xấu"/chưa hoàn thiện, tồn tại từ lúc build Bước 4 tới khi phát hiện. Đã xác nhận bằng `grep ".product-card" dist/_astro/*.css` trước/sau khi sửa.
+
+**Cách sửa**: dồn toàn bộ CSS của 4 loại thẻ vào 1 file `src/styles/cards.css` (mỗi rule đặt tên có tiền tố theo loại thẻ, vd. `.product-card .badge`, `.set-card .badge`, để tránh đụng độ khi gộp chung 1 file), import file này 1 lần trong `BaseLayout.astro` — đảm bảo mọi trang đều có CSS này bất kể trang có "gọi" tới component `.astro` hay không. Các file `.astro` (`ProductCard.astro`...) giữ lại **chỉ để tham chiếu** cấu trúc props/markup, không còn chứa `<style>`.
+
+**Bài học chung**: với kiến trúc "component `.astro` không được trang nào import trực tiếp" (do HTML thật dựng qua JS ở client), **không được đặt CSS bên trong `<style>` của chính file đó** dù có `is:global` — phải đặt CSS ở 1 file luôn được import (global.css, cards.css, hoặc tương tự).
 
 | File | Việc cụ thể |
 |---|---|
