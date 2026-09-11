@@ -8,6 +8,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 >
   <main class="home-page">
     <section class="hero">
+      <div class="hero-blob hero-blob-1"></div>
+      <div class="hero-blob hero-blob-2"></div>
+      <p class="eyebrow">🫚 Detox tự nhiên · Sài Gòn</p>
       <h1>Tiệm GỪNG xin chào!</h1>
       <p class="lead">
         Đồ uống lên men/detox từ gừng tươi, làm mới mỗi ngày, giao tận nhà theo tuần
@@ -26,16 +29,19 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <section class="why">
       <h2>Vì sao chọn GỪNG</h2>
       <div class="why-grid">
-        <div>
-          <h3>🫚 Nguyên liệu thật</h3>
+        <div class="surface-card">
+          <span class="why-icon">🫚</span>
+          <h3>Nguyên liệu thật</h3>
           <p>Gừng tươi, nghệ, chanh vàng, mật ong, muối hồng — không hương liệu, không chất bảo quản.</p>
         </div>
-        <div>
-          <h3>🌿 Làm mới mỗi ngày</h3>
+        <div class="surface-card">
+          <span class="why-icon">🌿</span>
+          <h3>Làm mới mỗi ngày</h3>
           <p>Ép/ủ/nấu mới theo đơn mỗi ngày, không sản xuất hàng loạt trữ sẵn.</p>
         </div>
-        <div>
-          <h3>♻️ Hệ chai refill sạch</h3>
+        <div class="surface-card">
+          <span class="why-icon">♻️</span>
+          <h3>Hệ chai refill sạch</h3>
           <p>Chai thủy tinh hoặc nhựa, khử khuẩn bằng nước sôi trước khi tái sử dụng.</p>
         </div>
       </div>
@@ -109,49 +115,105 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   }
 
   .hero {
+    position: relative;
     text-align: center;
-    padding: 2rem 0 1rem;
+    padding: 3.5rem 1.5rem 2rem;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, var(--color-bg-warm), var(--color-bg));
+  }
+
+  .hero-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(50px);
+    opacity: 0.35;
+    z-index: 0;
+  }
+
+  .hero-blob-1 {
+    width: 260px;
+    height: 260px;
+    background: var(--color-primary-light);
+    top: -80px;
+    left: -60px;
+  }
+
+  .hero-blob-2 {
+    width: 220px;
+    height: 220px;
+    background: var(--color-accent);
+    opacity: 0.15;
+    bottom: -60px;
+    right: -40px;
+  }
+
+  .hero > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .eyebrow {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--color-primary);
+    background: var(--color-primary-light);
+    padding: 0.3rem 0.9rem;
+    border-radius: 999px;
+    margin-bottom: 1rem;
   }
 
   .hero h1 {
-    font-size: 2.2rem;
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
   }
 
   .lead {
     max-width: 480px;
-    margin: 0 auto 1.2rem;
-    color: var(--color-text);
+    margin: 0 auto 1.4rem;
+    color: var(--color-text-muted);
+    font-size: 1.05rem;
   }
 
   .hero-cta {
     display: flex;
     gap: 1rem;
     justify-content: center;
-    margin-bottom: 1rem;
+    margin-bottom: 1.2rem;
   }
 
   .btn-primary,
   .btn-secondary {
     display: inline-block;
-    padding: 0.7rem 1.4rem;
+    padding: 0.8rem 1.6rem;
     border-radius: 999px;
     text-decoration: none;
     font-weight: 600;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
 
   .btn-primary {
     background: var(--color-primary);
     color: #fff;
+    box-shadow: 0 8px 20px rgba(78, 103, 53, 0.3);
   }
 
   .btn-primary:hover {
     background: var(--color-primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(78, 103, 53, 0.35);
   }
 
   .btn-secondary {
     background: #fff;
     color: var(--color-primary);
-    border: 1px solid var(--color-primary);
+    border: 1.5px solid var(--color-primary);
+  }
+
+  .btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
   }
 
   .socials {
@@ -173,20 +235,30 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   }
 
   .why-grid > div {
-    background: #fff;
-    border: 1px solid var(--color-bg-alt);
-    border-radius: 12px;
-    padding: 1.2rem;
+    padding: 1.4rem;
+  }
+
+  .why-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: var(--color-primary-light);
+    font-size: 1.4rem;
+    margin-bottom: 0.7rem;
   }
 
   .why-grid h3 {
     margin: 0 0 0.4rem;
-    font-size: 1.05rem;
+    font-size: 1.1rem;
   }
 
   .why-grid p {
     margin: 0;
     font-size: 0.9rem;
+    color: var(--color-text-muted);
   }
 
   .grid {
@@ -205,8 +277,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     gap: 1.5rem;
     align-items: center;
     background: var(--color-bg-alt);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     overflow: hidden;
+    box-shadow: var(--shadow-md);
   }
 
   .set-detox-promo img {
@@ -242,9 +315,19 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   .quick-contact {
     text-align: center;
-    background: var(--color-bg-alt);
-    border-radius: 16px;
-    padding: 1.5rem;
+    background: var(--color-primary);
+    color: #fff;
+    border-radius: var(--radius-lg);
+    padding: 2rem 1.5rem;
+  }
+
+  .quick-contact .btn-primary {
+    background: #fff;
+    color: var(--color-primary);
+  }
+
+  .quick-contact .btn-primary:hover {
+    background: var(--color-bg-warm);
   }
 
   .quick-contact p {

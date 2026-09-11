@@ -1,21 +1,38 @@
 /* Design tokens — GỪNG DETOX
-   Màu lấy theo logo thật (icon.jpg): xanh lá rừng đậm + nâu đậm,
-   nền trắng/kem nhạt, đỏ mận làm accent (nước ép beetroot / Set 3 Đỏ Giảm Cân).
-   Xem mục 5 và 11.0.1 trong tiem-gung-website-plan.md.
-   ⚠️ Mã hex dưới đây là ước lượng bằng mắt — cần lấy lại bằng color picker
-   thật từ icon.jpg trước khi chốt bản thiết kế cuối cùng. */
+   Màu lấy CHÍNH XÁC bằng cách quét pixel thật từ icon.jpg (xanh olive, nâu)
+   và anh bìa.jpg (đỏ cam đất — badge "Set 3 Đỏ Giảm Cân"), không còn ước lượng
+   bằng mắt. Xem mục 5, 11.0.1 trong tiem-gung-website-plan.md. */
 
 :root {
-  --color-primary: #1b4d2e;
-  --color-primary-dark: #0f331d;
-  --color-secondary: #4a2c1a;
-  --color-accent: #7a1f2b;
+  --color-primary: #4e6735; /* xanh olive thật từ logo */
+  --color-primary-dark: #3b4d28;
+  --color-primary-light: #e9edd9; /* tint nhạt của xanh, dùng cho nền/badge phụ */
+  --color-secondary: #4e2914; /* nâu thật từ chữ "GỪNG" trong logo */
+  --color-secondary-dark: #3e2110;
+  --color-accent: #b54311; /* đỏ cam đất thật từ ảnh bìa (Set 3) */
+  --color-accent-dark: #8f350d;
   --color-bg: #fffdf8;
   --color-bg-alt: #f5f0e6;
+  --color-bg-warm: #fbf3e6; /* nền ấm hơn cho section xen kẽ, thiên vàng nhẹ */
   --color-text: #2a2a2a;
+  --color-text-muted: #6b6558;
 
   --font-display: "Fraunces", serif;
   --font-body: "Be Vietnam Pro", sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+
+  --shadow-sm: 0 1px 3px rgba(78, 41, 20, 0.08);
+  --shadow-md: 0 6px 20px rgba(78, 41, 20, 0.1);
+  --shadow-lg: 0 16px 40px rgba(78, 41, 20, 0.14);
+
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2.5rem;
+  --space-5: 4rem;
 }
 
 * {
@@ -39,7 +56,8 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-body);
-  line-height: 1.5;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
 h1,
@@ -49,4 +67,48 @@ h4 {
   font-family: var(--font-display);
   color: var(--color-secondary);
   margin: 0 0 0.5em;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+h1 {
+  font-size: clamp(2rem, 4vw, 2.75rem);
+}
+
+h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+h2::after {
+  content: "";
+  display: block;
+  width: 46px;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 999px;
+  margin-top: 0.5rem;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+::selection {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* Hiệu ứng nổi nhẹ dùng chung cho card — thêm chiều sâu thay vì viền mỏng phẳng */
+.surface-card {
+  background: #fff;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.surface-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
