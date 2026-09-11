@@ -8,32 +8,27 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 >
   <main class="home-page">
     <section class="hero">
-      <div class="hero-bg"></div>
-      <div class="hero-overlay"></div>
-      <div class="hero-blob hero-blob-1"></div>
-      <div class="hero-blob hero-blob-2"></div>
-      <div class="hero-blob hero-blob-3"></div>
-      <p class="eyebrow">🫚 Detox tự nhiên · Sài Gòn</p>
-      <h1>Tiệm GỪNG xin chào!</h1>
-      <p class="lead">
-        Đồ uống lên men/detox từ gừng tươi, làm mới mỗi ngày, giao tận nhà theo tuần
-        tại TP.HCM.
-      </p>
-      <div class="hero-cta">
-        <a class="btn-primary" href="/san-pham">Xem sản phẩm</a>
-        <a class="btn-secondary" href="/dat-hang">Đặt hàng ngay</a>
+      <div class="hero-inner">
+        <div class="hero-text">
+          <p class="eyebrow">🫚 Detox tự nhiên · Sài Gòn</p>
+          <h1>Tiệm GỪNG xin chào!</h1>
+          <p class="lead">
+            Đồ uống lên men/detox từ gừng tươi, làm mới mỗi ngày, giao tận nhà theo tuần
+            tại TP.HCM.
+          </p>
+          <div class="hero-cta">
+            <a class="btn-primary" href="/san-pham">Xem sản phẩm</a>
+            <a class="btn-secondary" href="/dat-hang">Đặt hàng ngay</a>
+          </div>
+          <div class="socials">
+            <a href="https://facebook.com/gungdetox" target="_blank" rel="noopener">Facebook</a>
+            <a href="https://instagram.com/gungdetox.saigon" target="_blank" rel="noopener">Instagram</a>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <img src="/images/hero/mother-daughter.webp" alt="Hai mẹ con cùng uống GỪNG DETOX" />
+        </div>
       </div>
-      <div class="socials">
-        <a href="https://facebook.com/gungdetox" target="_blank" rel="noopener">Facebook</a>
-        <a href="https://instagram.com/gungdetox.saigon" target="_blank" rel="noopener">Instagram</a>
-      </div>
-
-      <svg class="hero-wave" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true">
-        <path
-          fill="#fffdf8"
-          d="M0,64L48,58.7C96,53,192,43,288,48C384,53,480,75,576,80C672,85,768,75,864,58.7C960,43,1056,21,1152,16C1248,11,1344,21,1392,26.7L1440,32L1440,100L0,100Z"
-        ></path>
-      </svg>
     </section>
 
     <section class="story" id="cau-chuyen">
@@ -248,24 +243,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     margin-left: -50vw;
     margin-right: -50vw;
     margin-top: -1.5rem;
-    text-align: center;
-    padding: 3.5rem 1.5rem 4.5rem;
-    min-height: 520px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
+    padding: 3rem 1.5rem;
     overflow: hidden;
-    background: linear-gradient(135deg, var(--color-bg-warm), var(--color-bg) 55%, #fff8e8);
-  }
-
-  .hero > .hero-wave {
-    position: absolute;
-    bottom: -1px;
-    left: 0;
-    width: 100%;
-    height: 60px;
-    z-index: 2;
-    pointer-events: none;
+    background: linear-gradient(135deg, var(--color-bg-warm), var(--color-bg) 60%);
   }
 
   .hero::before {
@@ -275,7 +255,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     left: 0;
     right: 0;
     height: 6px;
-    z-index: 2;
     background: linear-gradient(
       90deg,
       var(--c-green),
@@ -286,80 +265,45 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     );
   }
 
-  @media (max-width: 640px) {
-    .hero {
-      min-height: 340px;
-      padding: 2rem 1.2rem 1.5rem;
-    }
-  }
-
-  .hero > .hero-bg {
-    position: absolute;
-    inset: 0;
-    background: url("/images/hero/mother-daughter.webp") center 20% / cover no-repeat;
-  }
-
-  .hero > .hero-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      180deg,
-      rgba(255, 253, 248, 0.08) 0%,
-      rgba(255, 253, 248, 0.55) 60%,
-      rgba(255, 248, 232, 0.94) 80%,
-      var(--color-bg-warm) 100%
-    );
-  }
-
-  @media (max-width: 640px) {
-    .hero > .hero-overlay {
-      background: linear-gradient(
-        180deg,
-        rgba(255, 253, 248, 0.35) 0%,
-        rgba(255, 253, 248, 0.8) 35%,
-        rgba(255, 248, 232, 0.96) 65%,
-        var(--color-bg-warm) 100%
-      );
-    }
-  }
-
-  .hero > .hero-blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(50px);
-    opacity: 0.35;
-    z-index: 0;
-  }
-
-  .hero-blob-1 {
-    width: 260px;
-    height: 260px;
-    background: var(--color-primary-light);
-    top: -80px;
-    left: -60px;
-  }
-
-  .hero-blob-2 {
-    width: 220px;
-    height: 220px;
-    background: var(--color-accent);
-    opacity: 0.18;
-    bottom: -60px;
-    right: -40px;
-  }
-
-  .hero-blob-3 {
-    width: 180px;
-    height: 180px;
-    background: var(--c-yellow);
-    opacity: 0.2;
-    top: 20%;
-    right: 8%;
-  }
-
-  .hero > * {
+  .hero-inner {
     position: relative;
-    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 2.5rem;
+    align-items: center;
+  }
+
+  .hero-text {
+    text-align: left;
+  }
+
+  .hero-photo img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    display: block;
+  }
+
+  @media (max-width: 800px) {
+    .hero-inner {
+      grid-template-columns: 1fr;
+    }
+
+    .hero-text {
+      text-align: center;
+    }
+
+    .hero-photo {
+      order: -1;
+    }
+
+    .hero-photo img {
+      aspect-ratio: 16 / 10;
+    }
   }
 
   .eyebrow {
@@ -400,7 +344,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   .lead {
     max-width: 480px;
-    margin: 0 auto 1.4rem;
+    margin: 0 0 1.4rem;
     color: var(--color-text-muted);
     font-size: 1.05rem;
   }
@@ -408,7 +352,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   .hero-cta {
     display: flex;
     gap: 1rem;
-    justify-content: center;
+    justify-content: flex-start;
     margin-bottom: 1.2rem;
   }
 
@@ -447,8 +391,20 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   .socials {
     display: flex;
     gap: 1rem;
-    justify-content: center;
+    justify-content: flex-start;
     font-size: 0.9rem;
+  }
+
+  @media (max-width: 800px) {
+    .lead {
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero-cta,
+    .socials {
+      justify-content: center;
+    }
   }
 
   .socials a {
