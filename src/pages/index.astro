@@ -237,6 +237,25 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     overflow: hidden;
     border-radius: var(--radius-lg);
     background: linear-gradient(135deg, var(--color-bg-warm), var(--color-bg) 55%, #fff8e8);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    z-index: 2;
+    background: linear-gradient(
+      90deg,
+      var(--c-green),
+      var(--c-yellow),
+      var(--c-red),
+      var(--c-orange),
+      var(--c-purple)
+    );
   }
 
   @media (max-width: 640px) {
@@ -376,15 +395,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   }
 
   .btn-primary {
-    background: var(--color-primary);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     color: #fff;
-    box-shadow: 0 8px 20px rgba(78, 103, 53, 0.3);
+    box-shadow: 0 8px 20px rgba(78, 103, 53, 0.35);
   }
 
   .btn-primary:hover {
-    background: var(--color-primary-dark);
     transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgba(78, 103, 53, 0.35);
+    box-shadow: 0 10px 26px rgba(78, 103, 53, 0.4);
   }
 
   .btn-secondary {
