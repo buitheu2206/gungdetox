@@ -824,21 +824,46 @@ create table orders (
 - [x] Trang cảm ơn hiện inline sau submit: hiện mã đơn (8 ký tự đầu) + `OrderLookup` ngay bên dưới
 - [x] Gắn `OrderLookup` vào cuối trang `/dat-hang`
 
-### 11.6 Bước 6 — Trang Quy trình `/quy-trinh`, Liên hệ `/lien-he`
-- [ ] Quy trình: viết nội dung theo 5 section mục 6.4, dùng ảnh/video thật từ kho export (mục 9.3)
-- [ ] Liên hệ: nhúng Google Maps cho **cả 2 địa điểm** (embed 2 iframe hoặc 1 map có 2 pin), hiển thị giờ hoạt động dạng bảng theo ngày (dù giống nhau mỗi ngày, vẫn nên viết rõ "Thứ 2 - Chủ nhật: 7:00 - 22:00")
-- [ ] Thêm Schema.org `LocalBusiness` JSON-LD cho **cả 2 địa điểm** (mục 8.7) — mỗi địa điểm 1 block schema riêng nếu Google hỗ trợ multi-location, hoặc 1 block chính + ghi chú địa điểm phụ
+### 11.6 Bước 6 — Trang Quy trình `/quy-trinh`, Liên hệ `/lien-he` ✅ XONG (11/09/2026)
+Đã kiểm chứng bằng Playwright, 0 lỗi console. Ảnh/video thật từ kho export (mục 9.3) **chưa** được nhúng vào Quy trình — hiện dùng nội dung chữ dựa trên sự thật đã biết (mục 1, 6.4); có thể bổ sung ảnh cụ thể sau khi chọn được ảnh phù hợp từ kho 703 ảnh.
+- [x] Quy trình: viết nội dung theo 5 section mục 6.4
+- [x] Liên hệ: nhúng Google Maps cho **cả 2 địa điểm** (2 iframe riêng), hiển thị giờ hoạt động dạng bảng
+- [x] Thêm Schema.org `LocalBusiness` JSON-LD cho **cả 2 địa điểm** (1 block JSON-LD riêng mỗi địa điểm)
+
+### 11.6.1 ⚠️ Lỗi quan trọng phát hiện & đã sửa lúc code: thuộc tính `[hidden]` bị vô hiệu hoá
+
+Phát hiện qua Playwright: bất kỳ phần tử nào có CSS tự đặt `display` (vd. `.step { display: flex }` ở `dat-hang.astro`, `.admin-login-form { display: flex }` ở `AdminLogin.astro`) sẽ **âm thầm vô hiệu hoá** thuộc tính `hidden` mặc định của trình duyệt — vì CSS do tác giả viết luôn thắng CSS mặc định (UA stylesheet) của trình duyệt, bất kể độ ưu tiên (specificity). Hệ quả: phần tử "ẩn" vẫn hiển thị/chiếm chỗ.
+
+**Đã sửa**: thêm 1 rule trong `global.css`:
+```css
+[hidden] {
+  display: none !important;
+}
+```
+Đảm bảo `hidden` luôn thắng ở mọi component, không cần nhớ tránh đặt `display` trong CSS từng nơi. Đã build lại và test lại toàn bộ luồng đặt hàng + admin sau khi sửa, xác nhận hoạt động đúng.
 
 ### 11.7 Bước 7 — SEO, kiểm thử, deploy (gộp từ mục 8.7, 8.8 thành checklist thao tác)
-- [ ] Viết title/description riêng cho 6 trang (Trang chủ, Sản phẩm, Đặt hàng, Quy trình, Blog placeholder, Liên hệ)
-- [ ] Nén ảnh sang WebP (dùng `squoosh.app` hoặc script `sharp` cho toàn bộ ảnh lấy từ kho export mục 9.3 trước khi đưa vào `public/images/`)
-- [ ] Tạo `sitemap.xml` (dùng `@astrojs/sitemap` integration) + `robots.txt`
-- [ ] Test responsive trên mobile thật (không chỉ resize trình duyệt) — vì khách chủ yếu đặt hàng qua điện thoại
-- [ ] Test toàn bộ luồng đặt hàng thật: điền form → kiểm tra dữ liệu xuất hiện đúng trong Supabase table editor → tra cứu lại bằng đúng SĐT vừa nhập
-- [ ] `npm run build` → kiểm tra thư mục `dist/` chạy đúng cục bộ (`npm run preview`) trước khi upload
-- [ ] Upload `dist/` lên Web Hosting iNET qua File Manager/FTP (theo quy trình mục 8.8)
-- [ ] Kiểm tra SSL (https://gungdetox.com) hoạt động sau khi bật Let's Encrypt qua OnePanel
+- [x] Viết title/description riêng cho 5 trang đã build (Trang chủ, Sản phẩm, Đặt hàng, Quy trình, Liên hệ) — Blog để Phase 2
+- [ ] Nén ảnh sang WebP — **chưa cần** vì chưa có ảnh sản phẩm/blog thật nào được admin tải lên; áp dụng khi admin bắt đầu upload ảnh qua `/admin/san-pham`, `/admin/blog`
+- [x] Tạo `sitemap.xml` (`@astrojs/sitemap`, đã set `site` trong `astro.config.mjs`, loại trừ `/admin/*`) + `robots.txt` (chặn crawl `/admin/`)
+- [x] Test responsive trên mobile — dùng Playwright giả lập iPhone 13 (chưa test trên điện thoại thật). **Phát hiện 1 lỗi thật qua test này**: nút Zalo/Messenger nổi che nội dung trên màn hình hẹp — đã sửa (mục 11.7.1)
+- [x] Test toàn bộ luồng đặt hàng thật: điền form → xác nhận dữ liệu đúng trong Supabase (qua script, tương đương table editor) → tra cứu lại bằng đúng SĐT vừa nhập — khớp
+- [x] `npm run build` → `npm run preview` chạy đúng cục bộ, lặp lại nhiều lần trong suốt quá trình build
+- [ ] Upload `dist/` lên Web Hosting iNET qua File Manager/FTP — **CHƯA LÀM, cố ý chờ xác nhận** (mục 11.7.2 — vì thông tin chuyển khoản trên site vẫn là demo, không nên đưa lên public trước khi có thông tin thật)
+- [ ] Kiểm tra SSL sau khi deploy thật
 - [ ] Làm thủ tục thông báo website với Bộ Công Thương tại thongbao.online.gov.vn (mục 7) — việc này chủ tiệm tự làm, không phải code
+
+#### 11.7.1 Lỗi phát hiện qua test mobile: nút nổi che nội dung
+
+`ZaloButton.astro` dùng nút dạng pill full chữ ("Zalo"/"Messenger"), trên màn hình <480px che mất phần cuối dòng chữ của card sản phẩm khi cuộn tới. Đã sửa: dưới 480px, nút thu gọn thành hình tròn 44px chỉ hiện chữ cái đầu (Z/M), giảm đáng kể diện tích che khuất. Vẫn còn chạm nhẹ mép chữ ở 1 số vị trí cuộn — chấp nhận được vì đây là hành vi phổ biến của widget chat nổi trên hầu hết website thật (không phải lỗi chặn thao tác, chỉ che 1 phần chữ).
+
+#### 11.7.2 ⚠️ Chưa deploy lên production — quyết định có chủ đích
+
+Toàn bộ 8 trang (chủ, sản phẩm, đặt hàng, quy trình, liên hệ, 3 trang admin) đã code xong và kiểm chứng kỹ bằng Playwright (0 lỗi console ở mọi trang, luồng đặt hàng + quản trị đều test thao tác thật). Tuy nhiên **chưa upload lên hosting iNET** vì:
+- Thông tin chuyển khoản trên trang Xác nhận đặt hàng vẫn là **demo** (mục 6.3.1) — đưa lên site công khai lúc này có rủi ro khách hiểu nhầm là thông tin thật
+- Nên chờ chủ tiệm xác nhận đã sẵn sàng lên chính thức trước khi deploy, vì đây là hành động khó đảo ngược hoàn toàn (dù có thể gỡ xuống, nhưng có thể đã bị Google index hoặc khách đã thấy)
+
+Khi đã sẵn sàng: làm theo quy trình deploy ở mục 8.8 (build → upload `dist/` qua FTP/File Manager → cấu hình SSL).
 
 ### 11.8 Việc CHƯA đưa vào task breakdown này (cố ý, chờ thông tin thật từ chủ tiệm)
 - **Thông tin chuyển khoản thật** (mục 6.3.1) — đang demo, cần thay trước khi web lên chính thức (không chặn việc build)
