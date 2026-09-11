@@ -3,10 +3,10 @@
 // Markup/class phải khớp với CSS global trong src/components/*.astro tương ứng.
 
 // Mã đơn hiển thị cho khách/admin — không phải khoá chính thật (vẫn là uuid `orders.id`),
-// chỉ để dễ đọc/dễ nói qua điện thoại: 4 số cuối SĐT + 4 ký tự đầu của id.
+// chỉ để dễ đọc/dễ nói qua điện thoại: 6 số cuối SĐT + 6 ký tự đầu của id.
 export function orderCode(phone: string, id: string): string {
-  const phoneSuffix = phone.replace(/\D/g, "").slice(-4);
-  const idPrefix = id.replace(/-/g, "").slice(0, 4).toUpperCase();
+  const phoneSuffix = phone.replace(/\D/g, "").slice(-6);
+  const idPrefix = id.replace(/-/g, "").slice(0, 6).toUpperCase();
   return `${phoneSuffix}-${idPrefix}`;
 }
 

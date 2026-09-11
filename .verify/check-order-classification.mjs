@@ -37,8 +37,8 @@ const code2 = await placeOrder(page2, "kombucha");
 console.log("Order 2 code:", code2);
 await page2.close();
 
-// Check order code format: should be "last4phonedigits-XXXX"
-const expectedPrefix = TEST_PHONE.slice(-4);
+// Check order code format: should be "last6phonedigits-XXXXXX"
+const expectedPrefix = TEST_PHONE.slice(-6);
 console.log("Code1 matches phone suffix:", code1.startsWith(expectedPrefix + "-"));
 console.log("Code2 matches phone suffix:", code2.startsWith(expectedPrefix + "-"));
 console.log("Codes are different:", code1 !== code2);
