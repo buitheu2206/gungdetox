@@ -65,7 +65,8 @@ const products = [
       "Hạnh nhân/óc chó/macca/hạt điều/hạt sen/yến mạch, nấu mới sau khi đặt",
     volume: "1 chai",
     price_retail: 79000,
-    sort_order: 5, // chưa có ảnh thật phù hợp — chờ bổ sung qua /admin/san-pham
+    image_url: "/images/products/sua-hat-tuoi.webp",
+    sort_order: 5,
   },
   {
     slug: "kombucha",
@@ -98,7 +99,8 @@ const products = [
     volume: "1 chai",
     price_retail: 79000,
     badge: "new",
-    sort_order: 8, // chưa có ảnh thật phù hợp — chờ bổ sung qua /admin/san-pham
+    image_url: "/images/products/coco-matcha.webp",
+    sort_order: 8,
   },
 
   // ---- Combo thuê bao (type: combo) ----
@@ -113,6 +115,7 @@ const products = [
     delivery_schedule: "4 đợt/tuần",
     bottle_options: ["glass", "plastic"],
     badge: "best-seller",
+    image_url: "/images/products/ginger-shot.webp",
     sort_order: 9,
   },
   {
@@ -125,6 +128,7 @@ const products = [
     servings: 84,
     delivery_schedule: "Giao theo tuần",
     bottle_options: ["glass", "plastic"],
+    image_url: "/images/products/ginger-shot.webp",
     sort_order: 10,
   },
 
@@ -134,11 +138,14 @@ const products = [
     type: "set",
     name: "Set 1 — Xanh Thanh Lọc",
     category: "set-detox",
+    description:
+      "Set 7 chai xanh mát cho 1 tuần thải độc nhẹ nhàng: rau củ ép tươi giúp làm mát gan, giảm đầy bụng, hỗ trợ tiêu hóa sau những ngày ăn uống thất thường.",
     set_goal: "Thải độc – Làm mát – Giảm đầy bụng",
     price: 160000,
     servings: 7,
     bottle_options: ["glass"],
     color_theme: "green",
+    image_url: "/images/products/set-1-xanh-thanh-loc.webp",
     sort_order: 11,
   },
   {
@@ -146,12 +153,15 @@ const products = [
     type: "set",
     name: "Set 2 — Ginger Thơm Tái Tạo",
     category: "set-detox",
+    description:
+      "Set 7 chai vàng thơm mùi gừng và trái cây, giàu vitamin C — combo bán chạy nhất, giúp tăng đề kháng và cấp ẩm cho da trong 1 tuần.",
     set_goal: "Tăng đề kháng – Bổ sung vitamin – Đẹp da",
     price: 160000,
     servings: 7,
     bottle_options: ["glass"],
     color_theme: "yellow",
     badge: "best-seller",
+    image_url: "/images/products/set-2-ginger-thom-tai-tao.webp",
     sort_order: 12,
   },
   {
@@ -159,11 +169,14 @@ const products = [
     type: "set",
     name: "Set 3 — Đỏ Giảm Cân",
     category: "set-detox",
+    description:
+      "Set 7 chai đỏ vị trái cây chua nhẹ kết hợp gừng, hỗ trợ đốt mỡ và tiêu hóa — lựa chọn cho tuần detox giảm cân, giảm mỡ bụng.",
     set_goal: "Đốt mỡ – Hỗ trợ tiêu hóa – Giảm mỡ bụng",
     price: 170000,
     servings: 7,
     bottle_options: ["glass"],
     color_theme: "red",
+    image_url: "/images/products/set-3-do-giam-can.webp",
     sort_order: 13,
   },
   {
@@ -171,11 +184,14 @@ const products = [
     type: "set",
     name: "Set 4 — Ginger Cam Tiêu Hóa Tốt",
     category: "set-detox",
+    description:
+      "Set 7 chai cam gừng ấm bụng, giảm đầy hơi, dịu dạ dày — phù hợp cho tuần cần chăm sóc hệ tiêu hóa nhẹ nhàng.",
     set_goal: "Hỗ trợ tiêu hóa – Giảm đầy hơi – Dịu dạ dày",
     price: 160000,
     servings: 7,
     bottle_options: ["glass"],
     color_theme: "orange",
+    image_url: "/images/products/set-4-ginger-cam-tieu-hoa-tot.webp",
     sort_order: 14,
   },
   {
@@ -183,11 +199,14 @@ const products = [
     type: "set",
     name: "Set 5 — Mix Cân Bằng",
     category: "set-detox",
+    description:
+      "Set 7 chai phối trộn đủ vị xanh - vàng - đỏ - cam, cân bằng dinh dưỡng cho một tuần detox toàn diện mà không nhàm chán.",
     set_goal: "Cân bằng dinh dưỡng – Detox toàn diện",
     price: 160000,
     servings: 7,
     bottle_options: ["glass"],
     color_theme: "mix",
+    image_url: "/images/products/set-5-mix-can-bang.webp",
     sort_order: 15,
   },
 ];
@@ -198,6 +217,7 @@ const posts = [
     title: "Uống nước ép củ dền đúng cách để cơ thể hấp thu tốt hơn",
     tag: "eat-clean",
     read_time: "3 phút",
+    image_url: "/images/blog/uong-nuoc-ep-cu-den-dung-cach.webp",
     body: `Nhiều người nghĩ nước ép củ dền càng uống nhiều càng tốt. Thực ra, uống đúng cách mới là điều quan trọng.
 
 🌱 Nếu mới bắt đầu uống: chỉ nên uống một lượng nhỏ để cơ thể làm quen, có thể kết hợp với chanh, táo hoặc gừng để hương vị dễ uống hơn và giảm cảm giác khó chịu.
@@ -217,6 +237,7 @@ Tại Tiệm GỪNG, công thức luôn được phối theo tỷ lệ cân bằ
     title: "Vì sao nhiều người uống Ginger Shot mỗi sáng lại thấy nhẹ bụng hơn?",
     tag: "detox",
     read_time: "3 phút",
+    image_url: "/images/blog/vi-sao-uong-ginger-shot-moi-sang.webp",
     body: `Gừng trong Ginger Shot mang lại 2 lợi ích rõ nhất mà nhiều khách của Tiệm GỪNG phản hồi lại:
 
 Hỗ trợ tiêu hóa 🌱 — gừng kích thích tiêu hóa, giảm đầy hơi, chướng bụng, giúp cơ thể nhẹ nhàng hơn sau bữa ăn.
@@ -232,6 +253,7 @@ Chính những thay đổi nhỏ này, kết hợp cùng tác dụng hỗ trợ 
     title: "Trà Kombucha có lợi khuẩn từ đâu? Bí mật nằm ở quá trình lên men",
     tag: "cong-thuc",
     read_time: "2 phút",
+    image_url: "/images/blog/kombucha-loi-khuan-tu-dau.webp",
     body: `🫧 Kombucha được tạo ra từ trà, đường và hệ cộng sinh vi sinh vật SCOBY (Symbiotic Culture of Bacteria and Yeast).
 
 Trong quá trình lên men, nấm men và vi khuẩn có lợi cùng hoạt động, tạo nên những hợp chất đặc trưng làm nên hương vị chua thanh, sảng khoái rất riêng của Kombucha.
@@ -245,6 +267,7 @@ Một lon Kombucha không chỉ là thức uống giải khát, mà còn là th�
     title: "4 kiểu \"tiết kiệm\" khiến sức khỏe âm thầm trả giá",
     tag: "song-khoe",
     read_time: "3 phút",
+    image_url: "/images/blog/4-kieu-tiet-kiem-vo-dung-suc-khoe.webp",
     body: `Có những khoản tiền mình tưởng là đang tiết kiệm... nhưng thật ra chỉ là đang để dành cho bệnh viện. 🥲
 
 1️⃣ Không dám ăn ngon, không dám chăm sóc bản thân — tiền thì giữ được, nhưng sức khỏe cứ âm thầm đi xuống, đến lúc bệnh thì tiền tích góp lại lần lượt mang đi khám chữa bệnh.
@@ -262,6 +285,7 @@ Một lon Kombucha không chỉ là thức uống giải khát, mà còn là th�
     title: "Detox không phải là nhịn ăn — mà là quay lại với điều cơ thể thật sự cần",
     tag: "detox",
     read_time: "3 phút",
+    image_url: "/images/blog/detox-khong-phai-la-nhin-an.webp",
     body: `Mỗi khi công việc quá nhiều, áp lực chồng áp lực, nhiều người ăn uống rất thất thường — bỏ bữa, uống trà sữa/cà phê, ăn đồ ngọt để lấy năng lượng. Chỉ sau vài ngày, cơ thể bắt đầu lên tiếng: bụng nặng hơn, người uể oải, da xỉn màu, sáng dậy vẫn mệt dù ngủ đủ.
 
 Với Tiệm GỪNG, detox không phải là nhịn ăn hay ép cân. Detox đơn giản là quay lại với những điều cơ thể thật sự cần: uống đủ nước, bổ sung nhiều rau xanh và trái cây, hạn chế đồ ăn chế biến sẵn, giảm đường, giảm dầu mỡ và để hệ tiêu hóa có một khoảng nghỉ.

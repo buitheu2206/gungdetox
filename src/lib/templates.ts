@@ -27,6 +27,7 @@ export interface ProductRow {
 export interface PostRow {
   slug: string;
   title: string;
+  body?: string | null;
   tag?: string | null;
   read_time?: string | null;
   image_url?: string | null;
@@ -125,15 +126,15 @@ export function blogCardHtml(post: PostRow): string {
     ? new Date(post.published_at).toLocaleDateString("vi-VN")
     : "";
   return `
-    <a class="blog-card" href="/blog/${post.slug}">
-      <div class="media">
-        ${post.image_url ? `<img src="${post.image_url}" alt="${esc(post.title)}" loading="lazy" />` : `<div class="media-placeholder"></div>`}
-        ${post.video_url ? `<video src="${post.video_url}" muted loop playsinline class="hover-video"></video>` : ""}
+    <a class="blog-card" href="/blog/${encodeURIComponent(post.slug)}">
+      <div class="blog-media">
+        ${post.image_url ? `<img src="${post.image_url}" alt="${esc(post.title)}" loading="lazy" />` : `<div class="blog-media-placeholder"></div>`}
+        ${post.video_url ? `<video src="${post.video_url}" muted loop playsinline class="blog-hover-video"></video>` : ""}
       </div>
-      <div class="body">
+      <div class="blog-body">
         ${post.tag ? `<span class="tag">${esc(post.tag)}</span>` : ""}
         <h3>${esc(post.title)}</h3>
-        <p class="meta">${formattedDate}${post.read_time ? ` · ${esc(post.read_time)}` : ""}</p>
+        <p class="blog-meta">${formattedDate}${post.read_time ? ` · ${esc(post.read_time)}` : ""}</p>
       </div>
     </a>
   `;

@@ -1,0 +1,167 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { supabase } from "../../lib/supabase";
+
+// Cùng pattern với /san-pham/[slug].astro: pre-render tại build time (getStaticPaths)
+// cho URL đẹp/SEO, script phía client fetch lại đúng slug để cập nhật nội dung
+// nếu admin sửa bài sau lần build gần nhất (không cần rebuild chỉ vì sửa chữ).
+export async function getStaticPaths() {
+  const { data } = await supabase.from("posts").select("*");
+  return (data ?? []).map((p) => ({ params: { slug: p.slug }, props: { post: p } }));
+}
+
+const { post } = Astro.props;
+
+const formattedDate = post.published_at
+  ? new Date(post.published_at).toLocaleDateString("vi-VN")
+  : "";
+
+const paragraphs: string[] = (post.body ?? "").split(/\n\n+/).filter(Boolean);
+---
+
+<BaseLayout
+  title={`${post.title} — GỪNG DETOX`}
+  description={post.title}
+>
+  <main class="post-page" data-slug={post.slug}>
+    <nav class="breadcrumb">
+      <a href="/blog">Blog</a> / <span id="bc-title">{post.title}</span>
+    </nav>
+
+    <article>
+      <header>
+        {post.tag && <span class="tag" id="p-tag">{post.tag}</span>}
+        <h1 id="p-title">{post.title}</h1>
+        <p class="meta" id="p-meta">
+          {formattedDate}
+          {post.read_time ? ` · ${post.read_time}` : ""}
+        </p>
+      </header>
+
+      {
+        post.image_url ? (
+          <img class="cover" id="p-cover" src={post.image_url} alt={post.title} />
+        ) : (
+          <div class="cover media-placeholder" id="p-cover" />
+        )
+      }
+
+      <div class="content" id="p-body">
+        {paragraphs.map((para) => <p>{para}</p>)}
+      </div>
+    </article>
+
+    <p class="back"><a href="/blog">← Xem thêm bài viết khác</a></p>
+  </main>
+</BaseLayout>
+
+<script>
+  import { supabase } from "../../lib/supabase";
+
+  const page = document.querySelector(".post-page") as HTMLElement;
+  const slug = page?.dataset.slug;
+  if (!slug) throw new Error("missing slug");
+
+  supabase
+    .from("posts")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle()
+    .then(({ data: p }) => {
+      if (!p) return; // bài đã bị xoá sau build — giữ nguyên nội dung cũ, không báo lỗi
+
+      document.title = `${p.title} — GỪNG DETOX`;
+      const setText = (id: string, value?: string | null) => {
+        const el = document.getElementById(id);
+        if (el && value) el.textContent = value;
+      };
+      setText("bc-title", p.title);
+      setText("p-title", p.title);
+      setText("p-tag", p.tag);
+
+      const metaEl = document.getElementById("p-meta");
+      if (metaEl) {
+        const date = p.published_at ? new Date(p.published_at).toLocaleDateString("vi-VN") : "";
+        metaEl.textContent = `${date}${p.read_time ? ` · ${p.read_time}` : ""}`;
+      }
+
+      const cover = document.getElementById("p-cover");
+      if (p.image_url && cover?.tagName === "IMG") {
+        (cover as HTMLImageElement).src = p.image_url;
+      }
+
+      const bodyEl = document.getElementById("p-body");
+      if (bodyEl && p.body) {
+        bodyEl.innerHTML = "";
+        for (const para of p.body.split(/\n\n+/).filter(Boolean)) {
+          const pEl = document.createElement("p");
+          pEl.textContent = para;
+          bodyEl.appendChild(pEl);
+        }
+      }
+    });
+</script>
+
+<style>
+  .post-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+
+  .breadcrumb {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1.2rem;
+  }
+
+  .breadcrumb a {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+
+  header h1 {
+    margin: 0 0 0.4rem;
+  }
+
+  .meta {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .cover {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, var(--color-primary-light), var(--color-bg-warm));
+  }
+
+  .content p {
+    margin: 0 0 1.1rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
+
+  .back {
+    margin-top: 2rem;
+  }
+
+  .back a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 600;
+  }
+</style>
