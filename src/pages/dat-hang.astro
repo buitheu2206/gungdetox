@@ -1,0 +1,410 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import OrderLookup from "../components/OrderLookup.astro";
+---
+
+<BaseLayout
+  title="Đặt hàng — GỪNG DETOX"
+  description="Đặt hàng đồ uống/combo GỪNG DETOX và tra cứu trạng thái đơn bằng số điện thoại."
+>
+  <main class="order-page">
+    <h1>Đặt hàng</h1>
+
+    <ol class="steps-indicator" id="steps-indicator">
+      <li data-step="1" class="active">Sản phẩm</li>
+      <li data-step="2">Tuỳ chọn</li>
+      <li data-step="3">Giao hàng</li>
+      <li data-step="4">Xác nhận</li>
+    </ol>
+
+    <form id="order-form">
+      <!-- Bước 1 — Sản phẩm -->
+      <section class="step" data-step="1">
+        <h2>Bước 1 — Sản phẩm</h2>
+        <label>
+          Chọn sản phẩm
+          <select id="product-select" required></select>
+        </label>
+        <label>
+          Số lượng
+          <input type="number" id="quantity" min="1" value="1" required />
+        </label>
+        <button type="button" class="next" data-next="2">Tiếp tục</button>
+      </section>
+
+      <!-- Bước 2 — Tuỳ chọn -->
+      <section class="step" data-step="2" hidden>
+        <h2>Bước 2 — Tuỳ chọn</h2>
+        <fieldset id="bottle-fieldset">
+          <legend>Loại chai</legend>
+        </fieldset>
+        <label id="delivery-day-wrap" hidden>
+          Ngày giao hàng ưu tiên (áp dụng cho combo/set)
+          <select id="delivery-day">
+            <option value="thu-2">Thứ 2</option>
+            <option value="thu-3">Thứ 3</option>
+            <option value="thu-4">Thứ 4</option>
+            <option value="thu-5">Thứ 5</option>
+            <option value="thu-6">Thứ 6</option>
+            <option value="thu-7">Thứ 7</option>
+            <option value="chu-nhat">Chủ nhật</option>
+          </select>
+        </label>
+        <div class="nav-row">
+          <button type="button" class="back" data-back="1">Quay lại</button>
+          <button type="button" class="next" data-next="3">Tiếp tục</button>
+        </div>
+      </section>
+
+      <!-- Bước 3 — Thông tin giao hàng -->
+      <section class="step" data-step="3" hidden>
+        <h2>Bước 3 — Thông tin giao hàng</h2>
+        <label>
+          Họ tên
+          <input type="text" id="customer-name" required />
+        </label>
+        <label>
+          Số điện thoại
+          <input type="tel" id="phone" pattern="0[0-9]{9}" required />
+        </label>
+        <label>
+          Địa chỉ
+          <input type="text" id="address" required />
+        </label>
+        <label>
+          Quận
+          <select id="district">
+            <option value="Quận 1">Quận 1</option>
+            <option value="Quận 3">Quận 3</option>
+            <option value="Bình Thạnh">Bình Thạnh</option>
+            <option value="Khác">Khác (ngoài khu vực giao chuẩn)</option>
+          </select>
+        </label>
+        <p id="district-warning" class="warning" hidden>
+          ⚠️ Ngoài khu vực giao hàng chuẩn — vui lòng liên hệ tiệm để được tư vấn trước khi đặt.
+        </p>
+        <label>
+          Số chai cũ muốn trả (nếu có)
+          <input type="number" id="bottles-returned" min="0" value="0" />
+        </label>
+        <div class="nav-row">
+          <button type="button" class="back" data-back="2">Quay lại</button>
+          <button type="button" class="next" data-next="4">Tiếp tục</button>
+        </div>
+      </section>
+
+      <!-- Bước 4 — Xác nhận -->
+      <section class="step" data-step="4" hidden>
+        <h2>Bước 4 — Xác nhận</h2>
+        <div id="order-summary" class="order-summary"></div>
+
+        <p class="shipping-note">
+          🚚 Phí ship tính theo khoảng cách thực tế (5.000đ/km từ tiệm gần nhất), tiệm sẽ
+          báo lại qua Zalo trước khi giao.
+        </p>
+
+        <div class="bank-info">
+          <strong>⚠️ Thông tin chuyển khoản (demo, sẽ cập nhật thông tin thật)</strong>
+          <p>Ngân hàng: Vietcombank (demo)</p>
+          <p>Số tài khoản: 0000000000 (demo)</p>
+          <p>Chủ tài khoản: NGUYEN VAN DEMO (demo)</p>
+        </div>
+
+        <div class="nav-row">
+          <button type="button" class="back" data-back="3">Quay lại</button>
+          <button type="submit" class="submit">Đặt hàng</button>
+        </div>
+      </section>
+    </form>
+
+    <!-- Trang cảm ơn -->
+    <section id="thank-you" hidden>
+      <h2>🎉 Đặt hàng thành công!</h2>
+      <p>Mã đơn của bạn: <strong id="order-id"></strong></p>
+      <p>Tiệm sẽ liên hệ qua Zalo/hotline để xác nhận và báo phí ship cụ thể.</p>
+    </section>
+
+    <OrderLookup />
+  </main>
+</BaseLayout>
+
+<script>
+  import { supabase } from "../lib/supabase";
+
+  interface ProductRow {
+    slug: string;
+    type: "single" | "combo" | "set";
+    name: string;
+    price?: number | null;
+    price_retail?: number | null;
+    bottle_options?: string[] | null;
+  }
+
+  const bottleLabel: Record<string, string> = { glass: "Thủy tinh", plastic: "Nhựa" };
+
+  let products: ProductRow[] = [];
+  let selectedProduct: ProductRow | null = null;
+
+  const productSelect = document.getElementById("product-select") as HTMLSelectElement;
+  const quantityInput = document.getElementById("quantity") as HTMLInputElement;
+  const bottleFieldset = document.getElementById("bottle-fieldset") as HTMLFieldSetElement;
+  const deliveryDayWrap = document.getElementById("delivery-day-wrap") as HTMLElement;
+  const districtSelect = document.getElementById("district") as HTMLSelectElement;
+  const districtWarning = document.getElementById("district-warning") as HTMLElement;
+  const orderSummary = document.getElementById("order-summary") as HTMLDivElement;
+  const form = document.getElementById("order-form") as HTMLFormElement;
+  const thankYou = document.getElementById("thank-you") as HTMLElement;
+  const stepsIndicator = document.getElementById("steps-indicator")!;
+
+  function money(n?: number | null) {
+    return n != null ? `${n.toLocaleString("vi-VN")}đ` : "Đang cập nhật giá";
+  }
+
+  function unitPrice(p: ProductRow) {
+    return p.type === "single" ? p.price_retail : p.price;
+  }
+
+  function renderBottleOptions(p: ProductRow) {
+    const options = p.bottle_options ?? [];
+    bottleFieldset.innerHTML = "<legend>Loại chai</legend>";
+    if (options.length === 0) {
+      bottleFieldset.innerHTML += "<p>Không áp dụng cho sản phẩm này.</p>";
+      return;
+    }
+    options.forEach((opt, i) => {
+      const label = document.createElement("label");
+      label.innerHTML = `<input type="radio" name="bottle-type" value="${opt}" ${i === 0 ? "checked" : ""}/> ${bottleLabel[opt] ?? opt}`;
+      bottleFieldset.appendChild(label);
+    });
+    deliveryDayWrap.hidden = p.type === "single";
+  }
+
+  function goToStep(step: number) {
+    document.querySelectorAll<HTMLElement>(".step").forEach((el) => {
+      el.hidden = el.dataset.step !== String(step);
+    });
+    stepsIndicator.querySelectorAll("li").forEach((li) => {
+      li.classList.toggle("active", li.getAttribute("data-step") === String(step));
+    });
+    if (step === 4) renderSummary();
+  }
+
+  function renderSummary() {
+    if (!selectedProduct) return;
+    const qty = Number(quantityInput.value) || 1;
+    const price = unitPrice(selectedProduct) ?? 0;
+    const bottleType =
+      (form.querySelector('input[name="bottle-type"]:checked') as HTMLInputElement)?.value ??
+      "";
+    orderSummary.innerHTML = `
+      <p><strong>${selectedProduct.name}</strong> × ${qty}</p>
+      ${bottleType ? `<p>Loại chai: ${bottleLabel[bottleType] ?? bottleType}</p>` : ""}
+      <p>Tạm tính: ${money(price * qty)} (chưa gồm phí ship)</p>
+      <p>Giao tới: ${(document.getElementById("address") as HTMLInputElement).value},
+      ${districtSelect.value}</p>
+    `;
+  }
+
+  document.querySelectorAll<HTMLButtonElement>("[data-next]").forEach((btn) => {
+    btn.addEventListener("click", () => goToStep(Number(btn.dataset.next)));
+  });
+  document.querySelectorAll<HTMLButtonElement>("[data-back]").forEach((btn) => {
+    btn.addEventListener("click", () => goToStep(Number(btn.dataset.back)));
+  });
+
+  productSelect.addEventListener("change", () => {
+    selectedProduct = products.find((p) => p.slug === productSelect.value) ?? null;
+    if (selectedProduct) renderBottleOptions(selectedProduct);
+  });
+
+  districtSelect.addEventListener("change", () => {
+    districtWarning.hidden = districtSelect.value !== "Khác";
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!selectedProduct) return;
+
+    const bottleType =
+      (form.querySelector('input[name="bottle-type"]:checked') as HTMLInputElement)?.value ??
+      "glass";
+
+    const { data, error } = await supabase
+      .from("orders")
+      .insert({
+        phone: (document.getElementById("phone") as HTMLInputElement).value,
+        customer_name: (document.getElementById("customer-name") as HTMLInputElement).value,
+        address: (document.getElementById("address") as HTMLInputElement).value,
+        district: districtSelect.value,
+        items: [{ productSlug: selectedProduct.slug, quantity: Number(quantityInput.value) }],
+        bottle_type: bottleType,
+        bottles_returned:
+          Number((document.getElementById("bottles-returned") as HTMLInputElement).value) || 0,
+      })
+      .select()
+      .single();
+
+    if (error || !data) {
+      alert("Có lỗi khi đặt hàng, vui lòng thử lại: " + (error?.message ?? "unknown"));
+      return;
+    }
+
+    form.hidden = true;
+    stepsIndicator.hidden = true;
+    thankYou.hidden = false;
+    (document.getElementById("order-id") as HTMLElement).textContent = data.id.slice(0, 8);
+  });
+
+  // Load danh sách sản phẩm + đọc query string ?product=slug
+  const { data: allProducts } = await supabase
+    .from("products")
+    .select("slug, type, name, price, price_retail, bottle_options")
+    .order("sort_order");
+
+  products = allProducts ?? [];
+  productSelect.innerHTML = products
+    .map((p) => `<option value="${p.slug}">${p.name}</option>`)
+    .join("");
+
+  const preselectedSlug = new URLSearchParams(location.search).get("product");
+  const initial =
+    products.find((p) => p.slug === preselectedSlug) ?? products[0] ?? null;
+
+  if (initial) {
+    productSelect.value = initial.slug;
+    selectedProduct = initial;
+    renderBottleOptions(initial);
+  }
+</script>
+
+<style>
+  .order-page {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+
+  .steps-indicator {
+    display: flex;
+    justify-content: space-between;
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+  }
+
+  .steps-indicator li {
+    flex: 1;
+    text-align: center;
+    color: #9ca3af;
+    border-bottom: 3px solid var(--color-bg-alt);
+    padding-bottom: 0.5rem;
+  }
+
+  .steps-indicator li.active {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    font-weight: 600;
+  }
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .step label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .step input,
+  .step select {
+    padding: 0.55rem 0.7rem;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-weight: 400;
+    font-family: var(--font-body);
+  }
+
+  #bottle-fieldset {
+    border: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  #bottle-fieldset legend {
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0;
+  }
+
+  .nav-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+  }
+
+  button {
+    padding: 0.6rem 1.2rem;
+    border-radius: 999px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .next,
+  .submit {
+    background: var(--color-primary);
+    color: #fff;
+    margin-left: auto;
+  }
+
+  .back {
+    background: #fff;
+    border: 1px solid var(--color-bg-alt);
+  }
+
+  .warning {
+    color: var(--color-accent);
+    font-size: 0.85rem;
+  }
+
+  .order-summary {
+    background: var(--color-bg-alt);
+    border-radius: 12px;
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .order-summary p {
+    margin: 0.2rem 0;
+  }
+
+  .shipping-note {
+    font-size: 0.85rem;
+    color: var(--color-text);
+  }
+
+  .bank-info {
+    background: #fff3cd;
+    border: 1px solid #ffe08a;
+    border-radius: 8px;
+    padding: 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .bank-info p {
+    margin: 0.2rem 0;
+  }
+
+  #thank-you {
+    text-align: center;
+    padding: 2rem 0;
+  }
+</style>

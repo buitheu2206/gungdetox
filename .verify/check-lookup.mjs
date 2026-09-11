@@ -1,0 +1,14 @@
+import { chromium } from "playwright";
+const browser = await chromium.launch();
+const page = await browser.newPage();
+const errors = [];
+page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
+await page.goto("http://localhost:4322/dat-hang", { waitUntil: "networkidle" });
+await page.fill('#lookup-form input[name="phone"]', "0912345678");
+await page.click('#lookup-form button');
+await page.waitForFunction(() => document.getElementById("lookup-result")?.textContent?.trim() !== "Đang tra cứu...", { timeout: 10000 });
+const text = await page.$eval("#lookup-result", (el) => el.textContent);
+console.log("Lookup result:", text?.replace(/\s+/g, " ").trim());
+await page.screenshot({ path: ".verify/order-lookup.png" });
+console.log("errors:", errors.length ? errors : "none");
+await browser.close();
