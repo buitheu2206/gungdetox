@@ -193,6 +193,7 @@ import OrderLookup from "../components/OrderLookup.astro";
     price?: number | null;
     price_retail?: number | null;
     bottle_options?: string[] | null;
+    image_url?: string | null;
   }
 
   interface CartItem {
@@ -248,6 +249,13 @@ import OrderLookup from "../components/OrderLookup.astro";
     return hasUnknownPrice ? null : total;
   }
 
+  // Astro chỉ áp style scoped (data-astro-cid-*) cho phần tử render lúc build; phần tử
+  // tạo bằng innerHTML từ script phải tự gắn thêm attribute này thì CSS mới nhận diện
+  // được — nếu không, mọi class ở đây (kể cả kích thước ảnh thumbnail) sẽ bị bỏ qua
+  // hoàn toàn và phá vỡ layout (cùng lỗi đã gặp và fix ở trang chi tiết blog).
+  const cidAttrName = Array.from(cartList.attributes).find((a) => a.name.startsWith("data-astro-cid-"))?.name;
+  const cid = cidAttrName ? ` ${cidAttrName}=""` : "";
+
   function renderCart() {
     cartEmptyHint.hidden = cart.length > 0;
     step1Next.hidden = cart.length === 0;
@@ -258,11 +266,22 @@ import OrderLookup from "../components/OrderLookup.astro";
         if (!p) return "";
         const price = unitPrice(p);
         const priceLabel = price != null ? money(price * item.quantity) : "Đang cập nhật giá";
+        const thumb = p.image_url
+          ? `<img class="cart-item-thumb" src="${p.image_url}" alt=""${cid} loading="lazy" />`
+          : `<div class="cart-item-thumb cart-item-thumb-placeholder"${cid}>🫚</div>`;
         return `
-          <div class="cart-item" data-index="${index}">
-            <span class="cart-item-name">${p.name} × ${item.quantity}</span>
-            <span class="cart-item-price">${priceLabel}</span>
-            <button type="button" class="remove-item" data-index="${index}" aria-label="Xoá khỏi giỏ">✕</button>
+          <div class="cart-item" data-index="${index}"${cid}>
+            ${thumb}
+            <div class="cart-item-info"${cid}>
+              <span class="cart-item-name"${cid}>${p.name}</span>
+              <span class="cart-item-price"${cid}>${priceLabel}</span>
+            </div>
+            <div class="qty-stepper"${cid}>
+              <button type="button" class="qty-btn qty-decrease" data-index="${index}"${cid} aria-label="Giảm số lượng">−</button>
+              <span class="qty-value"${cid}>${item.quantity}</span>
+              <button type="button" class="qty-btn qty-increase" data-index="${index}"${cid} aria-label="Tăng số lượng">+</button>
+            </div>
+            <button type="button" class="remove-item" data-index="${index}"${cid} aria-label="Xoá khỏi giỏ">🗑</button>
           </div>
         `;
       })
@@ -270,13 +289,32 @@ import OrderLookup from "../components/OrderLookup.astro";
 
     if (cart.length > 0) {
       const total = cartTotal();
-      cartList.innerHTML += `<div class="cart-total">Tổng tạm tính: <strong>${total != null ? money(total) : "Đang cập nhật giá"}</strong></div>`;
+      cartList.innerHTML += `<div class="cart-total"${cid}>Tổng tạm tính <strong${cid}>${total != null ? money(total) : "Đang cập nhật giá"}</strong></div>`;
     }
 
     cartList.querySelectorAll<HTMLButtonElement>(".remove-item").forEach((btn) => {
       btn.addEventListener("click", () => {
         const index = Number(btn.dataset.index);
         cart = cart.filter((_, i) => i !== index);
+        renderCart();
+        renderStep2Options();
+      });
+    });
+
+    cartList.querySelectorAll<HTMLButtonElement>(".qty-decrease").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const index = Number(btn.dataset.index);
+        if (cart[index].quantity > 1) cart[index].quantity -= 1;
+        else cart = cart.filter((_, i) => i !== index);
+        renderCart();
+        renderStep2Options();
+      });
+    });
+
+    cartList.querySelectorAll<HTMLButtonElement>(".qty-increase").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const index = Number(btn.dataset.index);
+        cart[index].quantity += 1;
         renderCart();
         renderStep2Options();
       });
@@ -427,7 +465,7 @@ import OrderLookup from "../components/OrderLookup.astro";
   // Load danh sách sản phẩm + đọc query string ?product=slug
   const { data: allProducts } = await supabase
     .from("products")
-    .select("slug, type, name, price, price_retail, bottle_options")
+    .select("slug, type, name, price, price_retail, bottle_options, image_url")
     .order("sort_order");
 
   products = allProducts ?? [];
@@ -562,36 +600,102 @@ import OrderLookup from "../components/OrderLookup.astro";
   .cart-item {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    background: var(--color-bg-warm);
-    border-radius: var(--radius-sm);
-    padding: 0.55rem 0.7rem;
+    gap: 0.75rem;
+    background: #fff;
+    border: 1px solid var(--color-bg-alt);
+    border-radius: var(--radius-md);
+    padding: 0.6rem 0.75rem;
     font-size: 0.9rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .cart-item-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--color-bg-warm);
+  }
+
+  .cart-item-thumb-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+  }
+
+  .cart-item-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
   }
 
   .cart-item-name {
-    flex: 1;
     font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .cart-item-price {
     color: var(--color-secondary);
+    font-size: 0.85rem;
     white-space: nowrap;
+  }
+
+  .qty-stepper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .qty-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-bg-alt);
+    background: #fff;
+    color: var(--color-primary);
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .qty-btn:hover {
+    border-color: var(--color-primary);
+  }
+
+  .qty-value {
+    min-width: 1.2rem;
+    text-align: center;
+    font-weight: 600;
   }
 
   .remove-item {
     background: none;
     border: none;
-    padding: 0.2rem 0.4rem;
-    color: var(--color-accent);
-    font-weight: 700;
+    padding: 0.2rem 0.3rem;
+    font-size: 0.95rem;
     cursor: pointer;
+    flex-shrink: 0;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+  }
+
+  .remove-item:hover {
+    opacity: 1;
   }
 
   .cart-total {
-    text-align: right;
+    display: flex;
+    justify-content: space-between;
     font-weight: 700;
-    padding: 0.3rem 0.2rem 0;
+    padding: 0.5rem 0.75rem 0;
   }
 
   .cart-empty-hint {
