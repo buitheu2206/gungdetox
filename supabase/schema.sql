@@ -23,6 +23,7 @@ create table products (
   color_theme text,
   badge text check (badge in ('best-seller','new','sale','out-of-stock')),
   image_url text,
+  gallery_images text[], -- ảnh phụ cho trang chi tiết sản phẩm, ngoài image_url (ảnh đại diện/thumbnail)
   video_url text,
   in_stock boolean default true,
   sort_order int default 0,

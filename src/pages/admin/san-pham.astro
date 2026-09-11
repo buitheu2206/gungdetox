@@ -94,10 +94,16 @@ import AdminLogin from "../../components/AdminLogin.astro";
         </fieldset>
 
         <label>
-          Ảnh sản phẩm
+          Ảnh đại diện (thumbnail)
           <input type="file" id="f-image" accept="image/*" />
         </label>
         <p id="current-image" class="current-image"></p>
+
+        <label>
+          Ảnh phụ (thêm nhiều ảnh cho trang chi tiết sản phẩm)
+          <input type="file" id="f-gallery" accept="image/*" multiple />
+        </label>
+        <div id="gallery-preview" class="gallery-preview"></div>
 
         <label class="inline"><input type="checkbox" id="f-in-stock" checked /> Còn hàng</label>
 
@@ -139,14 +145,38 @@ import AdminLogin from "../../components/AdminLogin.astro";
 
   const field = (id: string) => document.getElementById(id) as HTMLInputElement;
 
+  const galleryPreview = document.getElementById("gallery-preview") as HTMLDivElement;
+
   let products: any[] = [];
   let currentImageUrl: string | null = null;
+  let currentGalleryImages: string[] = [];
+
+  function renderGalleryPreview() {
+    galleryPreview.innerHTML = currentGalleryImages
+      .map(
+        (url, i) => `
+        <div class="gallery-thumb-wrap">
+          <img src="${url}" />
+          <button type="button" class="remove-gallery-img" data-index="${i}">×</button>
+        </div>
+      `
+      )
+      .join("");
+    galleryPreview.querySelectorAll<HTMLButtonElement>(".remove-gallery-img").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        currentGalleryImages.splice(Number(btn.dataset.index), 1);
+        renderGalleryPreview();
+      });
+    });
+  }
 
   function resetForm() {
     form.reset();
     editIdInput.value = "";
     currentImageUrl = null;
     currentImageEl.textContent = "";
+    currentGalleryImages = [];
+    renderGalleryPreview();
     cancelBtn.hidden = true;
   }
 
@@ -175,6 +205,8 @@ import AdminLogin from "../../components/AdminLogin.astro";
     (document.getElementById("f-in-stock") as HTMLInputElement).checked = p.in_stock !== false;
     currentImageUrl = p.image_url ?? null;
     currentImageEl.textContent = currentImageUrl ? `Ảnh hiện tại: ${currentImageUrl}` : "Chưa có ảnh";
+    currentGalleryImages = [...(p.gallery_images ?? [])];
+    renderGalleryPreview();
     cancelBtn.hidden = false;
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -248,6 +280,22 @@ import AdminLogin from "../../components/AdminLogin.astro";
       imageUrl = supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl;
     }
 
+    const galleryInput = document.getElementById("f-gallery") as HTMLInputElement;
+    const newGalleryFiles = Array.from(galleryInput.files ?? []);
+    for (const file of newGalleryFiles) {
+      const path = `${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(path, file);
+      if (uploadError) {
+        alert("Lỗi tải ảnh phụ: " + uploadError.message);
+        return;
+      }
+      currentGalleryImages.push(
+        supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl
+      );
+    }
+
     const payload = {
       slug: field("f-slug").value,
       type: (document.getElementById("f-type") as HTMLSelectElement).value,
@@ -265,6 +313,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
       color_theme: (document.getElementById("f-color") as HTMLSelectElement).value || null,
       badge: (document.getElementById("f-badge") as HTMLSelectElement).value || null,
       image_url: imageUrl,
+      gallery_images: currentGalleryImages.length ? currentGalleryImages : null,
       in_stock: (document.getElementById("f-in-stock") as HTMLInputElement).checked,
     };
 
@@ -350,6 +399,40 @@ import AdminLogin from "../../components/AdminLogin.astro";
     font-size: 0.75rem;
     color: #6b7280;
     word-break: break-all;
+  }
+
+  .gallery-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .gallery-thumb-wrap {
+    position: relative;
+    width: 64px;
+    height: 64px;
+  }
+
+  .gallery-thumb-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+
+  .remove-gallery-img {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+    font-size: 0.85rem;
   }
 
   .form-actions {

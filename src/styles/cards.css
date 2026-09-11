@@ -29,8 +29,22 @@
 
 .product-card .media {
   position: relative;
+  display: block;
   aspect-ratio: 4 / 3;
   background: linear-gradient(135deg, var(--color-primary-light), var(--color-bg-warm));
+}
+
+.product-card .body h3 a,
+.combo-card h3 a,
+.set-card h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.product-card .body h3 a:hover,
+.combo-card h3 a:hover,
+.set-card h3 a:hover {
+  color: var(--color-primary);
 }
 
 .product-card .media img,

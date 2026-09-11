@@ -19,6 +19,7 @@ export interface ProductRow {
   color_theme?: string | null;
   badge?: string | null;
   image_url?: string | null;
+  gallery_images?: string[] | null;
   video_url?: string | null;
   in_stock?: boolean;
 }
@@ -59,13 +60,13 @@ export function productCardHtml(p: ProductRow): string {
     : "";
   return `
     <article class="product-card${p.in_stock === false ? " out-of-stock" : ""}">
-      <div class="media">
+      <a class="media" href="/san-pham/${encodeURIComponent(p.slug)}">
         ${p.image_url ? `<img src="${p.image_url}" alt="${esc(p.name)}" loading="lazy" />` : `<div class="media-placeholder"></div>`}
         ${p.video_url ? `<video src="${p.video_url}" muted loop playsinline class="hover-video"></video>` : ""}
         ${badge}
-      </div>
+      </a>
       <div class="body">
-        <h3>${esc(p.name)}</h3>
+        <h3><a href="/san-pham/${encodeURIComponent(p.slug)}">${esc(p.name)}</a></h3>
         ${p.description ? `<p class="description">${esc(p.description)}</p>` : ""}
         ${p.origin_story ? `<p class="origin">${esc(p.origin_story)}</p>` : ""}
         ${p.volume ? `<p class="volume">${esc(p.volume)}</p>` : ""}
@@ -83,7 +84,7 @@ export function comboCardHtml(p: ProductRow): string {
   return `
     <article class="combo-card">
       ${p.badge ? `<span class="badge">${badgeLabel[p.badge] ?? p.badge}</span>` : ""}
-      <h3>${esc(p.name)}</h3>
+      <h3><a href="/san-pham/${encodeURIComponent(p.slug)}">${esc(p.name)}</a></h3>
       <p class="price">${money(p.price)}</p>
       ${
         p.servings
@@ -111,7 +112,7 @@ export function setDetoxCardHtml(p: ProductRow, setNumber: number): string {
     <article class="set-card theme-${p.color_theme ?? "green"}">
       <span class="set-number">SET ${setNumber}</span>
       ${p.badge ? `<span class="badge">${p.badge === "best-seller" ? "Best Seller" : p.badge}</span>` : ""}
-      <h3>${esc(p.name)}</h3>
+      <h3><a href="/san-pham/${encodeURIComponent(p.slug)}">${esc(p.name)}</a></h3>
       <p class="goal">${esc(p.set_goal ?? "")}</p>
       <p class="price">${money(p.price)}<span> / set (7 chai)</span></p>
       <a class="cta" href="/dat-hang?product=${encodeURIComponent(p.slug)}">Chọn set này</a>

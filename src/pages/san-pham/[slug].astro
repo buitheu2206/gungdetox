@@ -1,0 +1,300 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { supabase } from "../../lib/supabase";
+
+// Trang được pre-render tại build time cho mọi sản phẩm hiện có (getStaticPaths),
+// để có URL đẹp (/san-pham/ten-slug) và HTML sẵn có ngay cho SEO/không cần JS.
+// Sản phẩm thêm SAU lần build gần nhất sẽ chưa có trang riêng cho tới khi build lại
+// — đây là đánh đổi chấp nhận được của site tĩnh (không có server để route động thật sự).
+// Script phía client bên dưới sẽ tự fetch lại đúng slug này để cập nhật nếu admin
+// đã sửa nội dung sau lần build, nên KHÔNG cần rebuild chỉ vì sửa giá/mô tả/ảnh.
+export async function getStaticPaths() {
+  const { data } = await supabase.from("products").select("*");
+  return (data ?? []).map((p) => ({ params: { slug: p.slug }, props: { product: p } }));
+}
+
+const { product } = Astro.props;
+
+const badgeLabel: Record<string, string> = {
+  "best-seller": "Best-seller",
+  new: "Mới",
+  sale: "Sale",
+  "out-of-stock": "Tạm hết",
+};
+
+const bottleLabel: Record<string, string> = {
+  glass: "Thủy tinh",
+  plastic: "Nhựa",
+};
+
+const ctaLabel =
+  product.type === "single"
+    ? "Đặt món này"
+    : product.type === "combo"
+      ? "Chọn combo này"
+      : "Chọn set này";
+
+const price = product.type === "single" ? product.price_retail : product.price;
+const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boolean);
+---
+
+<BaseLayout
+  title={`${product.name} — GỪNG DETOX`}
+  description={product.description ?? product.set_goal ?? `${product.name} tại GỪNG DETOX`}
+>
+  <main class="detail-page" data-slug={product.slug}>
+    <nav class="breadcrumb">
+      <a href="/san-pham">Sản phẩm</a> / <span id="bc-name">{product.name}</span>
+    </nav>
+
+    <div class="detail-grid">
+      <div class="gallery">
+        <div class="gallery-main">
+          {
+            images.length > 0 ? (
+              <img id="gallery-main-img" src={images[0]} alt={product.name} />
+            ) : (
+              <div class="media-placeholder" id="gallery-main-img" />
+            )
+          }
+          {product.badge && (
+            <span class={`badge badge-${product.badge}`}>
+              {badgeLabel[product.badge] ?? product.badge}
+            </span>
+          )}
+        </div>
+        {images.length > 1 && (
+          <div class="gallery-thumbs" id="gallery-thumbs">
+            {images.map((src, i) => (
+              <button class="thumb" data-src={src} class:list={{ active: i === 0 }}>
+                <img src={src} alt="" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div class="info">
+        <h1 id="p-name">{product.name}</h1>
+        {product.set_goal && <p class="goal" id="p-goal">{product.set_goal}</p>}
+        {product.description && <p class="description" id="p-description">{product.description}</p>}
+        {product.origin_story && <p class="origin" id="p-origin">{product.origin_story}</p>}
+
+        <div class="meta-list" id="p-meta">
+          {product.volume && <p><strong>Quy cách:</strong> {product.volume}</p>}
+          {product.servings && (
+            <p>
+              <strong>Số lần uống:</strong> {product.servings}
+              {product.delivery_schedule ? ` · giao ${product.delivery_schedule}` : ""}
+            </p>
+          )}
+          {product.bottle_options?.length > 0 && (
+            <p>
+              <strong>Loại chai:</strong>{" "}
+              {product.bottle_options.map((o: string) => bottleLabel[o] ?? o).join(", ")}
+            </p>
+          )}
+        </div>
+
+        <p class="price" id="p-price">
+          {price != null ? `${Number(price).toLocaleString("vi-VN")}đ` : "Đang cập nhật giá"}
+        </p>
+
+        <a class="btn-primary" id="p-cta" href={`/dat-hang?product=${encodeURIComponent(product.slug)}`}>
+          {ctaLabel}
+        </a>
+      </div>
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  import { supabase } from "../../lib/supabase";
+
+  const bottleLabel: Record<string, string> = { glass: "Thủy tinh", plastic: "Nhựa" };
+  const page = document.querySelector(".detail-page") as HTMLElement;
+  const slug = page?.dataset.slug;
+  if (!slug) throw new Error("missing slug");
+
+  // Chuyển ảnh khi bấm thumbnail
+  document.getElementById("gallery-thumbs")?.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest(".thumb") as HTMLButtonElement | null;
+    if (!btn) return;
+    const mainImg = document.getElementById("gallery-main-img") as HTMLImageElement;
+    mainImg.src = btn.dataset.src!;
+    document.querySelectorAll(".thumb").forEach((t) => t.classList.remove("active"));
+    btn.classList.add("active");
+  });
+
+  // Fetch lại đúng sản phẩm này để cập nhật nếu admin đã sửa sau lần build gần nhất
+  supabase
+    .from("products")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle()
+    .then(({ data: p }) => {
+      if (!p) return; // sản phẩm đã bị xoá sau build — giữ nguyên nội dung cũ, không báo lỗi
+      const setText = (id: string, value?: string | null) => {
+        const el = document.getElementById(id);
+        if (el && value) el.textContent = value;
+      };
+      document.title = `${p.name} — GỪNG DETOX`;
+      setText("bc-name", p.name);
+      setText("p-name", p.name);
+      setText("p-goal", p.set_goal);
+      setText("p-description", p.description);
+      setText("p-origin", p.origin_story);
+
+      const price = p.type === "single" ? p.price_retail : p.price;
+      const priceEl = document.getElementById("p-price");
+      if (priceEl) {
+        priceEl.textContent =
+          price != null ? `${Number(price).toLocaleString("vi-VN")}đ` : "Đang cập nhật giá";
+      }
+
+      const images = [p.image_url, ...(p.gallery_images ?? [])].filter(Boolean);
+      if (images.length > 0) {
+        const mainImg = document.getElementById("gallery-main-img") as HTMLImageElement;
+        if (mainImg?.tagName === "IMG") mainImg.src = images[0];
+      }
+    });
+</script>
+
+<style>
+  .detail-page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+
+  .breadcrumb {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1.2rem;
+  }
+
+  .breadcrumb a {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+  }
+
+  @media (max-width: 720px) {
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .gallery-main {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--color-primary-light), var(--color-bg-warm));
+    box-shadow: var(--shadow-md);
+  }
+
+  .gallery-main img,
+  .gallery-main .media-placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .badge {
+    position: absolute;
+    top: 0.8rem;
+    left: 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    color: #fff;
+    background: var(--color-primary);
+  }
+
+  .badge-sale {
+    background: var(--color-accent);
+  }
+
+  .badge-new {
+    background: #2563eb;
+  }
+
+  .gallery-thumbs {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+  }
+
+  .thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 2px solid transparent;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+  }
+
+  .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .thumb.active {
+    border-color: var(--color-primary);
+  }
+
+  .info h1 {
+    margin-bottom: 0.4rem;
+  }
+
+  .goal {
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+
+  .description,
+  .origin {
+    color: var(--color-text);
+  }
+
+  .origin {
+    font-style: italic;
+    color: var(--color-primary);
+  }
+
+  .meta-list p {
+    margin: 0.3rem 0;
+    font-size: 0.9rem;
+  }
+
+  .price {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-secondary);
+    margin: 1rem 0;
+  }
+
+  .btn-primary {
+    display: inline-block;
+    background: var(--color-primary);
+    color: #fff;
+    text-decoration: none;
+    padding: 0.8rem 1.8rem;
+    border-radius: 999px;
+    font-weight: 600;
+    box-shadow: 0 8px 20px rgba(78, 103, 53, 0.3);
+  }
+</style>
