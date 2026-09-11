@@ -1,0 +1,190 @@
+---
+// Props theo schema bảng `products` (type='single') — mục 8.3
+interface Props {
+  name: string;
+  description?: string | null;
+  originStory?: string | null;
+  volume?: string | null;
+  priceRetail?: number | null;
+  badge?: string | null;
+  imageUrl?: string | null;
+  videoUrl?: string | null;
+  inStock?: boolean;
+}
+
+const {
+  name,
+  description,
+  originStory,
+  volume,
+  priceRetail,
+  badge,
+  imageUrl,
+  videoUrl,
+  inStock = true,
+} = Astro.props;
+
+const badgeLabel: Record<string, string> = {
+  "best-seller": "Best-seller",
+  new: "Mới",
+  sale: "Sale",
+  "out-of-stock": "Tạm hết",
+};
+
+const formattedPrice = priceRetail
+  ? `${priceRetail.toLocaleString("vi-VN")}đ`
+  : "Đang cập nhật giá";
+---
+
+<article class="product-card" class:list={{ "out-of-stock": !inStock }}>
+  <div class="media">
+    {
+      imageUrl ? (
+        <img src={imageUrl} alt={name} loading="lazy" />
+      ) : (
+        <div class="media-placeholder" aria-hidden="true" />
+      )
+    }
+    {videoUrl && <video src={videoUrl} muted loop playsinline class="hover-video" />}
+    {badge && <span class={`badge badge-${badge}`}>{badgeLabel[badge] ?? badge}</span>}
+  </div>
+
+  <div class="body">
+    <h3>{name}</h3>
+    {description && <p class="description">{description}</p>}
+    {originStory && <p class="origin">{originStory}</p>}
+    {volume && <p class="volume">{volume}</p>}
+
+    <div class="footer-row">
+      <span class="price">{formattedPrice}</span>
+      <a class="cta" href={`/dat-hang?product=${encodeURIComponent(name)}`}>
+        Đặt món này
+      </a>
+    </div>
+  </div>
+</article>
+
+<style>
+  .product-card {
+    background: #fff;
+    border: 1px solid var(--color-bg-alt);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.15s ease;
+  }
+
+  .product-card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  .product-card.out-of-stock {
+    opacity: 0.6;
+  }
+
+  .media {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: var(--color-bg-alt);
+  }
+
+  .media img,
+  .media-placeholder,
+  .hover-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .hover-video {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .media:hover .hover-video {
+    opacity: 1;
+  }
+
+  .badge {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    color: #fff;
+    background: var(--color-primary);
+  }
+
+  .badge-sale {
+    background: var(--color-accent);
+  }
+
+  .badge-new {
+    background: #2563eb;
+  }
+
+  .badge-out-of-stock {
+    background: #6b7280;
+  }
+
+  .body {
+    padding: 0.9rem 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1;
+  }
+
+  .body h3 {
+    font-size: 1.05rem;
+    margin: 0;
+  }
+
+  .description,
+  .origin,
+  .volume {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--color-text);
+  }
+
+  .origin {
+    font-style: italic;
+    color: var(--color-primary);
+  }
+
+  .footer-row {
+    margin-top: auto;
+    padding-top: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .price {
+    font-weight: 700;
+    color: var(--color-secondary);
+  }
+
+  .cta {
+    background: var(--color-primary);
+    color: #fff;
+    text-decoration: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .cta:hover {
+    background: var(--color-primary-dark);
+  }
+</style>

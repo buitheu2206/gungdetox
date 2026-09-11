@@ -1,0 +1,120 @@
+---
+// Gác cổng đăng nhập dùng chung cho /admin/don-hang, /admin/san-pham, /admin/blog — mục 6.2.2
+// Vì site là static, việc kiểm tra phiên đăng nhập chỉ làm được ở phía trình duyệt (client-side).
+---
+
+<div id="admin-login-gate">
+  <form id="admin-login-form" class="admin-login-form">
+    <h2>Đăng nhập quản trị</h2>
+    <input type="email" name="email" placeholder="Email" required />
+    <input type="password" name="password" placeholder="Mật khẩu" required />
+    <button type="submit">Đăng nhập</button>
+    <p id="admin-login-error" class="error" hidden></p>
+  </form>
+
+  <div id="admin-content" hidden>
+    <button id="admin-logout" class="logout-btn">Đăng xuất</button>
+    <slot />
+  </div>
+</div>
+
+<script>
+  import { supabase } from "../lib/supabase";
+
+  const loginForm = document.getElementById("admin-login-form") as HTMLFormElement;
+  const errorEl = document.getElementById("admin-login-error") as HTMLParagraphElement;
+  const contentEl = document.getElementById("admin-content") as HTMLDivElement;
+  const logoutBtn = document.getElementById("admin-logout") as HTMLButtonElement;
+
+  function showLoggedIn() {
+    loginForm.hidden = true;
+    contentEl.hidden = false;
+  }
+
+  function showLoggedOut() {
+    loginForm.hidden = false;
+    contentEl.hidden = true;
+  }
+
+  // Kiểm tra phiên đăng nhập hiện có lúc trang tải
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (session) {
+    showLoggedIn();
+  } else {
+    showLoggedOut();
+  }
+
+  loginForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorEl.hidden = true;
+    const formData = new FormData(loginForm);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      errorEl.textContent = "Sai email hoặc mật khẩu.";
+      errorEl.hidden = false;
+      return;
+    }
+    showLoggedIn();
+  });
+
+  logoutBtn?.addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    showLoggedOut();
+  });
+</script>
+
+<style>
+  .admin-login-form {
+    max-width: 320px;
+    margin: 4rem auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    padding: 1.5rem;
+    background: var(--color-bg-alt);
+    border-radius: 12px;
+  }
+
+  .admin-login-form h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.2rem;
+  }
+
+  .admin-login-form input {
+    padding: 0.55rem 0.7rem;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-size: 0.95rem;
+  }
+
+  .admin-login-form button {
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .error {
+    color: var(--color-accent);
+    font-size: 0.85rem;
+    margin: 0;
+  }
+
+  .logout-btn {
+    background: none;
+    border: 1px solid var(--color-bg-alt);
+    border-radius: 8px;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    float: right;
+    margin-bottom: 1rem;
+  }
+</style>

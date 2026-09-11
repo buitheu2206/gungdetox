@@ -1,0 +1,62 @@
+---
+// Widget cố định 2 nút Zalo + Messenger, ưu tiên ngang nhau — mục 6.1 section "Widget cố định"
+---
+
+<div class="floating-contact">
+  <a
+    class="fab fab-zalo"
+    href="https://zalo.me/0888267009"
+    target="_blank"
+    rel="noopener"
+    aria-label="Chat Zalo"
+  >
+    Zalo
+  </a>
+  <a
+    class="fab fab-messenger"
+    href="https://m.me/gungdetox"
+    target="_blank"
+    rel="noopener"
+    aria-label="Nhắn Messenger"
+  >
+    Messenger
+  </a>
+</div>
+
+<style>
+  .floating-contact {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    z-index: 50;
+  }
+
+  .fab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1rem;
+    border-radius: 999px;
+    text-decoration: none;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .fab-zalo {
+    background: #0068ff;
+  }
+
+  .fab-messenger {
+    background: var(--color-primary);
+  }
+
+  .fab:hover {
+    filter: brightness(1.08);
+  }
+</style>

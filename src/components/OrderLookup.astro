@@ -1,0 +1,128 @@
+---
+// Tra cứu đơn hàng + số chai đã trả bằng SĐT — mục 6.3 (section 5), 8.5
+---
+
+<section class="order-lookup" id="order-lookup">
+  <h3>Tra cứu đơn hàng</h3>
+  <p class="hint">Nhập số điện thoại đã dùng khi đặt hàng</p>
+
+  <form id="lookup-form">
+    <input
+      type="tel"
+      name="phone"
+      placeholder="Số điện thoại"
+      pattern="0[0-9]{9}"
+      title="Số điện thoại Việt Nam hợp lệ (10 số, bắt đầu bằng 0)"
+      required
+    />
+    <button type="submit">Tra cứu</button>
+  </form>
+
+  <div id="lookup-result" hidden></div>
+</section>
+
+<script>
+  import { supabase } from "../lib/supabase";
+
+  const statusLabel: Record<string, string> = {
+    processing: "Đang xử lý",
+    delivering: "Đang giao",
+    delivered: "Đã giao",
+    cancelled: "Đã huỷ",
+  };
+
+  const form = document.getElementById("lookup-form") as HTMLFormElement;
+  const resultBox = document.getElementById("lookup-result") as HTMLDivElement;
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const phone = (new FormData(form).get("phone") as string)?.trim();
+    if (!phone) return;
+
+    resultBox.hidden = false;
+    resultBox.textContent = "Đang tra cứu...";
+
+    const { data: latestOrder, error: latestError } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("phone", phone)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const { data: allOrders } = await supabase
+      .from("orders")
+      .select("bottles_returned")
+      .eq("phone", phone);
+
+    const totalBottlesReturned =
+      allOrders?.reduce((sum, o) => sum + (o.bottles_returned ?? 0), 0) ?? 0;
+
+    if (latestError || !latestOrder) {
+      resultBox.innerHTML = `<p class="not-found">Không tìm thấy đơn hàng nào với số điện thoại này.</p>`;
+      return;
+    }
+
+    resultBox.innerHTML = `
+      <p><strong>Đơn gần nhất:</strong> ${statusLabel[latestOrder.status] ?? latestOrder.status}</p>
+      <p><strong>Đặt lúc:</strong> ${new Date(latestOrder.created_at).toLocaleString("vi-VN")}</p>
+      <p><strong>Tổng số chai đã trả:</strong> ${totalBottlesReturned}</p>
+    `;
+  });
+</script>
+
+<style>
+  .order-lookup {
+    max-width: 420px;
+    margin: 2rem auto;
+    padding: 1.2rem;
+    background: var(--color-bg-alt);
+    border-radius: 12px;
+  }
+
+  .order-lookup h3 {
+    margin: 0 0 0.2rem;
+  }
+
+  .hint {
+    margin: 0 0 0.8rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+
+  #lookup-form {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  #lookup-form input {
+    flex: 1;
+    padding: 0.55rem 0.7rem;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-size: 0.95rem;
+  }
+
+  #lookup-form button {
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.55rem 1rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  #lookup-result {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+  }
+
+  #lookup-result p {
+    margin: 0.2rem 0;
+  }
+
+  .not-found {
+    color: var(--color-accent);
+  }
+</style>

@@ -1,0 +1,92 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <strong>GỪNG DETOX</strong>
+      <p>SỐNG XANH - SỐNG KHỎE</p>
+      <div class="socials">
+        <a href="https://facebook.com/gungdetox" target="_blank" rel="noopener">Facebook</a>
+        <a href="https://instagram.com/gungdetox.saigon" target="_blank" rel="noopener">Instagram</a>
+      </div>
+    </div>
+
+    <div class="footer-col">
+      <strong>Chính sách</strong>
+      <a href="/chinh-sach/doi-tra-chai">Đổi trả chai refill</a>
+      <a href="/chinh-sach/giao-hang">Giao hàng theo tuần</a>
+      <a href="/chinh-sach/thanh-toan">Thanh toán</a>
+    </div>
+
+    <div class="footer-col">
+      <strong>Thanh toán</strong>
+      <p class="payment-note">Chuyển khoản ngân hàng · Ví điện tử</p>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>© {year} GỪNG DETOX. All rights reserved.</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: var(--color-bg-alt);
+    color: var(--color-text);
+    margin-top: 3rem;
+  }
+
+  .footer-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+  }
+
+  .footer-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .footer-col strong {
+    font-family: var(--font-display);
+    color: var(--color-secondary);
+    margin-bottom: 0.3rem;
+  }
+
+  .footer-col a {
+    color: var(--color-text);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+
+  .footer-col a:hover {
+    color: var(--color-primary);
+  }
+
+  .socials {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .payment-note {
+    font-size: 0.85rem;
+    margin: 0;
+  }
+
+  .footer-bottom {
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.8rem;
+  }
+
+  .footer-bottom p {
+    margin: 0;
+  }
+</style>

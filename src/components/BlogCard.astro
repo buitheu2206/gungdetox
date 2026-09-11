@@ -1,0 +1,105 @@
+---
+// Props theo schema bảng `posts` — mục 8.4
+interface Props {
+  slug: string;
+  title: string;
+  tag?: string | null;
+  readTime?: string | null;
+  imageUrl?: string | null;
+  videoUrl?: string | null;
+  publishedAt?: string | null;
+}
+
+const { slug, title, tag, readTime, imageUrl, videoUrl, publishedAt } = Astro.props;
+
+const formattedDate = publishedAt
+  ? new Date(publishedAt).toLocaleDateString("vi-VN")
+  : null;
+---
+
+<a class="blog-card" href={`/blog/${slug}`}>
+  <div class="media">
+    {
+      imageUrl ? (
+        <img src={imageUrl} alt={title} loading="lazy" />
+      ) : (
+        <div class="media-placeholder" aria-hidden="true" />
+      )
+    }
+    {videoUrl && <video src={videoUrl} muted loop playsinline class="hover-video" />}
+  </div>
+  <div class="body">
+    {tag && <span class="tag">{tag}</span>}
+    <h3>{title}</h3>
+    <p class="meta">
+      {formattedDate}
+      {readTime ? ` · ${readTime}` : ""}
+    </p>
+  </div>
+</a>
+
+<style>
+  .blog-card {
+    display: block;
+    background: #fff;
+    border: 1px solid var(--color-bg-alt);
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .blog-card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  .media {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    background: var(--color-bg-alt);
+  }
+
+  .media img,
+  .media-placeholder,
+  .hover-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .hover-video {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .blog-card:hover .hover-video {
+    opacity: 1;
+  }
+
+  .body {
+    padding: 0.9rem 1rem 1.1rem;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+
+  h3 {
+    margin: 0 0 0.3rem;
+    font-size: 1.05rem;
+  }
+
+  .meta {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+</style>

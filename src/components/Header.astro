@@ -1,0 +1,152 @@
+---
+const navItems = [
+  { href: "/san-pham", label: "Sản phẩm" },
+  { href: "/dat-hang", label: "Đặt hàng" },
+  { href: "/quy-trinh", label: "Giới thiệu" },
+  { href: "/blog", label: "Blog" },
+  { href: "/lien-he", label: "Liên hệ" },
+];
+---
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="/" class="brand">
+      <img src="/images/brand/logo.jpg" alt="GỪNG DETOX" width="44" height="44" />
+      <span class="brand-text">
+        <strong>GỪNG DETOX</strong>
+        <small>SỐNG XANH - SỐNG KHỎE</small>
+      </span>
+    </a>
+
+    <button
+      class="nav-toggle"
+      aria-label="Mở menu"
+      aria-expanded="false"
+      aria-controls="site-nav"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <nav id="site-nav" class="site-nav">
+      {navItems.map((item) => (
+        <a href={item.href}>{item.label}</a>
+      ))}
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-bg-alt);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+
+  .header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+    color: var(--color-secondary);
+  }
+
+  .brand img {
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+
+  .brand-text strong {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+  }
+
+  .brand-text small {
+    font-size: 0.65rem;
+    letter-spacing: 0.04em;
+    color: var(--color-primary);
+  }
+
+  .site-nav {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .site-nav a {
+    text-decoration: none;
+    color: var(--color-text);
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+
+  .site-nav a:hover {
+    color: var(--color-primary);
+  }
+
+  .nav-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.4rem;
+  }
+
+  .nav-toggle span {
+    width: 22px;
+    height: 2px;
+    background: var(--color-secondary);
+  }
+
+  @media (max-width: 768px) {
+    .nav-toggle {
+      display: flex;
+    }
+
+    .site-nav {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--color-bg);
+      flex-direction: column;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--color-bg-alt);
+      display: none;
+    }
+
+    .site-nav.open {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  const toggle = document.querySelector(".nav-toggle");
+  const nav = document.getElementById("site-nav");
+
+  toggle?.addEventListener("click", () => {
+    const isOpen = nav?.classList.toggle("open");
+    toggle.setAttribute("aria-expanded", String(Boolean(isOpen)));
+  });
+</script>

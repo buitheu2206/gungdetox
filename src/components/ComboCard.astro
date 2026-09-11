@@ -1,0 +1,137 @@
+---
+// Props theo schema bảng `products` (type='combo') — mục 8.3
+interface Props {
+  name: string;
+  price: number;
+  servings?: number | null;
+  deliverySchedule?: string | null;
+  bottleOptions?: string[] | null;
+  note?: string | null;
+  badge?: string | null;
+}
+
+const {
+  name,
+  price,
+  servings,
+  deliverySchedule,
+  bottleOptions = [],
+  note = "Giá chưa gồm phí ship",
+  badge,
+} = Astro.props;
+
+const bottleLabel: Record<string, string> = {
+  glass: "Thủy tinh",
+  plastic: "Nhựa",
+};
+---
+
+<article class="combo-card">
+  {badge && <span class="badge">{badge === "best-seller" ? "Best-seller" : badge}</span>}
+  <h3>{name}</h3>
+  <p class="price">{price.toLocaleString("vi-VN")}đ</p>
+
+  {servings && <p class="meta">{servings} lần uống{deliverySchedule ? ` · giao ${deliverySchedule}` : ""}</p>}
+
+  {bottleOptions.length > 0 && (
+    <fieldset class="bottle-options">
+      <legend>Chọn loại chai</legend>
+      {bottleOptions.map((option, i) => (
+        <label>
+          <input type="radio" name={`bottle-${name}`} value={option} checked={i === 0} />
+          {bottleLabel[option] ?? option}
+        </label>
+      ))}
+    </fieldset>
+  )}
+
+  <p class="note">{note}</p>
+
+  <a class="cta" href={`/dat-hang?product=${encodeURIComponent(name)}`}>
+    Chọn combo này
+  </a>
+</article>
+
+<style>
+  .combo-card {
+    position: relative;
+    background: #fff;
+    border: 1px solid var(--color-bg-alt);
+    border-radius: 12px;
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .badge {
+    position: absolute;
+    top: -0.6rem;
+    left: 1rem;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+  }
+
+  h3 {
+    margin: 0.4rem 0 0;
+  }
+
+  .price {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--color-secondary);
+    margin: 0;
+  }
+
+  .meta {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+
+  .bottle-options {
+    border: none;
+    padding: 0;
+    margin: 0.3rem 0;
+    display: flex;
+    gap: 1rem;
+  }
+
+  .bottle-options legend {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+    padding: 0;
+  }
+
+  .bottle-options label {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.9rem;
+  }
+
+  .note {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  .cta {
+    margin-top: 0.4rem;
+    background: var(--color-primary);
+    color: #fff;
+    text-decoration: none;
+    text-align: center;
+    padding: 0.55rem;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  .cta:hover {
+    background: var(--color-primary-dark);
+  }
+</style>

@@ -1,0 +1,107 @@
+---
+// Props cho 1 trong 5 SET DETOX TỰ NHIÊN — mục 6.2.1
+interface Props {
+  setNumber: number;
+  name: string;
+  goal: string;
+  price: number;
+  badge?: string | null;
+  colorTheme?: string | null;
+}
+
+const { setNumber, name, goal, price, badge, colorTheme = "green" } = Astro.props;
+---
+
+<article class={`set-card theme-${colorTheme}`}>
+  <span class="set-number">SET {setNumber}</span>
+  {badge && <span class="badge">{badge === "best-seller" ? "Best Seller" : badge}</span>}
+
+  <h3>{name}</h3>
+  <p class="goal">{goal}</p>
+  <p class="price">{price.toLocaleString("vi-VN")}đ<span> / set (7 chai)</span></p>
+
+  <a class="cta" href={`/dat-hang?product=${encodeURIComponent(name)}`}>
+    Chọn set này
+  </a>
+</article>
+
+<style>
+  .set-card {
+    --theme-color: var(--color-primary);
+    border-top: 5px solid var(--theme-color);
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  }
+
+  .theme-green {
+    --theme-color: #2e7d32;
+  }
+  .theme-yellow {
+    --theme-color: #d4a017;
+  }
+  .theme-red {
+    --theme-color: var(--color-accent);
+  }
+  .theme-orange {
+    --theme-color: #e07b1a;
+  }
+  .theme-mix {
+    --theme-color: #7c3aed;
+  }
+
+  .set-number {
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--theme-color);
+    letter-spacing: 0.05em;
+  }
+
+  .badge {
+    align-self: flex-start;
+    background: var(--theme-color);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+  }
+
+  h3 {
+    margin: 0.2rem 0 0;
+  }
+
+  .goal {
+    font-size: 0.85rem;
+    margin: 0;
+    color: var(--color-text);
+  }
+
+  .price {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--color-secondary);
+    margin: 0.3rem 0 0;
+  }
+
+  .price span {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: #6b7280;
+  }
+
+  .cta {
+    margin-top: 0.5rem;
+    background: var(--theme-color);
+    color: #fff;
+    text-decoration: none;
+    text-align: center;
+    padding: 0.55rem;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+</style>
