@@ -635,6 +635,8 @@ Lưu ý: một số bài đăng ghi combo Ginger 3 tháng là 1.500K, có 1 bài
 ### 9.3 Kho ảnh/video sản phẩm thật (đã có sẵn, khỏi cần chụp lại)
 Trong `facebook-gungdetox-11_09_2026-8rgEldK3/this_profile's_activity_across_facebook/posts/media/` có **703 ảnh + 32 video** thật từ các bài đăng — đủ để làm media cho trang Sản phẩm, Blog, Trang chủ mà không cần chụp mới ngay từ Phase 1.
 
+**✅ Đã dùng (11/09/2026)**: chọn và gắn được ảnh thật cho 6/8 sản phẩm lẻ (`ginger-shot`, `bia-gung`, `juice-ep-tuoi`, `smoothies-dong-lanh` *(ảnh tạm — bát trái cây cắt sẵn, không phải ảnh gói smoothie đông lạnh thật)*, `kombucha`, `cu-den-gung-ngam`) + 1 ảnh lifestyle (`kitchen-lifestyle.webp`, dùng ở trang Quy trình). Đã nén sang WebP (giảm 60-70% dung lượng), cập nhật `image_url` trực tiếp trong Supabase và đồng bộ vào `supabase/seed.mjs`. Còn **`sua-hat-tuoi` và `coco-matcha` chưa tìm được ảnh phù hợp** trong kho — đang tạm dùng placeholder gradient+icon, cần rà thêm hoặc chờ chủ tiệm chụp bổ sung 2 sản phẩm này khi có ảnh mới. Riêng ảnh poster có nhãn tiếng Nga/thương hiệu "ANH NGỌC" trong kho **không dùng** vì không thuộc bộ nhận diện chính (đã ghi chú từ mục 5).
+
 ### 9.4 ⚠️ Lưu ý bảo mật quan trọng — dữ liệu riêng tư khách hàng
 Cùng trong file export đó có thư mục `messages/inbox/` chứa **608 cuộc trò chuyện Messenger riêng tư với khách hàng thật** (tên, có thể kèm SĐT/địa chỉ trong nội dung chat). Đây là dữ liệu cá nhân của bên thứ ba, **không được**:
 - Đưa vào code/nội dung website
