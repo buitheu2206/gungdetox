@@ -17,7 +17,7 @@ import OrderLookup from "../components/OrderLookup.astro";
       <li data-step="4">Xác nhận</li>
     </ol>
 
-    <form id="order-form">
+    <form id="order-form" novalidate>
       <!-- Bước 1 — Sản phẩm -->
       <section class="step" data-step="1">
         <h2>Bước 1 — Sản phẩm</h2>
@@ -73,7 +73,13 @@ import OrderLookup from "../components/OrderLookup.astro";
           </label>
           <label>
             Số điện thoại
-            <input type="tel" id="phone" pattern="0[0-9]{9}" required />
+            <input
+              type="tel"
+              id="phone"
+              pattern="0[0-9]{9}"
+              title="Số điện thoại Việt Nam hợp lệ: đúng 10 số, bắt đầu bằng 0, không có khoảng trắng/dấu gạch"
+              required
+            />
           </label>
         </div>
         <label>
@@ -385,10 +391,27 @@ import OrderLookup from "../components/OrderLookup.astro";
     `;
   }
 
+  // Cả 4 bước nằm trong 1 <form> duy nhất (chỉ ẩn/hiện qua CSS), nên nếu để trình duyệt
+  // tự validate lúc bấm "Đặt hàng" ở bước 4, các input required của bước 3 (đã ẩn) sẽ
+  // fail validation nhưng trình duyệt KHÔNG focus/hiện được lỗi trên field đang ẩn — kết
+  // quả là nút "Đặt hàng" trông như không phản hồi gì cả, không có thông báo lỗi nào.
+  // Fix: tắt validate tự động của form (novalidate) và tự gọi reportValidity() ngay lúc
+  // rời bước 3 (khi field vẫn đang hiển thị, để lỗi hiện đúng chỗ) trước khi cho qua bước 4.
+  function validateStep3(): boolean {
+    const nameEl = document.getElementById("customer-name") as HTMLInputElement;
+    const phoneEl = document.getElementById("phone") as HTMLInputElement;
+    const addressEl = document.getElementById("address") as HTMLInputElement;
+    // && ngắn mạch: nếu field đầu invalid thì field sau không bị gọi reportValidity()
+    // chồng lên nhau (trình duyệt chỉ hiện được 1 bubble lỗi tại 1 thời điểm).
+    return nameEl.reportValidity() && phoneEl.reportValidity() && addressEl.reportValidity();
+  }
+
   document.querySelectorAll<HTMLButtonElement>("[data-next]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      if (Number(btn.dataset.next) === 2 && cart.length === 0) return;
-      goToStep(Number(btn.dataset.next));
+      const next = Number(btn.dataset.next);
+      if (next === 2 && cart.length === 0) return;
+      if (next === 4 && !validateStep3()) return;
+      goToStep(next);
     });
   });
   document.querySelectorAll<HTMLButtonElement>("[data-back]").forEach((btn) => {
@@ -429,6 +452,13 @@ import OrderLookup from "../components/OrderLookup.astro";
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (cart.length === 0) return;
+    // Phòng trường hợp người dùng tới được bước 4 mà chưa qua kiểm tra ở bước 3
+    // (vd. bấm lùi/tiến bằng nút back của trình duyệt) — quay lại bước 3 để field
+    // lỗi hiển thị đúng chỗ thay vì để nút "Đặt hàng" im lặng không phản hồi.
+    if (!validateStep3()) {
+      goToStep(3);
+      return;
+    }
 
     const bottleType =
       (form.querySelector('input[name="bottle-type"]:checked') as HTMLInputElement)?.value ??
