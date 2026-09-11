@@ -69,6 +69,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </section>
 
     <section class="why">
+      <p class="eyebrow eyebrow-green">🌱 Cam kết chất lượng</p>
       <h2>Vì sao chọn GỪNG</h2>
       <div class="why-grid">
         <div class="surface-card why-card">
@@ -105,6 +106,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </section>
 
     <section class="process-section">
+      <p class="eyebrow eyebrow-yellow">⏱️ Quy trình mỗi ngày</p>
       <h2>Quy trình làm mới mỗi ngày</h2>
       <ol class="process-steps">
         <li>
@@ -149,6 +151,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </section>
 
     <section class="featured">
+      <p class="eyebrow eyebrow-red">🔥 Được yêu thích nhất</p>
       <h2>Sản phẩm nổi bật</h2>
       <div class="grid" id="featured-grid">
         <p class="loading">Đang tải...</p>
@@ -158,6 +161,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <section class="set-detox-promo">
       <img src="/images/brand/cover-5-set-detox.jpg" alt="5 Set Detox Tự Nhiên" />
       <div class="promo-text">
+        <p class="eyebrow eyebrow-purple">🎁 Ưu đãi trọn set</p>
         <h2>5 SET DETOX TỰ NHIÊN</h2>
         <p>Giao 7 chai thủy tinh — thanh lọc cơ thể — tươi sạch mỗi ngày.</p>
         <a class="btn-primary" href="/san-pham#combo">Xem các gói</a>
@@ -323,6 +327,26 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     margin-bottom: 1rem;
   }
 
+  .eyebrow-green {
+    color: var(--c-green);
+    background: color-mix(in srgb, var(--c-green) 16%, #fff);
+  }
+
+  .eyebrow-yellow {
+    color: var(--c-yellow);
+    background: color-mix(in srgb, var(--c-yellow) 20%, #fff);
+  }
+
+  .eyebrow-red {
+    color: var(--c-red);
+    background: color-mix(in srgb, var(--c-red) 14%, #fff);
+  }
+
+  .eyebrow-purple {
+    color: var(--c-purple);
+    background: color-mix(in srgb, var(--c-purple) 16%, #fff);
+  }
+
   .hero h1 {
     font-size: clamp(2.2rem, 5vw, 3.2rem);
   }
@@ -398,6 +422,24 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   .story h2 {
     max-width: 640px;
     margin: 0 auto 2rem;
+  }
+
+  .story h2::after {
+    margin-left: auto;
+    margin-right: auto;
+    background: var(--c-orange);
+  }
+
+  .why h2::after {
+    background: var(--c-green);
+  }
+
+  .process-section h2::after {
+    background: var(--c-yellow);
+  }
+
+  .set-detox-promo h2::after {
+    background: var(--c-purple);
   }
 
   .story-row {
@@ -529,7 +571,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   /* Quy trình + chai refill */
   .process-section {
-    background: var(--color-bg-warm);
+    background: linear-gradient(160deg, var(--color-bg-warm), #fdf3e0 70%);
     border-radius: var(--radius-lg);
     padding: 2.5rem;
   }
@@ -634,6 +676,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     border-left: 4px solid var(--color-accent);
   }
 
+  .featured {
+    background: linear-gradient(160deg, #fdf1e6, #fff 60%);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+  }
+
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -713,7 +761,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   .quick-contact {
     text-align: center;
-    background: var(--color-primary);
+    background: linear-gradient(120deg, var(--color-primary), var(--color-primary-dark) 70%);
     color: #fff;
     border-radius: var(--radius-lg);
     padding: 2rem 1.5rem;
