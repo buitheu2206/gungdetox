@@ -39,21 +39,21 @@ const packages = [
 ];
 
 const included = [
-  "Chuyển giao toàn bộ menu & công thức",
-  "Hướng dẫn pha chế trực tiếp tại GỪNG DETOX (03 ngày)",
-  "Hướng dẫn sơ chế & bảo quản nguyên liệu",
-  "Tài liệu công thức & định lượng",
-  "Quyền sử dụng thương hiệu GỪNG DETOX",
-  "Thiết lập Fanpage Facebook",
-  "Thiết lập TikTok",
-  "Thiết lập Instagram",
-  "Thiết lập Threads",
-  "Thiết lập bộ nhận diện thương hiệu cơ bản",
-  "Hỗ trợ setup Google Maps",
-  "Hỗ trợ chạy quảng cáo Facebook",
-  "Tối ưu quảng cáo trong 01 tháng (không bao gồm ngân sách ads)",
-  "Tư vấn nội dung đăng bài trong 01 tháng",
-  "Hỗ trợ online sau chuyển giao",
+  { icon: "📖", text: "Chuyển giao toàn bộ menu & công thức" },
+  { icon: "🧃", text: "Hướng dẫn pha chế trực tiếp tại GỪNG DETOX (03 ngày)" },
+  { icon: "🍎", text: "Hướng dẫn sơ chế & bảo quản nguyên liệu" },
+  { icon: "📋", text: "Tài liệu công thức & định lượng" },
+  { icon: "🛡️", text: "Quyền sử dụng thương hiệu GỪNG DETOX" },
+  { icon: "📘", text: "Thiết lập Fanpage Facebook" },
+  { icon: "🎵", text: "Thiết lập TikTok" },
+  { icon: "📷", text: "Thiết lập Instagram" },
+  { icon: "🧵", text: "Thiết lập Threads" },
+  { icon: "🎨", text: "Thiết lập bộ nhận diện thương hiệu cơ bản" },
+  { icon: "📍", text: "Hỗ trợ setup Google Maps" },
+  { icon: "📢", text: "Hỗ trợ chạy quảng cáo Facebook" },
+  { icon: "📈", text: "Tối ưu quảng cáo trong 01 tháng (không bao gồm ngân sách ads)" },
+  { icon: "📝", text: "Tư vấn nội dung đăng bài trong 01 tháng" },
+  { icon: "🎧", text: "Hỗ trợ online sau chuyển giao" },
 ];
 ---
 
@@ -137,7 +137,7 @@ const included = [
       <p class="eyebrow eyebrow-yellow">📦 Chuyển giao trọn gói</p>
       <h2>Bạn sẽ nhận được gì</h2>
       <ul class="included-list">
-        {included.map((item) => <li>✅ {item}</li>)}
+        {included.map((item) => <li><span class="included-icon">{item.icon}</span> {item.text}</li>)}
       </ul>
     </section>
 
@@ -450,11 +450,20 @@ const included = [
   }
 
   .included-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
     background: #fff;
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-sm);
     padding: 0.65rem 0.9rem;
     font-size: 0.9rem;
+  }
+
+  .included-icon {
+    flex-shrink: 0;
+    font-size: 1.15rem;
+    line-height: 1;
   }
 
   .payment-policy {
