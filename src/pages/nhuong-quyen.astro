@@ -63,21 +63,20 @@ const included = [
 >
   <main class="franchise-page">
     <section class="franchise-hero">
-      <p class="eyebrow eyebrow-green">📣 Thông báo</p>
-      <h1>Tiệm GỪNG DETOX chính thức có Nhượng quyền!</h1>
-      <p class="lead">
-        Cơ hội cho chị em tỉnh muốn khởi nghiệp mô hình đồ uống healthy — thương hiệu uy tín,
-        đã có lượng khách hàng ổn định tại Sài Gòn.
-      </p>
-      <a class="hotline-btn hotline-btn-inline" href="tel:0888267009">📞 0888 267 009</a>
-    </section>
-
-    <section class="announcement-photo">
-      <img
-        src="/images/brand/nhuong-quyen-thong-bao.webp"
-        alt="Thông báo nhượng quyền GỪNG DETOX — chi tiết gói và quyền lợi"
-        loading="lazy"
-      />
+      <div class="franchise-hero-inner">
+        <div class="franchise-hero-text">
+          <p class="eyebrow eyebrow-green">📣 Thông báo</p>
+          <h1>Tiệm GỪNG DETOX chính thức có Nhượng quyền!</h1>
+          <p class="lead">
+            Cơ hội cho chị em tỉnh muốn khởi nghiệp mô hình đồ uống healthy — thương hiệu uy tín,
+            đã có lượng khách hàng ổn định tại Sài Gòn.
+          </p>
+          <a class="hotline-btn hotline-btn-inline" href="tel:0888267009">📞 0888 267 009</a>
+        </div>
+        <div class="franchise-hero-photo">
+          <img src="/images/hero/kitchen-lifestyle.webp" alt="Góc pha chế thật tại GỪNG DETOX" />
+        </div>
+      </div>
     </section>
 
     <section class="features">
@@ -178,17 +177,8 @@ const included = [
 
   .franchise-hero {
     position: relative;
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
     padding-top: 1.5rem;
-    text-align: center;
-    max-width: 680px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .franchise-hero h1::after {
-    margin-left: auto;
-    margin-right: auto;
   }
 
   .franchise-hero::before {
@@ -209,6 +199,36 @@ const included = [
     );
   }
 
+  .franchise-hero-inner {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 2.5rem;
+    align-items: center;
+  }
+
+  .franchise-hero-photo img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    display: block;
+  }
+
+  @media (max-width: 800px) {
+    .franchise-hero-inner {
+      grid-template-columns: 1fr;
+    }
+
+    .franchise-hero-photo {
+      order: -1;
+    }
+
+    .franchise-hero-text {
+      text-align: center;
+    }
+  }
+
   .lead {
     color: var(--color-text-muted);
     font-size: 1.05rem;
@@ -216,20 +236,6 @@ const included = [
 
   .hotline-btn-inline {
     margin-top: 0.5rem;
-  }
-
-  .announcement-photo {
-    text-align: center;
-    max-width: 760px;
-    margin: 0 auto 3rem;
-  }
-
-  .announcement-photo img {
-    width: 100%;
-    height: auto;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    display: block;
   }
 
   .eyebrow {
