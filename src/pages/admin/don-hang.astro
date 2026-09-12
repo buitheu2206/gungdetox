@@ -22,12 +22,6 @@ import AdminLogin from "../../components/AdminLogin.astro";
         <button data-customer="returning" class="chip">Khách quen</button>
       </div>
 
-      <div class="status-filter" id="delivery-day-filter">
-        <button data-delivery-day="all" class="chip active">Mọi ngày giao</button>
-        <button data-delivery-day="thu-4" class="chip">Thứ 4</button>
-        <button data-delivery-day="thu-6" class="chip">Thứ 6</button>
-      </div>
-
       <div class="table-wrap">
         <table id="orders-table">
           <thead>
@@ -38,6 +32,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
               <th>SĐT</th>
               <th>Địa chỉ</th>
               <th>Ngày giao</th>
+              <th>Ghi chú giao hàng</th>
               <th>Sản phẩm</th>
               <th>Chai</th>
               <th>Chai trả</th>
@@ -47,7 +42,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
             </tr>
           </thead>
           <tbody id="orders-body">
-            <tr><td colspan="12">Đang tải...</td></tr>
+            <tr><td colspan="13">Đang tải...</td></tr>
           </tbody>
         </table>
       </div>
@@ -75,30 +70,32 @@ import AdminLogin from "../../components/AdminLogin.astro";
   const tbody = document.getElementById("orders-body")!;
   const statusChips = document.querySelectorAll<HTMLButtonElement>("#status-filter .chip");
   const customerChips = document.querySelectorAll<HTMLButtonElement>("#customer-filter .chip");
-  const deliveryDayChips = document.querySelectorAll<HTMLButtonElement>("#delivery-day-filter .chip");
 
   let allOrders: any[] = [];
   let activeStatus = "all";
   let activeCustomerType: "all" | "new" | "returning" = "all";
-  let activeDeliveryDay: "all" | "thu-4" | "thu-6" = "all";
 
   function itemsSummary(items: any[]) {
     return items.map((i) => `${i.productSlug} × ${i.quantity}`).join(", ");
   }
 
-  // orders chưa có cột delivery_day riêng (không có quyền chạy ALTER TABLE từ đây —
-  // cần Supabase Management API token hoặc mật khẩu DB mà phiên này không có sẵn),
-  // nên đang lấy tạm từ shipping_fee_note — dat-hang.astro luôn ghi đúng theo mẫu
-  // "Giao Thứ 4/Thứ 6 hàng tuần." vào đầu ghi chú này lúc đặt hàng. Đơn cũ (đặt
-  // trước khi có tính năng chọn ngày giao) sẽ không khớp mẫu, trả về null.
-  function extractDeliveryDay(note: string | null | undefined): "thu-4" | "thu-6" | null {
-    if (!note) return null;
-    if (note.includes("Thứ 4")) return "thu-4";
-    if (note.includes("Thứ 6")) return "thu-6";
-    return null;
+  // orders chưa có cột delivery_date/delivery_note riêng (không có quyền chạy ALTER
+  // TABLE từ đây — cần Supabase Management API token hoặc mật khẩu DB mà phiên này
+  // không có sẵn), nên đang trích tạm từ shipping_fee_note — dat-hang.astro luôn ghi
+  // đúng theo mẫu "Giao ngày DD/MM/YYYY [lúc HH:MM]. Ghi chú của khách: ... . Phí ship..."
+  // lúc đặt hàng. Đơn cũ hơn (đặt trước khi có tính năng này) sẽ không khớp mẫu, trả về "—".
+  function extractDeliveryDateTime(note: string | null | undefined): string {
+    if (!note) return "—";
+    const match = note.match(/Giao ngày (.+?)\. Ghi chú của khách:/);
+    return match ? match[1] : "—";
   }
 
-  const deliveryDayLabel: Record<string, string> = { "thu-4": "Thứ 4", "thu-6": "Thứ 6" };
+  function extractDeliveryNote(note: string | null | undefined): string {
+    if (!note) return "—";
+    const match = note.match(/Ghi chú của khách: (.*?)\. Phí ship/);
+    if (!match || match[1] === "(không có)") return "—";
+    return match[1];
+  }
 
   // Khách "quen" = đã có từ 2 đơn trở lên tính đến thời điểm đơn này (kể cả đơn này) — dựa theo
   // toàn bộ đơn trong hệ thống (allOrders), không phải chỉ danh sách đang hiển thị sau khi lọc.
@@ -108,7 +105,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
 
   function render(orders: any[]) {
     if (orders.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="12">Không có đơn nào khớp bộ lọc.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="13">Không có đơn nào khớp bộ lọc.</td></tr>`;
       return;
     }
     tbody.innerHTML = orders
@@ -118,7 +115,8 @@ import AdminLogin from "../../components/AdminLogin.astro";
           orderCountSoFar > 1
             ? `<span class="badge badge-returning">Khách quen (${orderCountSoFar})</span>`
             : `<span class="badge badge-new">Khách mới</span>`;
-        const deliveryDay = extractDeliveryDay(o.shipping_fee_note);
+        const deliveryDateTime = extractDeliveryDateTime(o.shipping_fee_note);
+        const deliveryNote = extractDeliveryNote(o.shipping_fee_note);
         return `
       <tr data-id="${o.id}">
         <td class="code">${orderCode(o.phone, o.id)}</td>
@@ -126,7 +124,8 @@ import AdminLogin from "../../components/AdminLogin.astro";
         <td>${o.customer_name}<br />${customerBadge}</td>
         <td>${o.phone}</td>
         <td>${o.address}, ${o.district}</td>
-        <td>${deliveryDay ? `<span class="badge badge-delivery">${deliveryDayLabel[deliveryDay]}</span>` : "—"}</td>
+        <td>${deliveryDateTime !== "—" ? `<span class="badge badge-delivery">${deliveryDateTime}</span>` : "—"}</td>
+        <td class="delivery-note-cell">${deliveryNote}</td>
         <td>${itemsSummary(o.items)}</td>
         <td>${bottleLabel[o.bottle_type] ?? o.bottle_type}</td>
         <td>${o.bottles_returned ?? 0}</td>
@@ -198,9 +197,6 @@ import AdminLogin from "../../components/AdminLogin.astro";
         if (activeCustomerType === "returning" && !isReturning) return false;
         if (activeCustomerType === "new" && isReturning) return false;
       }
-      if (activeDeliveryDay !== "all" && extractDeliveryDay(o.shipping_fee_note) !== activeDeliveryDay) {
-        return false;
-      }
       return true;
     });
     render(filtered);
@@ -224,22 +220,13 @@ import AdminLogin from "../../components/AdminLogin.astro";
     });
   });
 
-  deliveryDayChips.forEach((chip) => {
-    chip.addEventListener("click", () => {
-      deliveryDayChips.forEach((c) => c.classList.remove("active"));
-      chip.classList.add("active");
-      activeDeliveryDay = (chip.dataset.deliveryDay as "all" | "thu-4" | "thu-6") ?? "all";
-      applyFilters();
-    });
-  });
-
   async function loadOrders() {
     const { data, error } = await supabase
       .from("orders")
       .select("*")
       .order("created_at", { ascending: false });
     if (error) {
-      tbody.innerHTML = `<tr><td colspan="12">Lỗi tải đơn hàng: ${error.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="13">Lỗi tải đơn hàng: ${error.message}</td></tr>`;
       return;
     }
     allOrders = data ?? [];
@@ -337,5 +324,12 @@ import AdminLogin from "../../components/AdminLogin.astro";
   .badge-delivery {
     background: color-mix(in srgb, #2563eb 16%, #fff);
     color: #2563eb;
+    white-space: nowrap;
+  }
+
+  .delivery-note-cell {
+    white-space: normal;
+    max-width: 220px;
+    min-width: 160px;
   }
 </style>

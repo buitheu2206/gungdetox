@@ -45,18 +45,25 @@ import OrderLookup from "../components/OrderLookup.astro";
         <fieldset id="bottle-fieldset">
           <legend>Loại chai</legend>
         </fieldset>
-        <label id="delivery-day-wrap" hidden>
-          Ngày giao hàng ưu tiên (áp dụng cho combo/set)
-          <select id="delivery-day">
-            <option value="thu-2">Thứ 2</option>
-            <option value="thu-3">Thứ 3</option>
-            <option value="thu-4">Thứ 4</option>
-            <option value="thu-5">Thứ 5</option>
-            <option value="thu-6">Thứ 6</option>
-            <option value="thu-7">Thứ 7</option>
-            <option value="chu-nhat">Chủ nhật</option>
-          </select>
+        <div class="form-row">
+          <label>
+            Ngày giao mong muốn
+            <input type="date" id="delivery-date" required />
+          </label>
+          <label>
+            Giờ giao mong muốn (không bắt buộc)
+            <input type="time" id="delivery-time" />
+          </label>
+        </div>
+        <label>
+          Ghi chú giao hàng (không bắt buộc)
+          <textarea
+            id="delivery-note"
+            rows="2"
+            placeholder="VD: gọi trước khi giao, để ở cổng, giao giờ hành chính..."
+          ></textarea>
         </label>
+        <p class="delivery-day-note">🚚 Tiệm giao hàng tất cả các ngày trong tuần.</p>
         <div class="nav-row">
           <button type="button" class="back" data-back="1">Quay lại</button>
           <button type="button" class="next" data-next="3">Tiếp tục</button>
@@ -223,6 +230,11 @@ import OrderLookup from "../components/OrderLookup.astro";
   }
 
   const bottleLabel: Record<string, string> = { glass: "Thủy tinh", plastic: "Nhựa" };
+  function formatDeliveryDate(dateStr: string): string {
+    if (!dateStr) return "";
+    const [y, m, d] = dateStr.split("-");
+    return `${d}/${m}/${y}`;
+  }
 
   let products: ProductRow[] = [];
   let cart: CartItem[] = [];
@@ -234,7 +246,9 @@ import OrderLookup from "../components/OrderLookup.astro";
   const cartEmptyHint = document.getElementById("cart-empty-hint") as HTMLElement;
   const step1Next = document.getElementById("step1-next") as HTMLButtonElement;
   const bottleFieldset = document.getElementById("bottle-fieldset") as HTMLFieldSetElement;
-  const deliveryDayWrap = document.getElementById("delivery-day-wrap") as HTMLElement;
+  const deliveryDateInput = document.getElementById("delivery-date") as HTMLInputElement;
+  const deliveryTimeInput = document.getElementById("delivery-time") as HTMLInputElement;
+  const deliveryNoteInput = document.getElementById("delivery-note") as HTMLTextAreaElement;
   const districtSelect = document.getElementById("district") as HTMLSelectElement;
   const districtWarning = document.getElementById("district-warning") as HTMLElement;
   const orderSummary = document.getElementById("order-summary") as HTMLDivElement;
@@ -372,8 +386,6 @@ import OrderLookup from "../components/OrderLookup.astro";
         bottleFieldset.appendChild(label);
       });
     }
-
-    deliveryDayWrap.hidden = !cartProducts.some((p) => p.type !== "single");
   }
 
   function goToStep(step: number) {
@@ -400,6 +412,8 @@ import OrderLookup from "../components/OrderLookup.astro";
     orderSummary.innerHTML = `
       ${itemLines}
       ${bottleType ? `<p>Loại chai: ${bottleLabel[bottleType] ?? bottleType}</p>` : ""}
+      <p>Ngày giao: ${formatDeliveryDate(deliveryDateInput.value)}${deliveryTimeInput.value ? ` lúc ${deliveryTimeInput.value}` : ""}</p>
+      ${deliveryNoteInput.value ? `<p>Ghi chú: ${deliveryNoteInput.value}</p>` : ""}
       <p>Tạm tính: ${money(cartTotal())} (chưa gồm phí ship)</p>
       <p>Giao tới: ${(document.getElementById("address") as HTMLInputElement).value},
       ${districtSelect.value}</p>
@@ -412,6 +426,10 @@ import OrderLookup from "../components/OrderLookup.astro";
   // quả là nút "Đặt hàng" trông như không phản hồi gì cả, không có thông báo lỗi nào.
   // Fix: tắt validate tự động của form (novalidate) và tự gọi reportValidity() ngay lúc
   // rời bước 3 (khi field vẫn đang hiển thị, để lỗi hiện đúng chỗ) trước khi cho qua bước 4.
+  function validateStep2(): boolean {
+    return deliveryDateInput.reportValidity();
+  }
+
   function validateStep3(): boolean {
     const nameEl = document.getElementById("customer-name") as HTMLInputElement;
     const phoneEl = document.getElementById("phone") as HTMLInputElement;
@@ -425,6 +443,7 @@ import OrderLookup from "../components/OrderLookup.astro";
     btn.addEventListener("click", () => {
       const next = Number(btn.dataset.next);
       if (next === 2 && cart.length === 0) return;
+      if (next === 3 && !validateStep2()) return;
       if (next === 4 && !validateStep3()) return;
       goToStep(next);
     });
@@ -467,9 +486,13 @@ import OrderLookup from "../components/OrderLookup.astro";
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (cart.length === 0) return;
-    // Phòng trường hợp người dùng tới được bước 4 mà chưa qua kiểm tra ở bước 3
-    // (vd. bấm lùi/tiến bằng nút back của trình duyệt) — quay lại bước 3 để field
+    // Phòng trường hợp người dùng tới được bước 4 mà chưa qua kiểm tra ở bước 2/3
+    // (vd. bấm lùi/tiến bằng nút back của trình duyệt) — quay lại đúng bước để field
     // lỗi hiển thị đúng chỗ thay vì để nút "Đặt hàng" im lặng không phản hồi.
+    if (!validateStep2()) {
+      goToStep(2);
+      return;
+    }
     if (!validateStep3()) {
       goToStep(3);
       return;
@@ -494,6 +517,12 @@ import OrderLookup from "../components/OrderLookup.astro";
         bottles_returned:
           Number((document.getElementById("bottles-returned") as HTMLInputElement).value) || 0,
         payment_method: paymentMethod,
+        // orders chưa có cột delivery_date/delivery_time/delivery_note riêng (không có
+        // quyền chạy ALTER TABLE từ phiên này — cần Supabase Management API token hoặc
+        // mật khẩu DB), nên đang ghép tạm vào shipping_fee_note theo mẫu cố định
+        // "Giao ngày DD/MM/YYYY [lúc HH:MM]. Ghi chú của khách: ... ." để admin đọc/trích
+        // xuất lại được (xem admin/don-hang.astro). Nên tách thành cột riêng khi có quyền chạy SQL.
+        shipping_fee_note: `Giao ngày ${formatDeliveryDate(deliveryDateInput.value)}${deliveryTimeInput.value ? ` lúc ${deliveryTimeInput.value}` : ""}. Ghi chú của khách: ${deliveryNoteInput.value.trim() || "(không có)"}. Phí ship tính theo khoảng cách, tiệm sẽ báo lại qua Zalo trước khi giao.`,
       })
       .select()
       .single();
@@ -544,6 +573,9 @@ import OrderLookup from "../components/OrderLookup.astro";
   }
   renderCart();
   renderStep2Options();
+
+  // Không cho chọn ngày giao trong quá khứ.
+  deliveryDateInput.min = new Date().toISOString().slice(0, 10);
 </script>
 
 <style>
@@ -604,17 +636,20 @@ import OrderLookup from "../components/OrderLookup.astro";
   }
 
   .step input,
-  .step select {
+  .step select,
+  .step textarea {
     padding: 0.6rem 0.75rem;
     border-radius: var(--radius-sm);
     border: 1.5px solid #e2ddd0;
     font-weight: 400;
     font-family: var(--font-body);
     transition: border-color 0.15s ease;
+    resize: vertical;
   }
 
   .step input:focus,
-  .step select:focus {
+  .step select:focus,
+  .step textarea:focus {
     outline: none;
     border-color: var(--color-primary);
   }
@@ -874,7 +909,8 @@ import OrderLookup from "../components/OrderLookup.astro";
     margin: 0.2rem 0;
   }
 
-  .shipping-note {
+  .shipping-note,
+  .delivery-day-note {
     font-size: 0.85rem;
     color: var(--color-text);
   }

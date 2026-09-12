@@ -12,6 +12,7 @@ async function placeOrder(page, slug) {
   await page.waitForSelector("#product-select");
   await page.click('[data-next="2"]');
   await page.waitForSelector('[data-step="2"]:not([hidden])');
+await page.fill("#delivery-date", "2026-09-20");
   await page.click('[data-next="3"]');
   await page.waitForSelector('[data-step="3"]:not([hidden])');
   await page.fill("#customer-name", "Test Classification");

@@ -52,6 +52,7 @@ await page.screenshot({ path: ".verify/cart-step1.png", fullPage: true });
 // Proceed through the flow
 await page.click("#step1-next");
 await page.waitForSelector('[data-step="2"]:not([hidden])');
+await page.fill("#delivery-date", "2026-09-20");
 await page.screenshot({ path: ".verify/cart-step2.png", fullPage: true });
 
 await page.click('[data-next="3"]');

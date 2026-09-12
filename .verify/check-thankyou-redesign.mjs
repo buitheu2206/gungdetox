@@ -9,6 +9,7 @@ page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
 await page.goto("http://localhost:4322/dat-hang?product=ginger-shot", { waitUntil: "networkidle" });
 await page.click("#step1-next");
 await page.waitForSelector('[data-step="2"]:not([hidden])');
+await page.fill("#delivery-date", "2026-09-20");
 await page.click('[data-next="3"]');
 await page.waitForSelector('[data-step="3"]:not([hidden])');
 await page.fill("#customer-name", "Thankyou Redesign Test");

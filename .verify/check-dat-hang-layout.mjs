@@ -13,6 +13,7 @@ await page.click("#add-to-cart");
 await page.waitForTimeout(200);
 await page.click("#step1-next");
 await page.waitForSelector('[data-step="2"]:not([hidden])');
+await page.fill("#delivery-date", "2026-09-20");
 await page.click('[data-next="3"]');
 await page.waitForSelector('[data-step="3"]:not([hidden])');
 await page.screenshot({ path: ".verify/dat-hang-step3.png", fullPage: true });

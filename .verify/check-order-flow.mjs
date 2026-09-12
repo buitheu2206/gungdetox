@@ -27,6 +27,7 @@ console.log("Preselected product:", preselected);
 await page.screenshot({ path: ".verify/order-step1.png" });
 await page.click('[data-next="2"]');
 await page.waitForSelector('.step[data-step="2"]:not([hidden])');
+await page.fill("#delivery-date", "2026-09-20");
 await page.screenshot({ path: ".verify/order-step2.png" });
 
 await page.click('[data-next="3"]');
