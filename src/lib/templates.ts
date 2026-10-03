@@ -100,6 +100,7 @@ export function comboCardHtml(p: ProductRow): string {
   const bottleOptions = p.bottle_options ?? [];
   return `
     <article class="combo-card">
+      ${p.image_url ? `<div class="media"><img src="${p.image_url}" alt="${esc(p.name)}" loading="lazy" /></div>` : ""}
       ${p.badge ? `<span class="badge">${badgeLabel[p.badge] ?? p.badge}</span>` : ""}
       <h3><a href="/san-pham/${encodeURIComponent(p.slug)}">${esc(p.name)}</a></h3>
       <p class="price">${money(p.price)}</p>
@@ -120,6 +121,44 @@ export function comboCardHtml(p: ProductRow): string {
       }
       <p class="note">Giá chưa gồm phí ship</p>
       <a class="cta" href="/dat-hang?product=${encodeURIComponent(p.slug)}">Chọn combo này</a>
+    </article>
+  `;
+}
+
+// Gộp nhiều sản phẩm cùng dòng (khác nhau ở số lượng, vd. combo 3/5/7 chai Sữa hạt)
+// thành 1 card duy nhất với nút chọn — thay vì mỗi mức số lượng 1 card riêng.
+// `variants` phải được sắp theo thứ tự muốn hiển thị (vd. servings tăng dần).
+export function comboVariantGroupCardHtml(name: string, variants: ProductRow[]): string {
+  const data = variants.map((p) => ({
+    slug: p.slug,
+    name: p.name,
+    price: p.price,
+    servings: p.servings ?? null,
+    image: p.image_url ?? null,
+  }));
+  const first = variants[0];
+  const badge = first.badge
+    ? `<span class="badge">${badgeLabel[first.badge] ?? first.badge}</span>`
+    : "";
+  return `
+    <article class="combo-card variant-group" data-variants='${esc(JSON.stringify(data))}'>
+      <div class="media">
+        ${first.image_url ? `<img src="${first.image_url}" alt="${esc(name)}" loading="lazy" class="variant-image" />` : `<div class="media-placeholder"></div>`}
+      </div>
+      ${badge}
+      <h3><a href="/san-pham/${encodeURIComponent(first.slug)}" class="variant-link">${esc(name)}</a></h3>
+      <p class="price variant-price">${money(first.price)}</p>
+      <fieldset class="variant-options">
+        <legend>Chọn số chai</legend>
+        ${variants
+          .map(
+            (p, i) =>
+              `<label><input type="radio" name="variant-${esc(first.slug)}" value="${i}" ${i === 0 ? "checked" : ""}/> ${p.servings ? `${p.servings} chai` : esc(p.name)}</label>`
+          )
+          .join("")}
+      </fieldset>
+      <p class="note">Giá chưa gồm phí ship</p>
+      <a class="cta variant-cta" href="/dat-hang?product=${encodeURIComponent(first.slug)}">Chọn combo này</a>
     </article>
   `;
 }

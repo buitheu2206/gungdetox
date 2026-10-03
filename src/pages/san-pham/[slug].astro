@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { supabase } from "../../lib/supabase";
+import { productCardHtml, comboCardHtml, setDetoxCardHtml, type ProductRow } from "../../lib/templates";
 
 // Trang được pre-render tại build time cho mọi sản phẩm hiện có (getStaticPaths),
 // để có URL đẹp (/san-pham/ten-slug) và HTML sẵn có ngay cho SEO/không cần JS.
@@ -10,10 +11,30 @@ import { supabase } from "../../lib/supabase";
 // đã sửa nội dung sau lần build, nên KHÔNG cần rebuild chỉ vì sửa giá/mô tả/ảnh.
 export async function getStaticPaths() {
   const { data } = await supabase.from("products").select("*");
-  return (data ?? []).map((p) => ({ params: { slug: p.slug }, props: { product: p } }));
+  const allProducts = data ?? [];
+  return allProducts.map((p) => ({ params: { slug: p.slug }, props: { product: p, allProducts } }));
 }
 
-const { product } = Astro.props;
+const { product, allProducts } = Astro.props as { product: ProductRow; allProducts: ProductRow[] };
+
+const relatedProducts = allProducts
+  .filter((p) => p.type === product.type && p.slug !== product.slug)
+  .slice(0, 4);
+
+function relatedCardHtml(p: ProductRow, i: number): string {
+  if (p.type === "combo") return comboCardHtml(p);
+  if (p.type === "set") {
+    const match = p.slug.match(/set-(\d+)/);
+    return setDetoxCardHtml(p, match ? Number(match[1]) : i + 1);
+  }
+  return productCardHtml(p);
+}
+
+const trustBadges = [
+  { icon: "🌿", text: "100% nguyên liệu tự nhiên" },
+  { icon: "🚴", text: "Giao theo khung giờ bạn chọn" },
+  { icon: "🚫", text: "Không chất bảo quản" },
+];
 
 const badgeLabel: Record<string, string> = {
   "best-seller": "Best-seller",
@@ -96,15 +117,32 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
           )}
         </div>
 
-        <p class="price" id="p-price">
-          {price != null ? `${Number(price).toLocaleString("vi-VN")}đ` : "Đang cập nhật giá"}
-        </p>
+        <div class="order-box">
+          <p class="price" id="p-price">
+            {price != null ? `${Number(price).toLocaleString("vi-VN")}đ` : "Đang cập nhật giá"}
+          </p>
 
-        <a class="btn-primary" id="p-cta" href={`/dat-hang?product=${encodeURIComponent(product.slug)}`}>
-          {ctaLabel}
-        </a>
+          <a class="btn-primary" id="p-cta" href={`/dat-hang?product=${encodeURIComponent(product.slug)}`}>
+            {ctaLabel}
+          </a>
+
+          <ul class="trust-badges">
+            {trustBadges.map((b) => (
+              <li><span aria-hidden="true">{b.icon}</span> {b.text}</li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
+
+    {
+      relatedProducts.length > 0 && (
+        <section class="related">
+          <h2>Sản phẩm liên quan</h2>
+          <div class="related-grid" set:html={relatedProducts.map((p, i) => relatedCardHtml(p, i)).join("")} />
+        </section>
+      )
+    }
   </main>
 </BaseLayout>
 
@@ -116,8 +154,10 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
   const slug = page?.dataset.slug;
   if (!slug) throw new Error("missing slug");
 
-  // Chuyển ảnh khi bấm thumbnail
-  document.getElementById("gallery-thumbs")?.addEventListener("click", (e) => {
+  // Chuyển ảnh khi bấm thumbnail — gắn trên .gallery (luôn tồn tại) thay vì
+  // #gallery-thumbs, vì dải thumbnail có thể chưa tồn tại lúc build (sản phẩm
+  // lúc đó chỉ có 1 ảnh) và được script bên dưới tự tạo ra sau khi fetch lại.
+  document.querySelector(".gallery")?.addEventListener("click", (e) => {
     const btn = (e.target as HTMLElement).closest(".thumb") as HTMLButtonElement | null;
     if (!btn) return;
     const mainImg = document.getElementById("gallery-main-img") as HTMLImageElement;
@@ -125,6 +165,36 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
     document.querySelectorAll(".thumb").forEach((t) => t.classList.remove("active"));
     btn.classList.add("active");
   });
+
+  function renderThumbs(images: string[]) {
+    const gallery = document.querySelector(".gallery");
+    if (!gallery) return;
+    let thumbs = document.getElementById("gallery-thumbs");
+    if (images.length <= 1) {
+      thumbs?.remove();
+      return;
+    }
+    // Astro chỉ áp style scoped (data-astro-cid-*) cho phần tử render lúc build;
+    // phần tử tạo bằng JS phải tự gắn thêm attribute này thì CSS bên dưới mới
+    // nhận diện được — nếu không, ảnh thumbnail sẽ không bị giới hạn 64x64 và
+    // phá vỡ luôn layout 2 cột (đã gặp lỗi này khi test).
+    const cidAttr = Array.from(gallery.attributes).find((a) => a.name.startsWith("data-astro-cid-"));
+    const cid = cidAttr ? ` ${cidAttr.name}=""` : "";
+
+    if (!thumbs) {
+      thumbs = document.createElement("div");
+      thumbs.id = "gallery-thumbs";
+      thumbs.className = "gallery-thumbs";
+      gallery.appendChild(thumbs);
+    }
+    if (cidAttr) thumbs.setAttribute(cidAttr.name, "");
+    thumbs.innerHTML = images
+      .map(
+        (src, i) =>
+          `<button class="thumb${i === 0 ? " active" : ""}" data-src="${src}"${cid}><img src="${src}" alt=""${cid} /></button>`
+      )
+      .join("");
+  }
 
   // Fetch lại đúng sản phẩm này để cập nhật nếu admin đã sửa sau lần build gần nhất
   supabase
@@ -157,6 +227,7 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
         const mainImg = document.getElementById("gallery-main-img") as HTMLImageElement;
         if (mainImg?.tagName === "IMG") mainImg.src = images[0];
       }
+      renderThumbs(images);
     });
 </script>
 
@@ -175,7 +246,13 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
 
   .breadcrumb a {
     color: var(--color-primary);
-    text-decoration: none;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 600;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--color-secondary);
   }
 
   .detail-grid {
@@ -203,7 +280,7 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
   .gallery-main .media-placeholder {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
   }
 
@@ -247,7 +324,7 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
   .thumb img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
   }
 
@@ -279,12 +356,21 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
     font-size: 0.9rem;
   }
 
+  .order-box {
+    margin-top: 1.2rem;
+    padding: 1.3rem;
+    border-radius: var(--radius-lg);
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-sm);
+  }
+
   .price {
     font-family: var(--font-display);
     font-size: 2rem;
     font-weight: 700;
     color: var(--color-secondary);
-    margin: 1rem 0;
+    margin: 0 0 1rem;
   }
 
   .btn-primary {
@@ -296,5 +382,40 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
     border-radius: 999px;
     font-weight: 600;
     box-shadow: 0 8px 20px rgba(78, 103, 53, 0.3);
+  }
+
+  .trust-badges {
+    list-style: none;
+    margin: 1.2rem 0 0;
+    padding: 1rem 0 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .trust-badges li {
+    font-size: 0.85rem;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .related {
+    margin-top: 3rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    padding-top: 1.8rem;
+  }
+
+  .related h2 {
+    font-size: 1.3rem;
+    margin: 0 0 1rem;
+  }
+
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem;
   }
 </style>

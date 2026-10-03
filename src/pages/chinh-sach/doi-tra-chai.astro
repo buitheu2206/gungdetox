@@ -58,7 +58,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
   .breadcrumb a {
     color: var(--color-primary);
-    text-decoration: none;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 600;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--color-secondary);
   }
 
   section {

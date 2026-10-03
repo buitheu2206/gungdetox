@@ -18,7 +18,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <button data-filter="bia-gung" class="chip">Bia Gừng</button>
       <button data-filter="kombucha" class="chip">Kombucha</button>
       <button data-filter="set-detox" class="chip">5 Set Detox</button>
-      <button data-filter="combo" class="chip">Combo thuê bao</button>
+      <button data-filter="combo" class="chip">Combo & quà tặng</button>
     </div>
 
     <section>
@@ -36,8 +36,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </section>
 
     <section>
-      <h2>Combo thuê bao</h2>
-      <div class="grid" id="combo-grid">
+      <h2>Combo & quà tặng</h2>
+      <div id="combo-groups">
         <p class="loading">Đang tải...</p>
       </div>
     </section>
@@ -87,12 +87,49 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
 <script>
   import { supabase } from "../lib/supabase";
-  import { productCardHtml, comboCardHtml, setDetoxCardHtml, type ProductRow } from "../lib/templates";
+  import {
+    productCardHtml,
+    comboCardHtml,
+    comboVariantGroupCardHtml,
+    setDetoxCardHtml,
+    type ProductRow,
+  } from "../lib/templates";
+
+  // Combo giống nhau, chỉ khác số lượng (vd. 3/5/7 chai Sữa hạt) — gộp lại thành 1 card
+  // duy nhất có nút chọn số lượng, thay vì mỗi mức 1 card riêng biệt.
+  const VARIANT_GROUPS: { name: string; slugs: string[] }[] = [
+    {
+      name: "Combo Sữa hạt",
+      slugs: ["combo-3-chai-sua-hat", "combo-5-chai-sua-hat", "combo-7-chai-sua-hat"],
+    },
+  ];
+
+  // Combo type gồm nhiều loại rất khác nhau (combo thuê bao định kỳ, set quà tặng 1 lần,
+  // lốc nhiều lon mua 1 lần) — trước đây dồn chung 1 lưới trông lộn xộn vì không cùng bản
+  // chất. Phân loại lại theo category/slug để hiện thành 3 nhóm riêng, có tiêu đề rõ ràng.
+  function comboSubgroup(p: ProductRow): "subscription" | "gift" | "loc" {
+    if (p.category === "qua-tang") return "gift";
+    if (p.slug.startsWith("combo-loc-")) return "loc";
+    return "subscription";
+  }
+
+  const COMBO_SUBGROUPS: { key: "subscription" | "gift" | "loc"; title: string }[] = [
+    { key: "subscription", title: "🔄 Combo thuê bao — giao định kỳ" },
+    { key: "gift", title: "🎁 Set quà tặng" },
+    { key: "loc", title: "🍹 Lốc nhiều lon — mua 1 lần" },
+  ];
 
   const singleGrid = document.getElementById("single-grid")!;
   const setGrid = document.getElementById("set-grid")!;
-  const comboGrid = document.getElementById("combo-grid")!;
+  const comboGroupsEl = document.getElementById("combo-groups")!;
   const chips = document.querySelectorAll<HTMLButtonElement>(".chip");
+
+  // Astro chỉ áp CSS scoped (data-astro-cid-*) cho phần tử render lúc build; các
+  // div "combo-subgroup"/"grid" tạo bằng innerHTML ở JS phải tự gắn thêm attribute
+  // này thì .grid{display:grid} mới nhận diện được — nếu không, card sẽ xếp chồng
+  // dọc từng cái một thay vì chia lưới nhiều cột (đã gặp đúng lỗi này ở nơi khác).
+  const cidAttr = Array.from(singleGrid.attributes).find((a) => a.name.startsWith("data-astro-cid-"));
+  const cid = cidAttr ? ` ${cidAttr.name}=""` : "";
 
   let allProducts: ProductRow[] = [];
 
@@ -111,9 +148,60 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       ? sets.map((p, i) => setDetoxCardHtml(p, i + 1)).join("")
       : "<p>Chưa có sản phẩm.</p>";
 
-    comboGrid.innerHTML = combos.length
-      ? combos.map(comboCardHtml).join("")
-      : "<p>Chưa có sản phẩm.</p>";
+    // Tách các combo thuộc 1 nhóm variant ra gộp thành 1 card, phần còn lại vẫn hiện riêng lẻ như cũ
+    const groupedSlugs = new Set(VARIANT_GROUPS.flatMap((g) => g.slugs));
+    const ungroupedCombos = combos.filter((p) => !groupedSlugs.has(p.slug));
+
+    if (!combos.length) {
+      comboGroupsEl.innerHTML = "<p>Chưa có sản phẩm.</p>";
+    } else {
+      comboGroupsEl.innerHTML = COMBO_SUBGROUPS.map(({ key, title }) => {
+        let cardsHtml = ungroupedCombos.filter((p) => comboSubgroup(p) === key).map(comboCardHtml).join("");
+        // Nhóm variant (Combo Sữa hạt) luôn thuộc "combo thuê bao"
+        if (key === "subscription") {
+          cardsHtml =
+            VARIANT_GROUPS.map((g) => {
+              const variants = g.slugs
+                .map((slug) => combos.find((p) => p.slug === slug))
+                .filter((p): p is ProductRow => Boolean(p));
+              return variants.length ? comboVariantGroupCardHtml(g.name, variants) : "";
+            }).join("") + cardsHtml;
+        }
+        if (!cardsHtml) return "";
+        return `<div class="combo-subgroup"${cid}><h3${cid}>${title}</h3><div class="grid"${cid}>${cardsHtml}</div></div>`;
+      }).join("");
+    }
+
+    bindVariantGroups();
+  }
+
+  function bindVariantGroups() {
+    document.querySelectorAll<HTMLElement>(".variant-group").forEach((card) => {
+      const variants = JSON.parse(card.dataset.variants ?? "[]") as {
+        slug: string;
+        name: string;
+        price: number | null;
+        servings: number | null;
+        image: string | null;
+      }[];
+      const priceEl = card.querySelector(".variant-price") as HTMLElement;
+      const ctaEl = card.querySelector(".variant-cta") as HTMLAnchorElement;
+      const linkEl = card.querySelector(".variant-link") as HTMLAnchorElement;
+      const imgEl = card.querySelector(".variant-image") as HTMLImageElement | null;
+
+      function applyVariant(i: number) {
+        const v = variants[i];
+        if (!v) return;
+        priceEl.textContent = v.price != null ? `${v.price.toLocaleString("vi-VN")}đ` : "Đang cập nhật giá";
+        ctaEl.href = `/dat-hang?product=${encodeURIComponent(v.slug)}`;
+        linkEl.href = `/san-pham/${encodeURIComponent(v.slug)}`;
+        if (imgEl && v.image) imgEl.src = v.image;
+      }
+
+      card.querySelectorAll<HTMLInputElement>('input[type="radio"]').forEach((radio) => {
+        radio.addEventListener("change", () => applyVariant(Number(radio.value)));
+      });
+    });
   }
 
   function applyFilter(filter: string) {
@@ -201,6 +289,16 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 1rem;
+  }
+
+  .combo-subgroup + .combo-subgroup {
+    margin-top: 2rem;
+  }
+
+  .combo-subgroup h3 {
+    font-size: 1.05rem;
+    margin: 0 0 0.9rem;
+    color: var(--color-secondary);
   }
 
   .loading {

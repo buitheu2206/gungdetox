@@ -1,0 +1,13 @@
+import { chromium } from "playwright";
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+const errors = [];
+page.on("pageerror", (e) => errors.push(e.message));
+await page.goto("http://localhost:4321/san-pham", { waitUntil: "networkidle" });
+await page.waitForTimeout(800);
+console.log("errors:", errors);
+const section = page.locator("#combo-groups");
+await section.scrollIntoViewIfNeeded();
+await page.waitForTimeout(200);
+await page.screenshot({ path: ".verify/combo-groups.png", fullPage: true });
+await browser.close();

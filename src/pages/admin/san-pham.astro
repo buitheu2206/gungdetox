@@ -97,6 +97,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
           Ảnh đại diện (thumbnail)
           <input type="file" id="f-image" accept="image/*" />
         </label>
+        <div id="main-image-preview" class="main-image-preview"></div>
         <p id="current-image" class="current-image"></p>
 
         <label>
@@ -146,25 +147,77 @@ import AdminLogin from "../../components/AdminLogin.astro";
   const field = (id: string) => document.getElementById(id) as HTMLInputElement;
 
   const galleryPreview = document.getElementById("gallery-preview") as HTMLDivElement;
+  const mainImageInput = document.getElementById("f-image") as HTMLInputElement;
+  const mainImagePreview = document.getElementById("main-image-preview") as HTMLDivElement;
+  const galleryInput = document.getElementById("f-gallery") as HTMLInputElement;
 
   let products: any[] = [];
   let currentImageUrl: string | null = null;
   let currentGalleryImages: string[] = [];
+  // File vừa chọn nhưng chưa lưu — giữ riêng để xem trước ngay, không phải đợi bấm Lưu mới biết đã chọn đúng ảnh chưa.
+  let pendingGalleryFiles: File[] = [];
+
+  // Astro chỉ áp CSS scoped (data-astro-cid-*) cho phần tử render lúc build; phần tử
+  // tạo bằng innerHTML ở JS phải tự gắn thêm attribute này thì style mới nhận diện
+  // được — nếu không, ảnh preview sẽ hiện full-size thay vì bị giới hạn kích thước nhỏ
+  // (đã gặp đúng lỗi này ở gallery ảnh trang chi tiết sản phẩm/blog).
+  const cidAttr = Array.from(mainImagePreview.attributes).find((a) => a.name.startsWith("data-astro-cid-"));
+  const cid = cidAttr ? ` ${cidAttr.name}=""` : "";
+
+  // Ảnh đại diện: xem trước ngay khi chọn file, không cần đợi lưu mới thấy.
+  mainImageInput.addEventListener("change", () => {
+    const file = mainImageInput.files?.[0];
+    mainImagePreview.innerHTML = file
+      ? `<img src="${URL.createObjectURL(file)}" alt="Xem trước ảnh đại diện"${cid} /><span class="thumb-filename"${cid}>${file.name}</span>`
+      : "";
+  });
+
+  // Đồng bộ lại input.files từ mảng pendingGalleryFiles sau khi xoá bớt 1 ảnh —
+  // FileList vốn chỉ đọc, phải dùng DataTransfer để dựng lại danh sách file mới.
+  function syncGalleryInputFiles() {
+    const dt = new DataTransfer();
+    pendingGalleryFiles.forEach((f) => dt.items.add(f));
+    galleryInput.files = dt.files;
+  }
+
+  galleryInput.addEventListener("change", () => {
+    pendingGalleryFiles = Array.from(galleryInput.files ?? []);
+    renderGalleryPreview();
+  });
 
   function renderGalleryPreview() {
-    galleryPreview.innerHTML = currentGalleryImages
+    const savedHtml = currentGalleryImages
       .map(
         (url, i) => `
-        <div class="gallery-thumb-wrap">
-          <img src="${url}" />
-          <button type="button" class="remove-gallery-img" data-index="${i}">×</button>
+        <div class="gallery-thumb-wrap"${cid}>
+          <img src="${url}"${cid} />
+          <button type="button" class="remove-gallery-img" data-index="${i}"${cid}>×</button>
         </div>
       `
       )
       .join("");
+    const pendingHtml = pendingGalleryFiles
+      .map(
+        (file, i) => `
+        <div class="gallery-thumb-wrap pending"${cid}>
+          <img src="${URL.createObjectURL(file)}"${cid} />
+          <span class="pending-label" title="${file.name}"${cid}>${file.name}</span>
+          <button type="button" class="remove-pending-img" data-index="${i}"${cid}>×</button>
+        </div>
+      `
+      )
+      .join("");
+    galleryPreview.innerHTML = savedHtml + pendingHtml;
     galleryPreview.querySelectorAll<HTMLButtonElement>(".remove-gallery-img").forEach((btn) => {
       btn.addEventListener("click", () => {
         currentGalleryImages.splice(Number(btn.dataset.index), 1);
+        renderGalleryPreview();
+      });
+    });
+    galleryPreview.querySelectorAll<HTMLButtonElement>(".remove-pending-img").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        pendingGalleryFiles.splice(Number(btn.dataset.index), 1);
+        syncGalleryInputFiles();
         renderGalleryPreview();
       });
     });
@@ -176,6 +229,8 @@ import AdminLogin from "../../components/AdminLogin.astro";
     currentImageUrl = null;
     currentImageEl.textContent = "";
     currentGalleryImages = [];
+    pendingGalleryFiles = [];
+    mainImagePreview.innerHTML = "";
     renderGalleryPreview();
     cancelBtn.hidden = true;
   }
@@ -205,28 +260,52 @@ import AdminLogin from "../../components/AdminLogin.astro";
     (document.getElementById("f-in-stock") as HTMLInputElement).checked = p.in_stock !== false;
     currentImageUrl = p.image_url ?? null;
     currentImageEl.textContent = currentImageUrl ? `Ảnh hiện tại: ${currentImageUrl}` : "Chưa có ảnh";
+    mainImagePreview.innerHTML = "";
     currentGalleryImages = [...(p.gallery_images ?? [])];
+    pendingGalleryFiles = [];
     renderGalleryPreview();
     cancelBtn.hidden = false;
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  const typeGroupLabel: Record<string, string> = {
+    single: "🥤 Đồ uống lẻ",
+    combo: "📦 Combo & Set quà",
+    set: "🌿 5 Set Detox",
+  };
+  const typeGroupOrder = ["single", "combo", "set"];
+
   function renderTable() {
-    tbody.innerHTML = products
-      .map(
-        (p) => `
-      <tr data-id="${p.id}">
-        <td>${p.image_url ? `<img src="${p.image_url}" width="50" height="50" style="object-fit:cover;border-radius:6px" />` : "—"}</td>
-        <td>${p.name}</td>
-        <td>${p.type}</td>
-        <td>${(p.price ?? p.price_retail ?? 0).toLocaleString("vi-VN")}đ</td>
-        <td>
-          <button class="edit-btn" data-id="${p.id}">Sửa</button>
-          <button class="delete-btn" data-id="${p.id}">Xoá</button>
+    const rowHtml = (p: any) => {
+      const price = p.price ?? p.price_retail;
+      return `
+      <tr data-id="${p.id}"${cid}>
+        <td${cid}>${p.image_url ? `<img class="row-thumb" src="${p.image_url}" alt=""${cid} />` : `<span class="row-thumb row-thumb-empty"${cid}>🫚</span>`}</td>
+        <td${cid}>${p.name}</td>
+        <td${cid}><span class="type-pill type-pill-${p.type}"${cid}>${p.type}</span></td>
+        <td class="${price ? "" : "price-pending"}"${cid}>${price ? `${price.toLocaleString("vi-VN")}đ` : "Đang cập nhật"}</td>
+        <td class="actions-cell"${cid}>
+          <button class="edit-btn" data-id="${p.id}"${cid}>Sửa</button>
+          <button class="delete-btn" data-id="${p.id}"${cid}>Xoá</button>
         </td>
       </tr>
-    `
-      )
+    `;
+    };
+
+    const groupedTypes = [
+      ...typeGroupOrder,
+      ...Array.from(new Set(products.map((p) => p.type))).filter((t) => !typeGroupOrder.includes(t)),
+    ];
+
+    tbody.innerHTML = groupedTypes
+      .map((type) => {
+        const items = products.filter((p) => p.type === type);
+        if (items.length === 0) return "";
+        return `
+          <tr class="group-row"${cid}><td colspan="5"${cid}>${typeGroupLabel[type] ?? type} (${items.length})</td></tr>
+          ${items.map(rowHtml).join("")}
+        `;
+      })
       .join("");
 
     document.querySelectorAll<HTMLButtonElement>(".edit-btn").forEach((btn) => {
@@ -266,8 +345,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
     ].filter(Boolean);
 
     let imageUrl = currentImageUrl;
-    const fileInput = document.getElementById("f-image") as HTMLInputElement;
-    const file = fileInput.files?.[0];
+    const file = mainImageInput.files?.[0];
     if (file) {
       const path = `${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage
@@ -280,7 +358,6 @@ import AdminLogin from "../../components/AdminLogin.astro";
       imageUrl = supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl;
     }
 
-    const galleryInput = document.getElementById("f-gallery") as HTMLInputElement;
     const newGalleryFiles = Array.from(galleryInput.files ?? []);
     for (const file of newGalleryFiles) {
       const path = `${Date.now()}-${file.name}`;
@@ -420,7 +497,43 @@ import AdminLogin from "../../components/AdminLogin.astro";
     border-radius: 6px;
   }
 
-  .remove-gallery-img {
+  .gallery-thumb-wrap.pending img {
+    border: 2px solid var(--color-primary);
+  }
+
+  .pending-label {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    right: 2px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font-size: 0.6rem;
+    text-align: center;
+    border-radius: 3px;
+    padding: 1px 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .main-image-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .thumb-filename {
+    font-size: 0.75rem;
+    color: #6b7280;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .remove-gallery-img,
+  .remove-pending-img {
     position: absolute;
     top: -6px;
     right: -6px;
@@ -433,6 +546,15 @@ import AdminLogin from "../../components/AdminLogin.astro";
     cursor: pointer;
     line-height: 1;
     font-size: 0.85rem;
+  }
+
+  .main-image-preview img {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid var(--color-primary);
+    flex-shrink: 0;
   }
 
   .form-actions {
@@ -473,6 +595,10 @@ import AdminLogin from "../../components/AdminLogin.astro";
 
   .table-wrap {
     overflow-x: auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    padding: 0.4rem 0.8rem;
   }
 
   table {
@@ -481,10 +607,91 @@ import AdminLogin from "../../components/AdminLogin.astro";
     font-size: 0.85rem;
   }
 
-  th,
+  thead th {
+    text-align: left;
+    padding: 0.7rem 0.5rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted, #6b7280);
+    border-bottom: 2px solid var(--color-bg-alt);
+  }
+
   td {
     border-bottom: 1px solid var(--color-bg-alt);
-    padding: 0.5rem;
+    padding: 0.55rem 0.5rem;
     text-align: left;
+    vertical-align: middle;
+  }
+
+  tbody tr:not(.group-row):hover {
+    background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+  }
+
+  .row-thumb {
+    display: block;
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--color-bg-alt);
+  }
+
+  .row-thumb-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-alt);
+    font-size: 1.2rem;
+    opacity: 0.6;
+  }
+
+  .type-pill {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: #e5e7eb;
+    color: #374151;
+  }
+
+  .type-pill-single {
+    background: color-mix(in srgb, var(--color-primary) 16%, #fff);
+    color: var(--color-primary-dark, var(--color-primary));
+  }
+
+  .type-pill-combo {
+    background: color-mix(in srgb, var(--color-secondary) 16%, #fff);
+    color: var(--color-secondary);
+  }
+
+  .type-pill-set {
+    background: color-mix(in srgb, var(--color-accent) 16%, #fff);
+    color: var(--color-accent);
+  }
+
+  .price-pending {
+    color: var(--color-text-muted, #9ca3af);
+    font-style: italic;
+    font-size: 0.8rem;
+  }
+
+  .actions-cell {
+    white-space: nowrap;
+  }
+
+  .group-row td {
+    background: var(--color-bg-alt);
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--color-secondary);
+    padding: 0.6rem 0.7rem;
+    border-bottom: none;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .group-row:first-child td {
+    border-top: none;
   }
 </style>

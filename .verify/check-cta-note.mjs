@@ -1,0 +1,10 @@
+import { chromium } from "playwright";
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+await page.goto("http://localhost:4321/nhuong-quyen", { waitUntil: "networkidle" });
+await page.waitForTimeout(400);
+const section = page.locator(".franchise-cta");
+await section.scrollIntoViewIfNeeded();
+await page.waitForTimeout(200);
+await page.screenshot({ path: ".verify/cta-note.png" });
+await browser.close();

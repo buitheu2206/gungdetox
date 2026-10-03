@@ -40,6 +40,7 @@ create table posts (
   body text not null,
   tag text,
   image_url text,
+  gallery_images text[], -- ảnh phụ cho trang chi tiết blog, ngoài image_url (ảnh đại diện/thumbnail)
   video_url text,
   read_time text,
   published_at timestamptz default now()
@@ -58,6 +59,8 @@ create table orders (
   bottle_type text not null check (bottle_type in ('glass','plastic')),
   bottles_returned int default 0,
   shipping_fee_note text default 'Phí ship tính theo khoảng cách, tiệm sẽ báo lại qua Zalo trước khi giao',
+  payment_method text not null default 'cod' check (payment_method in ('bank_transfer','cod')),
+  paid boolean not null default false,
   status text not null default 'processing' check (status in ('processing','delivering','delivered','cancelled')),
   status_history jsonb not null default '[]',
   created_at timestamptz not null default now()

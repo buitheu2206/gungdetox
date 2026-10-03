@@ -1,0 +1,23 @@
+import { chromium } from "playwright";
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
+await page.goto("http://localhost:4321/dat-hang", { waitUntil: "networkidle" });
+await page.waitForTimeout(400);
+await page.selectOption("#product-select", { index: 1 });
+await page.click("#add-to-cart");
+await page.click("#step1-next");
+await page.waitForTimeout(200);
+await page.fill("#delivery-date", "2026-09-20");
+await page.fill("#delivery-time-from", "14:00");
+await page.fill("#delivery-time-to", "16:00");
+await page.screenshot({ path: ".verify/time-range-step2.png" });
+
+await page.click("[data-next='3']");
+await page.fill("#customer-name", "Nguyễn Văn A");
+await page.fill("#phone", "0912345678");
+await page.fill("#address", "123 Test St");
+await page.click("[data-next='4']");
+await page.waitForTimeout(300);
+const summary = await page.locator("#order-summary").innerText();
+console.log("Order summary:\n", summary);
+await browser.close();

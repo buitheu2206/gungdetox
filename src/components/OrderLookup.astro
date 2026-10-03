@@ -3,8 +3,13 @@
 ---
 
 <section class="order-lookup" id="order-lookup">
-  <h3>Tra cứu đơn hàng</h3>
-  <p class="hint">Nhập số điện thoại đã dùng khi đặt hàng</p>
+  <div class="order-lookup-header">
+    <span class="order-lookup-icon">🔍</span>
+    <div>
+      <h3>Tra cứu đơn hàng</h3>
+      <p class="hint">Nhập số điện thoại đã dùng khi đặt hàng</p>
+    </div>
+  </div>
 
   <form id="lookup-form">
     <input
@@ -41,6 +46,19 @@
 
   const form = document.getElementById("lookup-form") as HTMLFormElement;
   const resultBox = document.getElementById("lookup-result") as HTMLDivElement;
+
+  // Bubble lỗi validate mặc định của trình duyệt hiện theo ngôn ngữ trình duyệt/hệ điều
+  // hành (vd "Please fill out this field"), không theo lang="vi" của trang — tự set message
+  // tiếng Việt qua setCustomValidity() để luôn hiện đúng tiếng Việt bất kể máy khách cài đặt gì.
+  const phoneInput = form?.querySelector<HTMLInputElement>('input[name="phone"]');
+  phoneInput?.addEventListener("invalid", () => {
+    phoneInput.setCustomValidity(
+      phoneInput.validity.valueMissing
+        ? "Vui lòng nhập số điện thoại"
+        : phoneInput.title || "Số điện thoại không hợp lệ"
+    );
+  });
+  phoneInput?.addEventListener("input", () => phoneInput.setCustomValidity(""));
 
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -84,6 +102,7 @@
                 <span class="order-code">${orderCode(o.phone, o.id)}</span>
                 <span class="order-date">${new Date(o.created_at).toLocaleDateString("vi-VN")}</span>
                 <span class="order-items">${itemsSummary(o.items)}</span>
+                <span class="paid-badge ${o.paid ? "paid-yes" : "paid-no"}">${o.paid ? "💳 Đã thanh toán" : "⏳ Chưa thanh toán"}</span>
               </li>
             `
               )
@@ -100,43 +119,77 @@
 <style>
   .order-lookup {
     max-width: 420px;
-    margin: 2rem auto;
-    padding: 1.4rem;
-    background: var(--color-bg-alt);
+    margin: 0 auto;
+    padding: 1.6rem;
+    background: #fff;
     border-radius: var(--radius-lg);
+  }
+
+  .order-lookup-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .order-lookup-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    background: var(--color-primary-light);
+    border-radius: 50%;
   }
 
   .order-lookup h3 {
     margin: 0 0 0.2rem;
+    font-size: 1.15rem;
   }
 
   .hint {
-    margin: 0 0 0.8rem;
+    margin: 0;
     font-size: 0.85rem;
-    color: #6b7280;
+    color: var(--color-text-muted);
   }
 
   #lookup-form {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.6rem;
   }
 
   #lookup-form input {
     flex: 1;
-    padding: 0.55rem 0.7rem;
-    border-radius: 8px;
-    border: 1px solid #d1d5db;
+    padding: 0.65rem 0.85rem;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid #e2ddd0;
     font-size: 0.95rem;
+    font-family: var(--font-body);
+    transition: border-color 0.15s ease;
+  }
+
+  #lookup-form input:focus {
+    outline: none;
+    border-color: var(--color-primary);
   }
 
   #lookup-form button {
     background: var(--color-primary);
     color: #fff;
     border: none;
-    border-radius: 8px;
-    padding: 0.55rem 1rem;
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 1.1rem;
     font-weight: 600;
     cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+  }
+
+  #lookup-form button:hover {
+    transform: translateY(-1px);
   }
 
   #lookup-result {
@@ -197,7 +250,7 @@
     flex-wrap: wrap;
     gap: 0.5rem;
     align-items: baseline;
-    background: #fff;
+    background: var(--color-bg-alt);
     border-radius: var(--radius-sm);
     padding: 0.5rem 0.7rem;
     font-size: 0.85rem;
@@ -216,5 +269,18 @@
 
   .order-items {
     color: var(--color-text);
+  }
+
+  .paid-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .paid-yes {
+    color: var(--color-primary);
+  }
+
+  .paid-no {
+    color: var(--color-accent);
   }
 </style>

@@ -110,12 +110,14 @@ Tổng hợp các chức năng phổ biến ở những trang bán hàng nhỏ l
 
 Sitemap: `/` (Trang chủ — **gồm cả nội dung Giới thiệu/Quy trình**, xem mục 6.4) · `/san-pham` (Sản phẩm) · `/dat-hang` (Đặt hàng + tra cứu đơn) · `/blog` (Bí kíp sức khỏe) · `/lien-he` (Liên hệ) · `/thanh-vien` (Thành viên, Phase 2)
 
-**✅ Thay đổi 11/09/2026 — gộp trang Giới thiệu/Quy trình vào trang chủ**: theo yêu cầu, nội dung mục 6.4 bên dưới (câu chuyện, quy trình làm mới mỗi ngày, hệ chai refill, cam kết vệ sinh) không còn là trang `/quy-trinh` riêng nữa — đã chuyển thành 1 phần của trang chủ `/` (section `#cau-chuyen` và các section theo sau), để trang chủ trở thành 1 trang storytelling dài giống sát với tinh thần trang tham chiếu ban đầu **mexoaikechuyen.vn** (mục 2) hơn. `/quy-trinh` cũ giờ tự động redirect về `/` (dùng `redirects` config của Astro, an toàn trên mọi static host). Nav "Giới thiệu" trỏ vào `/#cau-chuyen`.
+**✅ Thay đổi 11/09/2026 — gộp trang Giới thiệu/Quy trình vào trang chủ**: theo yêu cầu, nội dung mục 6.4 bên dưới (câu chuyện, quy trình làm mới mỗi ngày, hệ chai refill, cam kết vệ sinh) không còn là trang `/quy-trinh` riêng nữa — đã chuyển thành 1 phần của trang chủ `/`, để trang chủ trở thành 1 trang storytelling dài giống sát với tinh thần trang tham chiếu ban đầu **mexoaikechuyen.vn** (mục 2) hơn. `/quy-trinh` cũ giờ tự động redirect về `/` (dùng `redirects` config của Astro, an toàn trên mọi static host).
+
+**✅ Thay đổi 11/09/2026 (sau đó) — xóa section "Câu chuyện" (`#cau-chuyen`)**: theo yêu cầu, section "Câu chuyện GỪNG DETOX" (ảnh + đoạn "Từ mong muốn đơn giản...") bị xóa khỏi trang chủ vì trùng lặp — trang chủ đã đủ storytelling qua các section khác. Bỏ luôn mục nav "Giới thiệu" (từng trỏ `/#cau-chuyen`) vì không còn điểm neo để trỏ tới.
 
 ### 6.1 Trang chủ — `/`
 | # | Section | Heading | Nội dung/thành phần |
 |---|---|---|---|
-| 1 | Header | — | Logo **"GỪNG DETOX"** (`icon.jpg`) + tagline **"SỐNG XANH - SỐNG KHỎE"** + nav (Sản phẩm, Đặt hàng, Giới thiệu, Blog, Liên hệ) + link "Thành viên" |
+| 1 | Header | — | Logo **"GỪNG DETOX"** (`icon.jpg`) + tagline **"SỐNG XANH - SỐNG KHỎE"** + nav (Sản phẩm, Đặt hàng, Blog, Liên hệ) + link "Thành viên" |
 | 2 | Hero | H1 | "Tiệm GỪNG xin chào!" + câu dẫn ngắn + CTA chính **"Xem sản phẩm"**, CTA phụ **"Đặt hàng ngay"** |
 | 3 | Social follow | — | Icon Facebook, Instagram |
 | 4 | Vì sao chọn GỪNG | H2 | 3-4 điểm: nguyên liệu thật (gừng tươi, nghệ, chanh vàng, mật ong, muối hồng), làm mới mỗi ngày, hệ chai refill sạch |
@@ -287,7 +289,7 @@ Phí ship tính theo khoảng cách (5K/km từ tiệm gần nhất: 60M Nguyễ
 ### 6.4 Giới thiệu / Quy trình — ⚠️ ĐÃ GỘP VÀO TRANG CHỦ `/` (không còn là trang riêng `/quy-trinh`)
 | # | Section (giờ nằm trong `/`) | Heading | Nội dung |
 |---|---|---|---|
-| 1 | Câu chuyện (`#cau-chuyen`) | H2 | Câu chuyện thương hiệu GỪNG DETOX, kèm ảnh thật (nhân viên pha chế) bố cục song song trên desktop |
+| 1 | ~~Câu chuyện (`#cau-chuyen`)~~ | H2 | ❌ Đã xóa khỏi trang chủ (11/09/2026, trùng lặp storytelling) — không còn tồn tại |
 | 2 | Quy trình làm mới mỗi ngày | H2 | 4 bước từ nguyên liệu tươi đến giao hàng, đặt trên nền màu ấm (`--color-bg-warm`) để tách biệt khỏi các section khác |
 | 3 | Hệ chai refill | (cùng section 2) | So sánh thủy tinh vs nhựa + box đổi/hoàn chai cũ + cam kết vệ sinh (khử khuẩn nước sôi) |
 
@@ -875,21 +877,51 @@ Phát hiện qua Playwright: bất kỳ phần tử nào có CSS tự đặt `di
 - [x] Test responsive trên mobile — dùng Playwright giả lập iPhone 13 (chưa test trên điện thoại thật). **Phát hiện 1 lỗi thật qua test này**: nút Zalo/Messenger nổi che nội dung trên màn hình hẹp — đã sửa (mục 11.7.1)
 - [x] Test toàn bộ luồng đặt hàng thật: điền form → xác nhận dữ liệu đúng trong Supabase (qua script, tương đương table editor) → tra cứu lại bằng đúng SĐT vừa nhập — khớp
 - [x] `npm run build` → `npm run preview` chạy đúng cục bộ, lặp lại nhiều lần trong suốt quá trình build
-- [ ] Upload `dist/` lên Web Hosting iNET qua File Manager/FTP — **CHƯA LÀM, cố ý chờ xác nhận** (mục 11.7.2 — vì thông tin chuyển khoản trên site vẫn là demo, không nên đưa lên public trước khi có thông tin thật)
-- [ ] Kiểm tra SSL sau khi deploy thật
+- [x] Upload `dist/` lên Web Hosting iNET qua FTP — **Đã deploy 11/09/2026** (mục 11.7.2), user xác nhận đi live với thông tin chuyển khoản demo, sẽ cập nhật thật sau
+- [x] Kiểm tra SSL sau khi deploy thật — HTTPS hoạt động bình thường (chứng chỉ do hosting/CDN cấp sẵn, không cần cấu hình thêm)
 - [ ] Làm thủ tục thông báo website với Bộ Công Thương tại thongbao.online.gov.vn (mục 7) — việc này chủ tiệm tự làm, không phải code
 
 #### 11.7.1 Lỗi phát hiện qua test mobile: nút nổi che nội dung
 
 `ZaloButton.astro` dùng nút dạng pill full chữ ("Zalo"/"Messenger"), trên màn hình <480px che mất phần cuối dòng chữ của card sản phẩm khi cuộn tới. Đã sửa: dưới 480px, nút thu gọn thành hình tròn 44px chỉ hiện chữ cái đầu (Z/M), giảm đáng kể diện tích che khuất. Vẫn còn chạm nhẹ mép chữ ở 1 số vị trí cuộn — chấp nhận được vì đây là hành vi phổ biến của widget chat nổi trên hầu hết website thật (không phải lỗi chặn thao tác, chỉ che 1 phần chữ).
 
-#### 11.7.2 ⚠️ Chưa deploy lên production — quyết định có chủ đích
+#### 11.7.2 ✅ Đã deploy lên production (11/09/2026)
 
-Toàn bộ 8 trang (chủ, sản phẩm, đặt hàng, quy trình, liên hệ, 3 trang admin) đã code xong và kiểm chứng kỹ bằng Playwright (0 lỗi console ở mọi trang, luồng đặt hàng + quản trị đều test thao tác thật). Tuy nhiên **chưa upload lên hosting iNET** vì:
-- Thông tin chuyển khoản trên trang Xác nhận đặt hàng vẫn là **demo** (mục 6.3.1) — đưa lên site công khai lúc này có rủi ro khách hiểu nhầm là thông tin thật
-- Nên chờ chủ tiệm xác nhận đã sẵn sàng lên chính thức trước khi deploy, vì đây là hành động khó đảo ngược hoàn toàn (dù có thể gỡ xuống, nhưng có thể đã bị Google index hoặc khách đã thấy)
+Toàn bộ 8 trang (chủ, sản phẩm, đặt hàng, quy trình, liên hệ, 3 trang admin) đã code xong và kiểm chứng kỹ bằng Playwright (0 lỗi console ở mọi trang, luồng đặt hàng + quản trị đều test thao tác thật). Ngày 11/09/2026, user xác nhận muốn deploy ngay dù thông tin chuyển khoản trên trang Xác nhận đặt hàng vẫn là **demo** (mục 6.3.1) — sẽ cập nhật thông tin ngân hàng thật ở lần deploy sau, không chặn việc lên live lần này.
 
-Khi đã sẵn sàng: làm theo quy trình deploy ở mục 8.8 (build → upload `dist/` qua FTP/File Manager → cấu hình SSL).
+**Chi tiết hạ tầng phát hiện lúc deploy** (quan trọng cho các lần deploy sau):
+- Tài khoản hosting iNET (`amikirnchosting`, IP `202.92.7.88`) là **cPanel dùng chung cho nhiều domain/khách hàng khác** của agency — domain chính (`anhngocorder.vn`) chạy WordPress ở `public_html` gốc, cộng thêm `gincuisine.com` ở thư mục riêng. `gungdetox.com` ban đầu bị tạo nhầm dạng domain "share document root" với domain chính (nghĩa là sẽ hiển thị nhầm site WordPress) — đã sửa bằng cách xóa domain entry trong cPanel → Domains → tạo lại, lần này **bỏ tick "Share document root"** để nó có thư mục riêng `/public_html/gungdetox.com`.
+- Tên miền `gungdetox.com` phân giải qua CDN/proxy (không phải IP hosting trực tiếp) nên **FTP phải kết nối bằng IP `202.92.7.88`**, không dùng được tên miền làm FTP host.
+- Deploy thực hiện bằng cách build (`npm run build`) rồi upload từng file trong `dist/` qua FTP (`curl -T`, `--ftp-create-dirs`) vào đúng `/public_html/gungdetox.com/`. Không có script deploy tự động lưu trong repo (thông tin FTP không lưu vào code) — mỗi lần deploy sau cần lặp lại thao tác build + upload thủ công (hoặc viết script deploy riêng nếu làm thường xuyên).
+- Đã verify sau deploy: `https://gungdetox.com/`, `/san-pham/`, `/san-pham/ginger-shot/`, `/dat-hang/`, `/lien-he/` đều trả 200 và đúng nội dung GỪNG DETOX (không phải site WordPress), SSL hoạt động bình thường.
+
+### 11.7.4 Trang chi tiết được "làm đầy" hơn (11/09/2026)
+
+Sau khi lên production, user phản hồi trang chi tiết sản phẩm và blog "quá sơ sài". Đã bổ sung (chưa deploy, chỉ build/test local):
+- **Fix layout card thật sự (root cause)**: `.product-card .media` thiếu `overflow: hidden` → ảnh dọc (900×1128) làm khung ảnh giãn theo kích thước ảnh gốc thay vì tỷ lệ 4:3, kéo lệch cả hàng card. Đã thêm `overflow: hidden`.
+- **Tag blog** (`CONG-THUC` kiểu slug thô, không dấu, không khung) → thêm `tagLabel` map trong `src/lib/templates.ts` (dịch đúng: Công thức/Detox/Eat Clean/Sống khỏe) + style pill nền màu, áp dụng cả ở `/blog` list và trang chi tiết.
+- **Trang chi tiết sản phẩm** (`san-pham/[slug].astro`): giá + nút đặt hàng bọc trong `.order-box` (nền trắng/border/shadow, thay vì chữ nổi trên nền trống); thêm 3 dòng "trust badge" tĩnh (100% tự nhiên/giao trong ngày/không chất bảo quản); thêm khối **"Sản phẩm liên quan"** (cùng `type`, tối đa 4, tái dùng `productCardHtml`/`comboCardHtml`/`setDetoxCardHtml` từ `templates.ts`, lấy dữ liệu qua `allProducts` truyền kèm trong `getStaticPaths` — không gọi Supabase thêm lần nào).
+- **Trang chi tiết blog** (`blog/[slug].astro`): thêm banner CTA "Muốn thử ngay hôm nay? → Đặt hàng ngay" và khối **"Bài viết liên quan"** (tối đa 3, ưu tiên cùng tag, tái dùng `blogCardHtml`).
+- **Fix phụ**: `.product-card .footer-row` thêm `flex-wrap` để chữ "Đang cập nhật giá" (dài hơn giá thật) không còn đè/ép sát nút "Đặt món này".
+- Đổi font tiêu đề từ Fraunces (serif) sang Be Vietnam Pro (sans, cùng font với nội dung) theo yêu cầu user sau khi thấy bản live — bỏ luôn import Fraunces khỏi Google Fonts.
+
+Đã verify bằng Playwright screenshot trên `astro dev` (cổng 4321) cho cả `/san-pham/ginger-shot` và `/blog/kombucha-loi-khuan-tu-dau`, build production (`npm run build`) chạy sạch. **Đã deploy lên production ngày 11/09/2026** sau khi user gõ "deploy".
+
+Trong lúc user tự test bằng browser thật, phát hiện thêm 2 việc:
+- Breadcrumb ("Sản phẩm / Ginger Shot", "Blog / ...") không có gạch chân nên không rõ là link bấm được → thêm `text-decoration: underline` + `font-weight:600` cho `.breadcrumb a`, áp dụng cho cả 2 trang chi tiết và 3 trang chính sách.
+- **Bug thật trong tính năng gallery đa ảnh**: khi 1 sản phẩm được thêm `gallery_images` *sau* lần build gần nhất, script client-side (`san-pham/[slug].astro`) chỉ cập nhật ảnh chính chứ không tự tạo dải thumbnail (vì HTML tĩnh lúc build không có sẵn khung `#gallery-thumbs` do lúc đó sản phẩm chỉ có 1 ảnh). Đã sửa để tự dựng thumbnail bằng JS khi cần. Khi vá lỗi này lộ ra bug thứ 2: phần tử DOM tạo bằng `document.createElement`/`innerHTML` không tự có attribute scope CSS của Astro (`data-astro-cid-*`), nên style `.thumb`/`.thumb img` (giới hạn 64×64px) không áp dụng được, ảnh gốc full-size (900px) làm vỡ luôn grid 2 cột của trang chi tiết. Đã fix bằng cách đọc attribute scope từ `.gallery` (phần tử có sẵn lúc build) rồi gắn thủ công vào các phần tử tạo mới. Test bằng cách gán tạm `gallery_images` demo cho Ginger Shot qua service role key, xác nhận fix hoạt động, rồi xoá lại dữ liệu demo trước khi deploy.
+- Chạy audit toàn site (console errors, request lỗi, alt text ảnh, link chết, h1 trùng, overflow mobile) trước khi deploy — không phát hiện vấn đề thật nào (vài false positive do Astro dev toolbar và ảnh lazy-load dưới fold).
+
+### 11.7.5 Blog: thêm gallery đa ảnh + viết lại nội dung 5 bài demo (11/09/2026)
+
+Theo yêu cầu user, thêm tính năng nhiều ảnh cho từng bài blog (giống sản phẩm):
+- Thêm cột `gallery_images text[]` vào bảng `posts` (chạy tay qua Supabase SQL Editor, cập nhật `supabase/schema.sql`).
+- `PostRow` (`src/lib/templates.ts`) thêm field `gallery_images`.
+- `blog/[slug].astro`: thêm gallery (ảnh chính + dải thumbnail) y hệt pattern trang chi tiết sản phẩm, áp dụng luôn 2 bài học từ bug gallery sản phẩm (mục 11.7.4): script client-side tự dựng `#gallery-thumbs` bằng JS khi cần (không có sẵn lúc build), và tự gắn attribute `data-astro-cid-*` cho phần tử tạo bằng JS để không vỡ layout.
+- `admin/blog.astro`: thêm ô upload "Ảnh phụ" (multiple) + preview/xoá từng ảnh, giống hệt UI đã có ở `admin/san-pham.astro`.
+- Test bằng cách gán tạm gallery demo cho 1 bài qua service role key, xác nhận hoạt động đúng, rồi xoá lại.
+
+Đồng thời viết lại nội dung (mượt hơn, mở bài hấp dẫn hơn, giữ nguyên thông tin/giọng văn thương hiệu) cho toàn bộ 5 bài blog demo hiện có, cập nhật cả `supabase/seed.mjs` và dữ liệu thật trong Supabase (bài viết fetch từ DB, không phải từ seed file).
 
 ### 11.7.3 Rà soát dữ liệu thiếu (11/09/2026) — phát hiện & sửa
 
@@ -908,3 +940,22 @@ Chủ tiệm yêu cầu rà lại toàn bộ trang xem còn thiếu data không.
 - **Thông tin chuyển khoản thật** (mục 6.3.1) — đang demo, cần thay trước khi web lên chính thức (không chặn việc build)
 - **Số tiền/điểm cụ thể cho chương trình đổi chai cũ** (mục 6.2, 11.4) — đang để placeholder, chủ tiệm cung cấp sau
 - **Giá lẻ đầy đủ từng vị Kombucha/Matcha** — không cần dev tra cứu nữa, chủ tiệm tự nhập qua `/admin/san-pham` sau khi web lên (mục 6.2.2)
+
+### 11.9 Đối chiếu dữ liệu thật từ Google Form menu đặt hàng (11/09/2026)
+
+Chủ tiệm gửi link Google Form menu đặt hàng thật (`docs.google.com/forms/d/e/1FAIpQLSeJsjHtzU-aRMR4m5KMD4Mr_ZzUjCEjPF7cHY82FxfnLDg1CQ/viewform` — form khách điền để đặt hàng, kèm ảnh menu/giá thật cho từng mục) để đối chiếu và bổ sung dữ liệu. Đọc bằng cách chụp toàn bộ form qua Playwright (ảnh không nằm trong HTML tĩnh, phải render JS) rồi đọc từng ảnh.
+
+**Sửa lỗi thực tế nghiêm trọng — lịch giao hàng sai với thực tế:**
+Form ghi rõ tiệm **chỉ giao hàng Thứ 4 và Thứ 6 hàng tuần** (làm mới theo đơn từng ngày giao, không làm sẵn), đặt trước tối thiểu 1 ngày (đơn Thứ 4 chốt trước Thứ 3, đơn Thứ 6 chốt trước Thứ 5) — áp dụng cho **mọi đơn hàng, kể cả đồ uống lẻ**, không chỉ combo/set. Trong khi đó trang `/dat-hang` trước đó chỉ bắt chọn "ngày giao ưu tiên" (7 lựa chọn, không bắt buộc) cho riêng combo/set, và trang chi tiết sản phẩm còn ghi sai hẳn "🚴 Giao trong ngày nội thành". Đã sửa:
+- `src/pages/dat-hang.astro`: ô chọn ngày giao (`#delivery-day`) giờ luôn hiển thị cho mọi đơn (không chỉ combo/set), chỉ còn đúng 2 lựa chọn Thứ 4/Thứ 6, kèm ghi chú chốt đơn; giá trị chọn được hiện trong tóm tắt đơn (bước 4) và được ghi vào cột `shipping_fee_note` lúc submit (không cần đổi schema Supabase, tận dụng cột free-text có sẵn).
+- `src/pages/san-pham/[slug].astro`: trust badge "Giao trong ngày nội thành" → "Giao Thứ 4 & Thứ 6 hàng tuần".
+- Supabase: cập nhật `delivery_schedule` cho `combo-thang-ginger-shot` ("4 đợt/tuần" → "2 đợt/tuần (Thứ 4 & Thứ 6)") và `combo-3-thang-ginger-shot` ("Giao theo tuần" → "Thứ 4 & Thứ 6 hàng tuần") — script `supabase/seed-menu-form-2026-09.mjs`.
+- ⚠️ Riêng dòng "Hũ ngâm" (xem dưới) theo form lại giao vào **Thứ 5** hàng tuần — khác lịch Thứ 4/Thứ 6 của đồ uống tươi (có thể vì hũ ngâm/lên men để được lâu hơn nên gom giao 1 đợt/tuần riêng). Chưa đưa lịch riêng này vào UI `/dat-hang` (vẫn dùng chung dropdown Thứ 4/Thứ 6) — chỉ ghi chú trong mô tả sản phẩm; cần chủ tiệm xác nhận lại có đúng là lịch tách riêng hay không trước khi code phân biệt.
+
+**8 sản phẩm mới thêm vào Supabase** (script `supabase/seed-menu-form-2026-09.mjs`, sort_order 16-23) — chưa có ảnh thật (`image_url: null`, hiện placeholder 🫚 cho tới khi chủ tiệm upload qua `/admin/san-pham`):
+- **Combo Sữa hạt**: 3 chai 209.000đ (gốc 237.000đ) · 5 chai 349.000đ (gốc 395.000đ) · 7 chai 469.000đ (gốc 553.000đ) — badge "sale", dùng chung ảnh với `sua-hat-tuoi`.
+- **Phô Mai Xông Khói** (`pho-mai-xong-khoi`) — dòng sản phẩm hoàn toàn mới, không phải đồ uống: 399.000đ/300g, phô mai kéo sợi xông khói kiểu Nga.
+- **Trà Gạo Rang Detox Trái Cây** — dòng mới, 2 bản: Basic 150.000đ/hộp 12 gói (không kèm túi lọc gạo rang), Premium 199.000đ/hộp 12 gói (kèm túi lọc gạo lứt rang).
+- **Chanh Vàng Ngâm Mật Ong** và **Thơm Nướng Dưỡng Phổi** — 2 vị "Hũ ngâm" còn lại từ ảnh thật trong form (vị "Củ Dền Gừng ngâm" đã có sẵn trong catalog từ trước) — **chưa có giá** (`price_retail: null`, hiện "Đang cập nhật giá"), chờ chủ tiệm nhập qua `/admin/san-pham`.
+
+**Đã verify**: chạy `astro dev`, chụp Playwright `/san-pham` (8 sản phẩm mới hiện đúng, không lỗi console) và `/dat-hang` bước 2 (ô chọn ngày giao hiện đúng cho đơn chỉ có đồ uống lẻ, ghi chú Thứ 4/Thứ 6 hiển thị đúng).

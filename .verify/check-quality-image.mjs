@@ -1,0 +1,14 @@
+import { chromium } from "playwright";
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1100, height: 1000 } });
+await page.goto("http://localhost:4322/", { waitUntil: "networkidle" });
+await page.waitForTimeout(400);
+await page.click(".quality-details summary");
+await page.waitForTimeout(400);
+const img = page.locator(".quality-infographic");
+await img.scrollIntoViewIfNeeded();
+await page.waitForTimeout(200);
+await page.screenshot({ path: ".verify/quality-image-final.png" });
+const box = await img.boundingBox();
+console.log("image box:", box);
+await browser.close();

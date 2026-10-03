@@ -1,6 +1,5 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import OrderLookup from "../components/OrderLookup.astro";
 ---
 
 <BaseLayout
@@ -8,19 +7,41 @@ import OrderLookup from "../components/OrderLookup.astro";
   description="Đặt hàng đồ uống/combo GỪNG DETOX và tra cứu trạng thái đơn bằng số điện thoại."
 >
   <main class="order-page">
-    <h1>Đặt hàng</h1>
+    <div class="ginger-shot-schedule-note">
+      <h3>🛵 Lịch giao Ginger Shot</h3>
+      <p>
+        Giao <strong>định kỳ mỗi 7 ngày</strong>, tính từ lần nhận hàng gần nhất (VD: nhận
+        <strong>Thứ 2</strong> → giao tiếp <strong>Thứ 2 tuần sau</strong>) 💚
+      </p>
+      <p>
+        🌿 Muốn đổi ngày giao? Báo Tiệm qua SĐT <a href="tel:0888267009">088 826 7009</a>, Tiệm sẽ
+        linh hoạt điều chỉnh và luôn nhắn xác nhận trước mỗi lần giao.
+      </p>
+    </div>
 
     <ol class="steps-indicator" id="steps-indicator">
-      <li data-step="1" class="active">Sản phẩm</li>
-      <li data-step="2">Tuỳ chọn</li>
-      <li data-step="3">Giao hàng</li>
-      <li data-step="4">Xác nhận</li>
+      <li data-step="1" class="active">
+        <span class="step-badge">1</span>
+        <span class="step-label">Sản phẩm</span>
+      </li>
+      <li data-step="2">
+        <span class="step-badge">2</span>
+        <span class="step-label">Tuỳ chọn</span>
+      </li>
+      <li data-step="3">
+        <span class="step-badge">3</span>
+        <span class="step-label">Giao hàng</span>
+      </li>
+      <li data-step="4">
+        <span class="step-badge">4</span>
+        <span class="step-label">Xác nhận</span>
+      </li>
     </ol>
 
     <form id="order-form" novalidate>
       <!-- Bước 1 — Sản phẩm -->
       <section class="step" data-step="1">
-        <h2>Bước 1 — Sản phẩm</h2>
+        <h2>🛒 Bước 1 — Sản phẩm</h2>
         <div class="product-picker">
           <label class="product-picker-select">
             Chọn sản phẩm
@@ -41,20 +62,42 @@ import OrderLookup from "../components/OrderLookup.astro";
 
       <!-- Bước 2 — Tuỳ chọn -->
       <section class="step" data-step="2" hidden>
-        <h2>Bước 2 — Tuỳ chọn</h2>
-        <fieldset id="bottle-fieldset">
-          <legend>Loại chai</legend>
-        </fieldset>
+        <h2>🕐 Bước 2 — Tuỳ chọn</h2>
         <div class="form-row">
           <label>
             Ngày giao mong muốn
             <input type="date" id="delivery-date" required />
           </label>
-          <label>
-            Giờ giao mong muốn (không bắt buộc)
-            <input type="time" id="delivery-time" />
-          </label>
         </div>
+        <fieldset id="delivery-slot-fieldset" class="delivery-slot-fieldset">
+          <legend>Khung giờ giao mong muốn</legend>
+          <div class="option-grid">
+            <label class="option-card">
+              <input type="radio" name="delivery-slot" value="8h-12h" required />
+              <span class="option-icon">☀️</span>
+              <span class="option-text">
+                <span class="option-title">Sáng</span>
+                <span class="option-subtitle">8h - 12h</span>
+              </span>
+            </label>
+            <label class="option-card">
+              <input type="radio" name="delivery-slot" value="13h-17h" />
+              <span class="option-icon">🌤️</span>
+              <span class="option-text">
+                <span class="option-title">Chiều</span>
+                <span class="option-subtitle">13h - 17h</span>
+              </span>
+            </label>
+            <label class="option-card">
+              <input type="radio" name="delivery-slot" value="18h-21h" />
+              <span class="option-icon">🌙</span>
+              <span class="option-text">
+                <span class="option-title">Tối</span>
+                <span class="option-subtitle">18h - 21h</span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
         <label>
           Ghi chú giao hàng (không bắt buộc)
           <textarea
@@ -63,7 +106,6 @@ import OrderLookup from "../components/OrderLookup.astro";
             placeholder="VD: gọi trước khi giao, để ở cổng, giao giờ hành chính..."
           ></textarea>
         </label>
-        <p class="delivery-day-note">🚚 Tiệm giao hàng tất cả các ngày trong tuần.</p>
         <div class="nav-row">
           <button type="button" class="back" data-back="1">Quay lại</button>
           <button type="button" class="next" data-next="3">Tiếp tục</button>
@@ -72,7 +114,7 @@ import OrderLookup from "../components/OrderLookup.astro";
 
       <!-- Bước 3 — Thông tin giao hàng -->
       <section class="step" data-step="3" hidden>
-        <h2>Bước 3 — Thông tin giao hàng</h2>
+        <h2>📍 Bước 3 — Thông tin giao hàng</h2>
         <div class="form-row">
           <label>
             Họ tên
@@ -99,7 +141,26 @@ import OrderLookup from "../components/OrderLookup.astro";
             <select id="district">
               <option value="Quận 1">Quận 1</option>
               <option value="Quận 3">Quận 3</option>
+              <option value="Quận 4">Quận 4</option>
+              <option value="Quận 5">Quận 5</option>
+              <option value="Quận 6">Quận 6</option>
+              <option value="Quận 7">Quận 7</option>
+              <option value="Quận 8">Quận 8</option>
+              <option value="Quận 10">Quận 10</option>
+              <option value="Quận 11">Quận 11</option>
+              <option value="Quận 12">Quận 12</option>
               <option value="Bình Thạnh">Bình Thạnh</option>
+              <option value="Bình Tân">Bình Tân</option>
+              <option value="Gò Vấp">Gò Vấp</option>
+              <option value="Phú Nhuận">Phú Nhuận</option>
+              <option value="Tân Bình">Tân Bình</option>
+              <option value="Tân Phú">Tân Phú</option>
+              <option value="Thủ Đức">Thủ Đức</option>
+              <option value="Bình Chánh">Bình Chánh</option>
+              <option value="Cần Giờ">Cần Giờ</option>
+              <option value="Củ Chi">Củ Chi</option>
+              <option value="Hóc Môn">Hóc Môn</option>
+              <option value="Nhà Bè">Nhà Bè</option>
               <option value="Khác">Khác (ngoài khu vực giao chuẩn)</option>
             </select>
           </label>
@@ -119,29 +180,39 @@ import OrderLookup from "../components/OrderLookup.astro";
 
       <!-- Bước 4 — Xác nhận -->
       <section class="step" data-step="4" hidden>
-        <h2>Bước 4 — Xác nhận</h2>
+        <h2>✅ Bước 4 — Xác nhận</h2>
 
         <div class="confirm-grid">
           <div class="confirm-col">
             <div id="order-summary" class="order-summary"></div>
 
             <p class="shipping-note">
-              🚚 Phí ship tính theo khoảng cách thực tế (5.000đ/km từ tiệm gần nhất), tiệm sẽ
-              báo lại qua Zalo trước khi giao.
+              🚚 Phí ship tùy theo khoảng cách và thời tiết hôm giao — tiệm sẽ báo cụ thể qua Zalo
+              trước khi giao.
             </p>
           </div>
 
           <div class="confirm-col">
             <fieldset id="payment-method-fieldset" class="payment-method">
               <legend>Hình thức thanh toán</legend>
-              <label>
-                <input type="radio" name="payment-method" value="bank_transfer" checked />
-                Chuyển khoản trước
-              </label>
-              <label>
-                <input type="radio" name="payment-method" value="cod" />
-                Tiền mặt khi nhận hàng (COD)
-              </label>
+              <div class="option-grid option-grid--cols-2">
+                <label class="option-card">
+                  <input type="radio" name="payment-method" value="bank_transfer" checked />
+                  <span class="option-icon">🏦</span>
+                  <span class="option-text">
+                    <span class="option-title">Chuyển khoản</span>
+                    <span class="option-subtitle">Trước khi giao</span>
+                  </span>
+                </label>
+                <label class="option-card">
+                  <input type="radio" name="payment-method" value="cod" />
+                  <span class="option-icon">💵</span>
+                  <span class="option-text">
+                    <span class="option-title">Tiền mặt (COD)</span>
+                    <span class="option-subtitle">Khi nhận hàng</span>
+                  </span>
+                </label>
+              </div>
             </fieldset>
 
             <div class="bank-info" id="bank-info">
@@ -205,8 +276,6 @@ import OrderLookup from "../components/OrderLookup.astro";
         <a class="thank-you-btn thank-you-btn-primary" href="/san-pham">Tiếp tục mua sắm</a>
       </div>
     </section>
-
-    <OrderLookup />
   </main>
 </BaseLayout>
 
@@ -245,10 +314,20 @@ import OrderLookup from "../components/OrderLookup.astro";
   const cartList = document.getElementById("cart-list") as HTMLDivElement;
   const cartEmptyHint = document.getElementById("cart-empty-hint") as HTMLElement;
   const step1Next = document.getElementById("step1-next") as HTMLButtonElement;
-  const bottleFieldset = document.getElementById("bottle-fieldset") as HTMLFieldSetElement;
   const deliveryDateInput = document.getElementById("delivery-date") as HTMLInputElement;
-  const deliveryTimeInput = document.getElementById("delivery-time") as HTMLInputElement;
   const deliveryNoteInput = document.getElementById("delivery-note") as HTMLTextAreaElement;
+
+  const deliverySlotLabel: Record<string, string> = {
+    "8h-12h": "Sáng (8h - 12h)",
+    "13h-17h": "Chiều (13h - 17h)",
+    "18h-21h": "Tối (18h - 21h)",
+  };
+
+  function deliveryTimeRangeText(): string {
+    const value = (form.querySelector('input[name="delivery-slot"]:checked') as HTMLInputElement)
+      ?.value;
+    return value ? deliverySlotLabel[value] ?? value : "";
+  }
   const districtSelect = document.getElementById("district") as HTMLSelectElement;
   const districtWarning = document.getElementById("district-warning") as HTMLElement;
   const orderSummary = document.getElementById("order-summary") as HTMLDivElement;
@@ -332,7 +411,6 @@ import OrderLookup from "../components/OrderLookup.astro";
         const index = Number(btn.dataset.index);
         cart = cart.filter((_, i) => i !== index);
         renderCart();
-        renderStep2Options();
       });
     });
 
@@ -342,7 +420,6 @@ import OrderLookup from "../components/OrderLookup.astro";
         if (cart[index].quantity > 1) cart[index].quantity -= 1;
         else cart = cart.filter((_, i) => i !== index);
         renderCart();
-        renderStep2Options();
       });
     });
 
@@ -351,7 +428,6 @@ import OrderLookup from "../components/OrderLookup.astro";
         const index = Number(btn.dataset.index);
         cart[index].quantity += 1;
         renderCart();
-        renderStep2Options();
       });
     });
   }
@@ -366,43 +442,29 @@ import OrderLookup from "../components/OrderLookup.astro";
     if (existing) existing.quantity += qty;
     else cart.push({ slug, quantity: qty });
     renderCart();
-    renderStep2Options();
+    // Trả số lượng về 1 sau khi thêm — tránh giữ lại số lượng cũ khiến lần thêm
+    // tiếp theo (kể cả khi đổi sang sản phẩm khác) vô tình cộng nhầm số lượng lớn.
+    quantityInput.value = "1";
   }
 
-  // Bước 2 áp dụng chung cho cả đơn (khách chọn 1 loại chai cho toàn bộ đơn thay vì
-  // từng sản phẩm riêng) — tuỳ chọn hiện ra dựa trên các sản phẩm đang có trong giỏ.
-  function renderStep2Options() {
-    const cartProducts = cart.map((item) => findProduct(item.slug)).filter(Boolean) as ProductRow[];
-    const allOptions = new Set<string>();
-    cartProducts.forEach((p) => (p.bottle_options ?? []).forEach((o) => allOptions.add(o)));
-
-    bottleFieldset.innerHTML = "<legend>Loại chai</legend>";
-    if (allOptions.size === 0) {
-      bottleFieldset.innerHTML += "<p>Không áp dụng cho các sản phẩm trong giỏ.</p>";
-    } else {
-      Array.from(allOptions).forEach((opt, i) => {
-        const label = document.createElement("label");
-        label.innerHTML = `<input type="radio" name="bottle-type" value="${opt}" ${i === 0 ? "checked" : ""}/> ${bottleLabel[opt] ?? opt}`;
-        bottleFieldset.appendChild(label);
-      });
-    }
-  }
+  productSelect.addEventListener("change", () => {
+    quantityInput.value = "1";
+  });
 
   function goToStep(step: number) {
     document.querySelectorAll<HTMLElement>(".step").forEach((el) => {
       el.hidden = el.dataset.step !== String(step);
     });
     stepsIndicator.querySelectorAll("li").forEach((li) => {
-      li.classList.toggle("active", li.getAttribute("data-step") === String(step));
+      const liStep = Number(li.getAttribute("data-step"));
+      li.classList.toggle("active", liStep === step);
+      li.classList.toggle("done", liStep < step);
     });
     if (step === 4) renderSummary();
   }
 
   function renderSummary() {
     if (cart.length === 0) return;
-    const bottleType =
-      (form.querySelector('input[name="bottle-type"]:checked') as HTMLInputElement)?.value ??
-      "";
     const itemLines = cart
       .map((item) => {
         const p = findProduct(item.slug);
@@ -411,14 +473,62 @@ import OrderLookup from "../components/OrderLookup.astro";
       .join("");
     orderSummary.innerHTML = `
       ${itemLines}
-      ${bottleType ? `<p>Loại chai: ${bottleLabel[bottleType] ?? bottleType}</p>` : ""}
-      <p>Ngày giao: ${formatDeliveryDate(deliveryDateInput.value)}${deliveryTimeInput.value ? ` lúc ${deliveryTimeInput.value}` : ""}</p>
+      <p>Ngày giao: ${formatDeliveryDate(deliveryDateInput.value)}${deliveryTimeRangeText() ? ` (${deliveryTimeRangeText()})` : ""}</p>
       ${deliveryNoteInput.value ? `<p>Ghi chú: ${deliveryNoteInput.value}</p>` : ""}
       <p>Tạm tính: ${money(cartTotal())} (chưa gồm phí ship)</p>
       <p>Giao tới: ${(document.getElementById("address") as HTMLInputElement).value},
       ${districtSelect.value}</p>
     `;
   }
+
+  // reportValidity() hiện bubble lỗi mặc định của trình duyệt, nhưng nội dung bubble đó
+  // ("Please fill out this field"...) theo NGÔN NGỮ TRÌNH DUYỆT/hệ điều hành, không theo
+  // lang="vi" của trang — nên máy set tiếng Anh vẫn hiện tiếng Anh dù toàn trang tiếng Việt.
+  // Fix: tự set thông báo lỗi tiếng Việt qua setCustomValidity() trước khi gọi reportValidity().
+  function vietnameseValidityMessage(input: HTMLInputElement, requiredMessage: string): string {
+    if (input.validity.valueMissing) return requiredMessage;
+    if (input.validity.patternMismatch) return input.title || "Giá trị không đúng định dạng";
+    if (input.validity.typeMismatch) return "Giá trị không hợp lệ";
+    return "";
+  }
+
+  function useVietnameseValidation(input: HTMLInputElement, requiredMessage: string) {
+    input.addEventListener("invalid", () => {
+      input.setCustomValidity(vietnameseValidityMessage(input, requiredMessage));
+    });
+    // Xoá thông báo cũ mỗi khi người dùng sửa lại, để lần kiểm tra tiếp theo tính toán lại
+    // từ đầu (không thì trình duyệt coi field vẫn invalid với message cũ dù đã nhập đúng).
+    input.addEventListener("input", () => input.setCustomValidity(""));
+  }
+
+  useVietnameseValidation(deliveryDateInput, "Vui lòng chọn ngày giao hàng");
+
+  // Radio "required" chỉ gắn trên ô đầu tiên (theo chuẩn HTML, required trên 1 radio là
+  // áp dụng cho cả nhóm cùng name) nhưng người dùng có thể bấm chọn bất kỳ ô nào trong 3
+  // ô — phải lắng nghe "change" trên CẢ 3 ô để xoá customValidity của ô đầu, nếu không dù
+  // đã chọn ô 2/3 thì ô đầu vẫn giữ nguyên lỗi cũ (customValidity không tự hết).
+  const deliverySlotRadios = document.querySelectorAll<HTMLInputElement>('input[name="delivery-slot"]');
+  const firstDeliverySlotRadio = deliverySlotRadios[0];
+  firstDeliverySlotRadio.addEventListener("invalid", () => {
+    firstDeliverySlotRadio.setCustomValidity(
+      vietnameseValidityMessage(firstDeliverySlotRadio, "Vui lòng chọn khung giờ giao")
+    );
+  });
+  deliverySlotRadios.forEach((radio) => {
+    radio.addEventListener("change", () => firstDeliverySlotRadio.setCustomValidity(""));
+  });
+  useVietnameseValidation(
+    document.getElementById("customer-name") as HTMLInputElement,
+    "Vui lòng nhập họ tên"
+  );
+  useVietnameseValidation(
+    document.getElementById("phone") as HTMLInputElement,
+    "Vui lòng nhập số điện thoại"
+  );
+  useVietnameseValidation(
+    document.getElementById("address") as HTMLInputElement,
+    "Vui lòng nhập địa chỉ"
+  );
 
   // Cả 4 bước nằm trong 1 <form> duy nhất (chỉ ẩn/hiện qua CSS), nên nếu để trình duyệt
   // tự validate lúc bấm "Đặt hàng" ở bước 4, các input required của bước 3 (đã ẩn) sẽ
@@ -427,7 +537,7 @@ import OrderLookup from "../components/OrderLookup.astro";
   // Fix: tắt validate tự động của form (novalidate) và tự gọi reportValidity() ngay lúc
   // rời bước 3 (khi field vẫn đang hiển thị, để lỗi hiện đúng chỗ) trước khi cho qua bước 4.
   function validateStep2(): boolean {
-    return deliveryDateInput.reportValidity();
+    return deliveryDateInput.reportValidity() && firstDeliverySlotRadio.reportValidity();
   }
 
   function validateStep3(): boolean {
@@ -522,7 +632,7 @@ import OrderLookup from "../components/OrderLookup.astro";
         // mật khẩu DB), nên đang ghép tạm vào shipping_fee_note theo mẫu cố định
         // "Giao ngày DD/MM/YYYY [lúc HH:MM]. Ghi chú của khách: ... ." để admin đọc/trích
         // xuất lại được (xem admin/don-hang.astro). Nên tách thành cột riêng khi có quyền chạy SQL.
-        shipping_fee_note: `Giao ngày ${formatDeliveryDate(deliveryDateInput.value)}${deliveryTimeInput.value ? ` lúc ${deliveryTimeInput.value}` : ""}. Ghi chú của khách: ${deliveryNoteInput.value.trim() || "(không có)"}. Phí ship tính theo khoảng cách, tiệm sẽ báo lại qua Zalo trước khi giao.`,
+        shipping_fee_note: `Giao ngày ${formatDeliveryDate(deliveryDateInput.value)}${deliveryTimeRangeText() ? ` (${deliveryTimeRangeText()})` : ""}. Ghi chú của khách: ${deliveryNoteInput.value.trim() || "(không có)"}. Phí ship tùy theo khoảng cách và thời tiết hôm giao, tiệm sẽ báo lại qua Zalo trước khi giao.`,
       })
       .select()
       .single();
@@ -572,7 +682,6 @@ import OrderLookup from "../components/OrderLookup.astro";
     cart.push({ slug: initial.slug, quantity: 1 });
   }
   renderCart();
-  renderStep2Options();
 
   // Không cho chọn ngày giao trong quá khứ.
   deliveryDateInput.min = new Date().toISOString().slice(0, 10);
@@ -599,25 +708,67 @@ import OrderLookup from "../components/OrderLookup.astro";
   }
 
   .steps-indicator {
+    position: relative;
     display: flex;
     justify-content: space-between;
     list-style: none;
     padding: 0;
-    margin: 1.5rem 0;
-    font-size: 0.85rem;
+    margin: 1.75rem 0;
+    font-size: 0.8rem;
+  }
+
+  .steps-indicator::before {
+    content: "";
+    position: absolute;
+    top: 15px;
+    left: 6%;
+    right: 6%;
+    height: 2px;
+    background: var(--color-bg-alt);
+    z-index: 0;
   }
 
   .steps-indicator li {
+    position: relative;
+    z-index: 1;
     flex: 1;
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
     color: #9ca3af;
-    border-bottom: 3px solid var(--color-bg-alt);
-    padding-bottom: 0.5rem;
   }
 
-  .steps-indicator li.active {
-    color: var(--color-primary);
+  .step-badge {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 2px solid var(--color-bg-alt);
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #9ca3af;
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  }
+
+  .steps-indicator li.done .step-badge {
     border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: #fff;
+  }
+
+  .steps-indicator li.active .step-badge {
+    border-color: var(--color-primary);
+    background: #fff;
+    color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  }
+
+  .steps-indicator li.active .step-label {
+    color: var(--color-primary);
     font-weight: 600;
   }
 
@@ -647,6 +798,14 @@ import OrderLookup from "../components/OrderLookup.astro";
     resize: vertical;
   }
 
+  .step select {
+    appearance: none;
+    padding-right: 2.4rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9' fill='none'%3E%3Cpath d='M1 1.5L7 7.5L13 1.5' stroke='%234e6735' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+  }
+
   .step input:focus,
   .step select:focus,
   .step textarea:focus {
@@ -667,6 +826,99 @@ import OrderLookup from "../components/OrderLookup.astro";
 
   .form-row {
     display: contents;
+  }
+
+  .delivery-slot-fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .delivery-slot-fieldset legend {
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .option-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+  }
+
+  .option-grid--cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .option-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.9rem 0.5rem;
+    border: 1.5px solid #e2ddd0;
+    border-radius: var(--radius-sm);
+    background: #fff;
+    font-weight: 400;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .option-card:hover {
+    border-color: var(--color-primary);
+  }
+
+  .option-card input {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    margin: 0;
+    accent-color: var(--color-primary);
+  }
+
+  .option-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  .option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .option-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--color-primary-dark, var(--color-primary));
+  }
+
+  .option-subtitle {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+
+  .option-card:has(input:checked) {
+    border-color: var(--color-primary);
+    background: var(--color-bg-alt);
+    box-shadow: 0 0 0 1.5px var(--color-primary);
+  }
+
+  @media (max-width: 480px) {
+    .option-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .option-grid .option-card {
+      flex-direction: row;
+      justify-content: flex-start;
+      text-align: left;
+      padding: 0.7rem 0.9rem;
+    }
   }
 
   @media (min-width: 720px) {
@@ -831,13 +1083,6 @@ import OrderLookup from "../components/OrderLookup.astro";
     margin-bottom: 0.3rem;
   }
 
-  .payment-method label {
-    flex-direction: row;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 400;
-  }
-
   .nav-row {
     display: flex;
     justify-content: space-between;
@@ -909,10 +1154,37 @@ import OrderLookup from "../components/OrderLookup.astro";
     margin: 0.2rem 0;
   }
 
-  .shipping-note,
-  .delivery-day-note {
+  .shipping-note {
     font-size: 0.85rem;
     color: var(--color-text);
+  }
+
+  .ginger-shot-schedule-note {
+    padding: 1rem 1.2rem;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-alt);
+  }
+
+  .ginger-shot-schedule-note h3 {
+    margin: 0 0 0.6rem;
+    font-size: 1rem;
+    color: var(--color-secondary);
+  }
+
+  .ginger-shot-schedule-note p {
+    margin: 0 0 0.6rem;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--color-text);
+  }
+
+  .ginger-shot-schedule-note p:last-child {
+    margin-bottom: 0;
+  }
+
+  .ginger-shot-schedule-note a {
+    color: var(--color-primary);
+    font-weight: 600;
   }
 
   .bank-info {

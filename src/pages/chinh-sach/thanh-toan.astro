@@ -16,8 +16,35 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       <p>Thông tin chuyển khoản cụ thể được hiển thị ở bước xác nhận cuối cùng của form <a href="/dat-hang">Đặt hàng</a>.</p>
     </section>
 
-    <section class="note-box">
-      <p>⚠️ Thông tin tài khoản ngân hàng hiển thị trên trang Đặt hàng hiện là dữ liệu demo, sẽ được tiệm cập nhật thông tin thật trước khi nhận thanh toán chính thức.</p>
+    <section class="bank-info">
+      <p class="bank-info-title">💳 Thông tin chuyển khoản</p>
+      <div class="bank-info-body">
+        <img
+          class="qr-code"
+          src="https://img.vietqr.io/image/970436-1065425789-qr_only.png"
+          alt="Mã QR chuyển khoản Vietcombank HKD GUNG DETOX"
+          width="200"
+          height="200"
+          loading="lazy"
+        />
+        <dl class="bank-details">
+          <div class="bank-details-row">
+            <dt>Ngân hàng</dt>
+            <dd>Vietcombank</dd>
+          </div>
+          <div class="bank-details-row">
+            <dt>Số tài khoản</dt>
+            <dd class="account-number">
+              <span>1065425789</span>
+              <button type="button" class="copy-btn" data-copy="1065425789">Sao chép</button>
+            </dd>
+          </div>
+          <div class="bank-details-row">
+            <dt>Chủ tài khoản</dt>
+            <dd>HKD GUNG DETOX</dd>
+          </div>
+        </dl>
+      </div>
     </section>
 
     <section>
@@ -26,6 +53,27 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     </section>
   </main>
 </BaseLayout>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>(".copy-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const text = btn.dataset.copy ?? "";
+      const original = btn.textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = "Đã sao chép ✓";
+        btn.classList.add("copied");
+      } catch {
+        alert("Không sao chép được, vui lòng copy thủ công: " + text);
+        return;
+      }
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.classList.remove("copied");
+      }, 1500);
+    });
+  });
+</script>
 
 <style>
   .policy-page {
@@ -42,7 +90,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
   .breadcrumb a {
     color: var(--color-primary);
-    text-decoration: none;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 600;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--color-secondary);
   }
 
   section {
@@ -53,9 +107,91 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     margin-bottom: 0.6rem;
   }
 
-  .note-box {
-    background: var(--color-bg-warm);
-    border-radius: var(--radius-md);
-    padding: 1rem;
+  .bank-info {
+    background: #fff;
+    border: 1px solid var(--color-bg-alt);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 1.1rem 1.2rem;
+  }
+
+  .bank-info-title {
+    margin: 0 0 0.9rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--color-secondary);
+  }
+
+  .bank-info-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.1rem;
+    align-items: flex-start;
+  }
+
+  .bank-info .qr-code {
+    width: 132px;
+    height: 132px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-bg-alt);
+    flex-shrink: 0;
+  }
+
+  .bank-details {
+    flex: 1;
+    min-width: 180px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .bank-details-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .bank-details-row dt {
+    margin: 0;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-muted);
+    font-weight: 600;
+  }
+
+  .bank-details-row dd {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text);
+  }
+
+  .account-number {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    font-family: monospace;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+  }
+
+  .copy-btn {
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-primary);
+    background: #fff;
+    color: var(--color-primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .copy-btn.copied {
+    background: var(--color-primary);
+    color: #fff;
   }
 </style>

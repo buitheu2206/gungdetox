@@ -1,0 +1,10 @@
+import { chromium } from "playwright";
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1300, height: 900 } });
+await page.goto("http://localhost:4321/nhuong-quyen", { waitUntil: "networkidle" });
+await page.waitForTimeout(500);
+const card = page.locator(".package-card").first();
+await card.scrollIntoViewIfNeeded();
+await page.waitForTimeout(200);
+await card.screenshot({ path: ".verify/card-corner-zoom.png" });
+await browser.close();

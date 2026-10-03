@@ -1,0 +1,12 @@
+import { chromium } from "playwright";
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1100, height: 1200 } });
+await page.goto("http://localhost:4321/", { waitUntil: "networkidle" });
+await page.waitForTimeout(500);
+const section = page.locator(".quality-check");
+await section.scrollIntoViewIfNeeded();
+await page.screenshot({ path: ".verify/quality-check-collapsed.png" });
+await page.click(".quality-details summary");
+await page.waitForTimeout(300);
+await page.screenshot({ path: ".verify/quality-check-expanded.png", fullPage: false });
+await browser.close();

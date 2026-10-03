@@ -16,12 +16,6 @@ import AdminLogin from "../../components/AdminLogin.astro";
         <button data-status="cancelled" class="chip">Đã huỷ</button>
       </div>
 
-      <div class="status-filter" id="customer-filter">
-        <button data-customer="all" class="chip active">Mọi khách</button>
-        <button data-customer="new" class="chip">Khách mới</button>
-        <button data-customer="returning" class="chip">Khách quen</button>
-      </div>
-
       <div class="table-wrap">
         <table id="orders-table">
           <thead>
@@ -32,6 +26,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
               <th>SĐT</th>
               <th>Địa chỉ</th>
               <th>Ngày giao</th>
+              <th>Khung giờ</th>
               <th>Ghi chú giao hàng</th>
               <th>Sản phẩm</th>
               <th>Chai</th>
@@ -42,7 +37,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
             </tr>
           </thead>
           <tbody id="orders-body">
-            <tr><td colspan="13">Đang tải...</td></tr>
+            <tr><td colspan="14">Đang tải...</td></tr>
           </tbody>
         </table>
       </div>
@@ -69,11 +64,17 @@ import AdminLogin from "../../components/AdminLogin.astro";
 
   const tbody = document.getElementById("orders-body")!;
   const statusChips = document.querySelectorAll<HTMLButtonElement>("#status-filter .chip");
-  const customerChips = document.querySelectorAll<HTMLButtonElement>("#customer-filter .chip");
+
+  // Astro chỉ gắn attribute scope CSS (data-astro-cid-*) cho phần tử render lúc build —
+  // <tr>/<td> dựng bằng innerHTML ở đây không tự có, nên mọi CSS trong file này (viền,
+  // màu xen kẽ...) sẽ bị bỏ qua hoàn toàn nếu không tự gắn thêm (cùng lỗi đã gặp ở
+  // dat-hang.astro và trang chi tiết sản phẩm/blog).
+  const orderTable = document.getElementById("orders-table")!;
+  const cidAttrName = Array.from(orderTable.attributes).find((a) => a.name.startsWith("data-astro-cid-"))?.name;
+  const cid = cidAttrName ? ` ${cidAttrName}=""` : "";
 
   let allOrders: any[] = [];
   let activeStatus = "all";
-  let activeCustomerType: "all" | "new" | "returning" = "all";
 
   function itemsSummary(items: any[]) {
     return items.map((i) => `${i.productSlug} × ${i.quantity}`).join(", ");
@@ -82,11 +83,25 @@ import AdminLogin from "../../components/AdminLogin.astro";
   // orders chưa có cột delivery_date/delivery_note riêng (không có quyền chạy ALTER
   // TABLE từ đây — cần Supabase Management API token hoặc mật khẩu DB mà phiên này
   // không có sẵn), nên đang trích tạm từ shipping_fee_note — dat-hang.astro luôn ghi
-  // đúng theo mẫu "Giao ngày DD/MM/YYYY [lúc HH:MM]. Ghi chú của khách: ... . Phí ship..."
+  // đúng theo mẫu "Giao ngày DD/MM/YYYY [(HH:MM-HH:MM)]. Ghi chú của khách: ... . Phí ship..."
   // lúc đặt hàng. Đơn cũ hơn (đặt trước khi có tính năng này) sẽ không khớp mẫu, trả về "—".
-  function extractDeliveryDateTime(note: string | null | undefined): string {
-    if (!note) return "—";
+  function extractDeliveryFull(note: string | null | undefined): string | null {
+    if (!note) return null;
     const match = note.match(/Giao ngày (.+?)\. Ghi chú của khách:/);
+    return match ? match[1] : null;
+  }
+
+  function extractDeliveryDate(note: string | null | undefined): string {
+    const full = extractDeliveryFull(note);
+    if (!full) return "—";
+    const match = full.match(/^(.+?)\s*\(/);
+    return match ? match[1] : full;
+  }
+
+  function extractDeliveryTimeRange(note: string | null | undefined): string {
+    const full = extractDeliveryFull(note);
+    if (!full) return "—";
+    const match = full.match(/\(([^)]+)\)/);
     return match ? match[1] : "—";
   }
 
@@ -105,39 +120,38 @@ import AdminLogin from "../../components/AdminLogin.astro";
 
   function render(orders: any[]) {
     if (orders.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="13">Không có đơn nào khớp bộ lọc.</td></tr>`;
+      tbody.innerHTML = `<tr${cid}><td colspan="14"${cid}>Không có đơn nào khớp bộ lọc.</td></tr>`;
       return;
     }
     tbody.innerHTML = orders
       .map((o) => {
         const orderCountSoFar = orderCountByPhoneUpTo(o.phone, o.created_at);
-        const customerBadge =
-          orderCountSoFar > 1
-            ? `<span class="badge badge-returning">Khách quen (${orderCountSoFar})</span>`
-            : `<span class="badge badge-new">Khách mới</span>`;
-        const deliveryDateTime = extractDeliveryDateTime(o.shipping_fee_note);
+        const customerBadge = `<span class="badge ${orderCountSoFar > 1 ? "badge-returning" : "badge-new"}"${cid}>${orderCountSoFar}</span>`;
+        const deliveryDate = extractDeliveryDate(o.shipping_fee_note);
+        const deliveryTimeRange = extractDeliveryTimeRange(o.shipping_fee_note);
         const deliveryNote = extractDeliveryNote(o.shipping_fee_note);
         return `
-      <tr data-id="${o.id}">
-        <td class="code">${orderCode(o.phone, o.id)}</td>
-        <td>${new Date(o.created_at).toLocaleString("vi-VN")}</td>
-        <td>${o.customer_name}<br />${customerBadge}</td>
-        <td>${o.phone}</td>
-        <td>${o.address}, ${o.district}</td>
-        <td>${deliveryDateTime !== "—" ? `<span class="badge badge-delivery">${deliveryDateTime}</span>` : "—"}</td>
-        <td class="delivery-note-cell">${deliveryNote}</td>
-        <td>${itemsSummary(o.items)}</td>
-        <td>${bottleLabel[o.bottle_type] ?? o.bottle_type}</td>
-        <td>${o.bottles_returned ?? 0}</td>
-        <td>${paymentMethodLabel[o.payment_method] ?? o.payment_method ?? "COD"}</td>
-        <td>
-          <label class="paid-toggle">
-            <input type="checkbox" class="paid-checkbox" data-id="${o.id}" ${o.paid ? "checked" : ""} />
+      <tr data-id="${o.id}"${cid}>
+        <td class="code"${cid}>${orderCode(o.phone, o.id)}</td>
+        <td${cid}>${new Date(o.created_at).toLocaleDateString("vi-VN")}<br${cid} />${new Date(o.created_at).toLocaleTimeString("vi-VN")}</td>
+        <td${cid}>${o.customer_name}<br${cid} />${customerBadge}</td>
+        <td${cid}>${o.phone}</td>
+        <td class="address-cell"${cid}>${o.address}, ${o.district}</td>
+        <td${cid}>${deliveryDate !== "—" ? `<span class="badge badge-delivery"${cid}>${deliveryDate}</span>` : "—"}</td>
+        <td${cid}>${deliveryTimeRange}</td>
+        <td class="delivery-note-cell"${cid}>${deliveryNote}</td>
+        <td${cid}>${itemsSummary(o.items)}</td>
+        <td${cid}>${bottleLabel[o.bottle_type] ?? o.bottle_type}</td>
+        <td${cid}>${o.bottles_returned ?? 0}</td>
+        <td${cid}>${paymentMethodLabel[o.payment_method] ?? o.payment_method ?? "COD"}</td>
+        <td${cid}>
+          <label class="paid-toggle"${cid}>
+            <input type="checkbox" class="paid-checkbox" data-id="${o.id}" ${o.paid ? "checked" : ""}${cid} />
             ${o.paid ? "Đã thanh toán" : "Chưa thanh toán"}
           </label>
         </td>
-        <td>
-          <select class="status-select" data-id="${o.id}">
+        <td${cid}>
+          <select class="status-select" data-id="${o.id}"${cid}>
             ${Object.entries(statusLabel)
               .map(
                 ([value, label]) =>
@@ -192,11 +206,6 @@ import AdminLogin from "../../components/AdminLogin.astro";
   function applyFilters() {
     const filtered = allOrders.filter((o) => {
       if (activeStatus !== "all" && o.status !== activeStatus) return false;
-      if (activeCustomerType !== "all") {
-        const isReturning = orderCountByPhoneUpTo(o.phone, o.created_at) > 1;
-        if (activeCustomerType === "returning" && !isReturning) return false;
-        if (activeCustomerType === "new" && isReturning) return false;
-      }
       return true;
     });
     render(filtered);
@@ -211,22 +220,13 @@ import AdminLogin from "../../components/AdminLogin.astro";
     });
   });
 
-  customerChips.forEach((chip) => {
-    chip.addEventListener("click", () => {
-      customerChips.forEach((c) => c.classList.remove("active"));
-      chip.classList.add("active");
-      activeCustomerType = (chip.dataset.customer as "all" | "new" | "returning") ?? "all";
-      applyFilters();
-    });
-  });
-
   async function loadOrders() {
     const { data, error } = await supabase
       .from("orders")
       .select("*")
       .order("created_at", { ascending: false });
     if (error) {
-      tbody.innerHTML = `<tr><td colspan="13">Lỗi tải đơn hàng: ${error.message}</td></tr>`;
+      tbody.innerHTML = `<tr${cid}><td colspan="14"${cid}>Lỗi tải đơn hàng: ${error.message}</td></tr>`;
       return;
     }
     allOrders = data ?? [];
@@ -238,9 +238,9 @@ import AdminLogin from "../../components/AdminLogin.astro";
 
 <style>
   .admin-page {
-    max-width: 1100px;
+    max-width: 100%;
     margin: 0 auto;
-    padding: 1.5rem;
+    padding: 1.5rem 2rem;
   }
 
   .status-filter {
@@ -272,14 +272,32 @@ import AdminLogin from "../../components/AdminLogin.astro";
     width: 100%;
     border-collapse: collapse;
     font-size: 0.85rem;
+    border: 1px solid #c9bfa8;
   }
 
   th,
   td {
-    border-bottom: 1px solid var(--color-bg-alt);
-    padding: 0.5rem;
+    padding: 0.55rem 0.6rem;
     text-align: left;
     white-space: nowrap;
+    vertical-align: top;
+    border: 1px solid #c9bfa8;
+  }
+
+  th {
+    background: var(--color-bg-alt);
+  }
+
+  td {
+    background: #fff;
+  }
+
+  tbody tr:nth-child(even) td {
+    background: #faf6ec;
+  }
+
+  tbody tr:hover td {
+    background: color-mix(in srgb, var(--color-primary) 8%, #fff);
   }
 
   .status-select {
@@ -328,6 +346,12 @@ import AdminLogin from "../../components/AdminLogin.astro";
   }
 
   .delivery-note-cell {
+    white-space: normal;
+    max-width: 220px;
+    min-width: 160px;
+  }
+
+  .address-cell {
     white-space: normal;
     max-width: 220px;
     min-width: 160px;

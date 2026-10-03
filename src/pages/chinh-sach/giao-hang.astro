@@ -17,17 +17,22 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
     <section>
       <h2>Phí ship</h2>
-      <p>🚚 Tính theo khoảng cách thực tế (5.000đ/km từ tiệm gần nhất), tiệm sẽ báo lại qua Zalo trước khi giao.</p>
+      <p>🚚 Phí ship tùy theo khoảng cách và thời tiết hôm giao — tiệm sẽ báo cụ thể qua Zalo trước khi giao.</p>
     </section>
 
     <section>
-      <h2>Lịch giao combo &amp; Set Detox</h2>
+      <h2>Lịch giao combo & set detox</h2>
+      <p>
+        Tiệm làm mới đồ uống theo từng đơn (không làm sẵn). Bạn chọn ngày và khung giờ giao mong
+        muốn ở bước 2 của form <a href="/dat-hang">Đặt hàng</a>, tiệm sẽ sắp xếp giao trong khung
+        thời gian phù hợp.
+      </p>
       <ul>
-        <li><strong>Combo tháng Ginger Shot:</strong> giao 4 đợt/tuần.</li>
-        <li><strong>Combo 3 tháng Ginger Shot:</strong> giao theo tuần để đảm bảo độ tươi ngon.</li>
+        <li><strong>Combo tháng Ginger Shot:</strong> giao 2 đợt/tuần.</li>
+        <li><strong>Combo 3 tháng Ginger Shot:</strong> giao hàng tuần để đảm bảo độ tươi ngon.</li>
         <li><strong>5 Set Detox:</strong> giao 1 lần đủ 7 chai cho cả tuần.</li>
+        <li><strong>Hũ ngâm</strong> (Củ Dền Gừng ngâm, Chanh Vàng Ngâm Mật Ong, Thơm Nướng Dưỡng Phổi): để được lâu hơn nên gom giao theo lịch riêng, tiệm sẽ báo cụ thể qua Zalo.</li>
       </ul>
-      <p>Khi đặt combo/set, bạn có thể chọn ngày giao hàng ưu tiên trong tuần ở bước 2 của form <a href="/dat-hang">Đặt hàng</a>.</p>
     </section>
 
     <section>
@@ -52,7 +57,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
   .breadcrumb a {
     color: var(--color-primary);
-    text-decoration: none;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 600;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--color-secondary);
   }
 
   section {

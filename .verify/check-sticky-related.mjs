@@ -1,0 +1,12 @@
+import { chromium } from "playwright";
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+await page.goto("http://localhost:4321/blog/kombucha-loi-khuan-tu-dau", { waitUntil: "networkidle" });
+await page.waitForTimeout(500);
+const before = await page.evaluate(() => document.querySelector(".related").getBoundingClientRect().top);
+console.log("related top before scroll:", before);
+await page.evaluate(() => window.scrollTo(0, 800));
+await page.waitForTimeout(300);
+const after = await page.evaluate(() => document.querySelector(".related").getBoundingClientRect().top);
+console.log("related top after scrolling 800px:", after);
+await browser.close();

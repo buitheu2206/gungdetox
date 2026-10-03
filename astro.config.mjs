@@ -12,7 +12,7 @@ export default defineConfig({
     }),
   ],
   redirects: {
-    // Nội dung "Quy trình/Giới thiệu" đã gộp vào trang chủ (mục #cau-chuyen)
+    // Nội dung "Quy trình/Giới thiệu" đã gộp vào trang chủ
     '/quy-trinh': '/',
   },
 });

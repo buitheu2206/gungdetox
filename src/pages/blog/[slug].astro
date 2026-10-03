@@ -1,22 +1,30 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { supabase } from "../../lib/supabase";
+import { blogCardHtml, tagLabel, type PostRow } from "../../lib/templates";
 
 // Cùng pattern với /san-pham/[slug].astro: pre-render tại build time (getStaticPaths)
 // cho URL đẹp/SEO, script phía client fetch lại đúng slug để cập nhật nội dung
 // nếu admin sửa bài sau lần build gần nhất (không cần rebuild chỉ vì sửa chữ).
 export async function getStaticPaths() {
   const { data } = await supabase.from("posts").select("*");
-  return (data ?? []).map((p) => ({ params: { slug: p.slug }, props: { post: p } }));
+  const allPosts = data ?? [];
+  return allPosts.map((p) => ({ params: { slug: p.slug }, props: { post: p, allPosts } }));
 }
 
-const { post } = Astro.props;
+const { post, allPosts } = Astro.props as { post: PostRow; allPosts: PostRow[] };
 
 const formattedDate = post.published_at
   ? new Date(post.published_at).toLocaleDateString("vi-VN")
   : "";
 
 const paragraphs: string[] = (post.body ?? "").split(/\n\n+/).filter(Boolean);
+const images = [post.image_url, ...(post.gallery_images ?? [])].filter(Boolean) as string[];
+
+const relatedPosts = allPosts
+  .filter((p) => p.slug !== post.slug)
+  .sort((a, b) => (a.tag === post.tag ? -1 : 0) - (b.tag === post.tag ? -1 : 0))
+  .slice(0, 3);
 ---
 
 <BaseLayout
@@ -28,39 +36,111 @@ const paragraphs: string[] = (post.body ?? "").split(/\n\n+/).filter(Boolean);
       <a href="/blog">Blog</a> / <span id="bc-title">{post.title}</span>
     </nav>
 
-    <article>
-      <header>
-        {post.tag && <span class="tag" id="p-tag">{post.tag}</span>}
-        <h1 id="p-title">{post.title}</h1>
-        <p class="meta" id="p-meta">
-          {formattedDate}
-          {post.read_time ? ` · ${post.read_time}` : ""}
-        </p>
-      </header>
+    <div class="post-layout">
+      <article>
+        <header>
+          {post.tag && <span class="tag" id="p-tag">{tagLabel[post.tag] ?? post.tag}</span>}
+          <h1 id="p-title">{post.title}</h1>
+          <p class="meta" id="p-meta">
+            {formattedDate}
+            {post.read_time ? ` · ${post.read_time}` : ""}
+          </p>
+        </header>
+
+        <div class="gallery">
+          {
+            images.length > 0 ? (
+              <img class="cover" id="p-cover" src={images[0]} alt={post.title} />
+            ) : (
+              <div class="cover media-placeholder" id="p-cover" />
+            )
+          }
+          {
+            images.length > 1 && (
+              <div class="gallery-thumbs" id="gallery-thumbs">
+                {images.map((src, i) => (
+                  <button class="thumb" data-src={src} class:list={{ active: i === 0 }}>
+                    <img src={src} alt="" />
+                  </button>
+                ))}
+              </div>
+            )
+          }
+        </div>
+
+        <div class="content" id="p-body">
+          {paragraphs.map((para) => <p>{para}</p>)}
+        </div>
+
+        <div class="cta-banner">
+          <p>Muốn thử ngay hôm nay?</p>
+          <a class="btn-primary" href="/dat-hang">Đặt hàng ngay</a>
+        </div>
+
+        <p class="back"><a href="/blog">← Xem thêm bài viết khác</a></p>
+      </article>
 
       {
-        post.image_url ? (
-          <img class="cover" id="p-cover" src={post.image_url} alt={post.title} />
-        ) : (
-          <div class="cover media-placeholder" id="p-cover" />
+        relatedPosts.length > 0 && (
+          <aside class="related">
+            <h2>Bài viết liên quan</h2>
+            <div class="related-list" set:html={relatedPosts.map((p) => blogCardHtml(p)).join("")} />
+          </aside>
         )
       }
-
-      <div class="content" id="p-body">
-        {paragraphs.map((para) => <p>{para}</p>)}
-      </div>
-    </article>
-
-    <p class="back"><a href="/blog">← Xem thêm bài viết khác</a></p>
+    </div>
   </main>
 </BaseLayout>
 
 <script>
   import { supabase } from "../../lib/supabase";
+  import { tagLabel } from "../../lib/templates";
 
   const page = document.querySelector(".post-page") as HTMLElement;
   const slug = page?.dataset.slug;
   if (!slug) throw new Error("missing slug");
+
+  // Chuyển ảnh khi bấm thumbnail — gắn trên .gallery (luôn tồn tại) thay vì
+  // #gallery-thumbs, vì dải thumbnail có thể chưa tồn tại lúc build (bài viết
+  // lúc đó chỉ có 1 ảnh) và được script bên dưới tự tạo ra sau khi fetch lại.
+  document.querySelector(".gallery")?.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest(".thumb") as HTMLButtonElement | null;
+    if (!btn) return;
+    const mainImg = document.getElementById("p-cover") as HTMLImageElement;
+    mainImg.src = btn.dataset.src!;
+    document.querySelectorAll(".thumb").forEach((t) => t.classList.remove("active"));
+    btn.classList.add("active");
+  });
+
+  function renderThumbs(images: string[]) {
+    const gallery = document.querySelector(".gallery");
+    if (!gallery) return;
+    let thumbs = document.getElementById("gallery-thumbs");
+    if (images.length <= 1) {
+      thumbs?.remove();
+      return;
+    }
+    // Astro chỉ áp style scoped (data-astro-cid-*) cho phần tử render lúc build;
+    // phần tử tạo bằng JS phải tự gắn thêm attribute này thì CSS mới nhận diện
+    // được — nếu không, ảnh thumbnail sẽ không bị giới hạn kích thước và phá
+    // vỡ layout (lỗi đã gặp và fix ở trang chi tiết sản phẩm).
+    const cidAttr = Array.from(gallery.attributes).find((a) => a.name.startsWith("data-astro-cid-"));
+    const cid = cidAttr ? ` ${cidAttr.name}=""` : "";
+
+    if (!thumbs) {
+      thumbs = document.createElement("div");
+      thumbs.id = "gallery-thumbs";
+      thumbs.className = "gallery-thumbs";
+      gallery.appendChild(thumbs);
+    }
+    if (cidAttr) thumbs.setAttribute(cidAttr.name, "");
+    thumbs.innerHTML = images
+      .map(
+        (src, i) =>
+          `<button class="thumb${i === 0 ? " active" : ""}" data-src="${src}"${cid}><img src="${src}" alt=""${cid} /></button>`
+      )
+      .join("");
+  }
 
   supabase
     .from("posts")
@@ -77,7 +157,7 @@ const paragraphs: string[] = (post.body ?? "").split(/\n\n+/).filter(Boolean);
       };
       setText("bc-title", p.title);
       setText("p-title", p.title);
-      setText("p-tag", p.tag);
+      setText("p-tag", p.tag ? (tagLabel[p.tag] ?? p.tag) : null);
 
       const metaEl = document.getElementById("p-meta");
       if (metaEl) {
@@ -85,10 +165,12 @@ const paragraphs: string[] = (post.body ?? "").split(/\n\n+/).filter(Boolean);
         metaEl.textContent = `${date}${p.read_time ? ` · ${p.read_time}` : ""}`;
       }
 
+      const images = [p.image_url, ...(p.gallery_images ?? [])].filter(Boolean) as string[];
       const cover = document.getElementById("p-cover");
-      if (p.image_url && cover?.tagName === "IMG") {
-        (cover as HTMLImageElement).src = p.image_url;
+      if (images.length > 0 && cover?.tagName === "IMG") {
+        (cover as HTMLImageElement).src = images[0];
       }
+      renderThumbs(images);
 
       const bodyEl = document.getElementById("p-body");
       if (bodyEl && p.body) {
@@ -104,9 +186,22 @@ const paragraphs: string[] = (post.body ?? "").split(/\n\n+/).filter(Boolean);
 
 <style>
   .post-page {
-    max-width: 760px;
+    max-width: 1080px;
     margin: 0 auto;
     padding: 1.5rem;
+  }
+
+  .post-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 2.5rem;
+    align-items: start;
+  }
+
+  @media (max-width: 860px) {
+    .post-layout {
+      grid-template-columns: 1fr;
+    }
   }
 
   .breadcrumb {
@@ -117,16 +212,26 @@ const paragraphs: string[] = (post.body ?? "").split(/\n\n+/).filter(Boolean);
 
   .breadcrumb a {
     color: var(--color-primary);
-    text-decoration: none;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 600;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--color-secondary);
   }
 
   .tag {
     display: inline-block;
     font-size: 0.75rem;
     font-weight: 700;
-    color: var(--color-primary);
+    color: #fff;
+    background: var(--color-primary);
     text-transform: uppercase;
-    margin-bottom: 0.4rem;
+    letter-spacing: 0.03em;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    margin-bottom: 0.5rem;
   }
 
   header h1 {
@@ -139,14 +244,46 @@ const paragraphs: string[] = (post.body ?? "").split(/\n\n+/).filter(Boolean);
     margin-bottom: 1.2rem;
   }
 
+  .gallery {
+    margin-bottom: 1.5rem;
+  }
+
   .cover {
     width: 100%;
     aspect-ratio: 16 / 10;
-    object-fit: cover;
+    object-fit: contain;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
-    margin-bottom: 1.5rem;
     background: linear-gradient(135deg, var(--color-primary-light), var(--color-bg-warm));
+  }
+
+  .gallery-thumbs {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+  }
+
+  .thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 2px solid transparent;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+    flex-shrink: 0;
+  }
+
+  .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .thumb.active {
+    border-color: var(--color-primary);
   }
 
   .content p {
@@ -163,5 +300,79 @@ const paragraphs: string[] = (post.body ?? "").split(/\n\n+/).filter(Boolean);
     color: var(--color-primary);
     text-decoration: none;
     font-weight: 600;
+  }
+
+  .cta-banner {
+    margin-top: 2.5rem;
+    padding: 1.6rem;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, var(--color-primary-light), var(--color-bg-warm));
+    text-align: center;
+  }
+
+  .cta-banner p {
+    margin: 0 0 0.8rem;
+    font-weight: 600;
+    color: var(--color-secondary);
+    font-size: 1.1rem;
+  }
+
+  .btn-primary {
+    display: inline-block;
+    background: var(--color-primary);
+    color: #fff;
+    text-decoration: none;
+    padding: 0.8rem 1.8rem;
+    border-radius: 999px;
+    font-weight: 600;
+    box-shadow: 0 8px 20px rgba(78, 103, 53, 0.3);
+  }
+
+  .related {
+    padding-top: 0.2rem;
+    position: sticky;
+    top: 88px;
+  }
+
+  @media (max-width: 860px) {
+    .related {
+      position: static;
+    }
+  }
+
+  .related h2 {
+    font-size: 1.1rem;
+    margin: 0 0 1rem;
+  }
+
+  .related-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+
+  .related-list :global(.blog-card) {
+    display: flex;
+    gap: 0.8rem;
+    background: #fff;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .related-list :global(.blog-media) {
+    width: 92px;
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+  }
+
+  .related-list :global(.blog-body) {
+    padding: 0.6rem 0.8rem 0.6rem 0;
+    min-width: 0;
+  }
+
+  .related-list :global(.blog-body h3) {
+    font-size: 0.9rem;
+    line-height: 1.3;
   }
 </style>

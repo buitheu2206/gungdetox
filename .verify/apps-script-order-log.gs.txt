@@ -1,0 +1,28 @@
+function doPost(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Đơn hàng") || SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const data = JSON.parse(e.postData.contents);
+
+  // Nếu sheet đang trống, tự thêm dòng tiêu đề trước
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow([
+      "Ngày tạo", "Tên khách", "SĐT", "Địa chỉ", "Quận",
+      "Sản phẩm", "Loại chai", "Số chai trả", "Thanh toán", "Ghi chú giao hàng",
+    ]);
+  }
+
+  sheet.appendRow([
+    data.created_at || new Date().toLocaleString("vi-VN"),
+    data.customer_name || "",
+    data.phone || "",
+    data.address || "",
+    data.district || "",
+    data.items_summary || "",
+    data.bottle_type || "",
+    data.bottles_returned ?? "",
+    data.payment_method || "",
+    data.shipping_fee_note || "",
+  ]);
+
+  return ContentService.createTextOutput(JSON.stringify({ ok: true }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
