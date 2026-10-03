@@ -8,12 +8,16 @@ import AdminLogin from "../../components/AdminLogin.astro";
     <AdminLogin>
       <h1>Quản trị đơn hàng</h1>
 
-      <div class="status-filter" id="status-filter">
-        <button data-status="all" class="chip active">Tất cả</button>
-        <button data-status="processing" class="chip">Đang xử lý</button>
-        <button data-status="delivering" class="chip">Đang giao</button>
-        <button data-status="delivered" class="chip">Đã giao</button>
-        <button data-status="cancelled" class="chip">Đã huỷ</button>
+      <div class="toolbar-row">
+        <div class="status-filter" id="status-filter">
+          <button data-status="all" class="chip active">Tất cả</button>
+          <button data-status="processing" class="chip">Đang xử lý</button>
+          <button data-status="delivering" class="chip">Đang giao</button>
+          <button data-status="delivered" class="chip">Đã giao</button>
+          <button data-status="cancelled" class="chip">Đã huỷ</button>
+        </div>
+
+        <button type="button" id="export-csv-btn" class="export-btn">Xuất file CSV</button>
       </div>
 
       <div class="table-wrap">
@@ -220,6 +224,54 @@ import AdminLogin from "../../components/AdminLogin.astro";
     });
   });
 
+  // Xuất toàn bộ đơn (không theo bộ lọc đang chọn) ra file CSV để mở bằng Excel/Sheets.
+  const exportCsvBtn = document.getElementById("export-csv-btn") as HTMLButtonElement;
+
+  const csvHeader = [
+    "Mã đơn", "Ngày đặt", "Khách", "SĐT", "Địa chỉ", "Ngày giao", "Khung giờ",
+    "Ghi chú giao hàng", "Sản phẩm", "Chai", "Chai trả", "Hình thức TT",
+    "Thanh toán", "Trạng thái",
+  ];
+
+  function orderToCsvRow(o: any): string[] {
+    return [
+      orderCode(o.phone, o.id),
+      new Date(o.created_at).toLocaleString("vi-VN"),
+      o.customer_name,
+      o.phone,
+      `${o.address}, ${o.district}`,
+      extractDeliveryDate(o.shipping_fee_note),
+      extractDeliveryTimeRange(o.shipping_fee_note),
+      extractDeliveryNote(o.shipping_fee_note),
+      itemsSummary(o.items),
+      bottleLabel[o.bottle_type] ?? o.bottle_type,
+      String(o.bottles_returned ?? 0),
+      paymentMethodLabel[o.payment_method] ?? o.payment_method ?? "COD",
+      o.paid ? "Đã thanh toán" : "Chưa thanh toán",
+      statusLabel[o.status] ?? o.status,
+    ];
+  }
+
+  // Bọc trong dấu "" và nhân đôi dấu " bên trong — quy tắc escape chuẩn của CSV,
+  // bắt buộc vì địa chỉ/ghi chú khách nhập tự do có thể chứa dấu phẩy hoặc xuống dòng.
+  function csvCell(value: string): string {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+
+  exportCsvBtn.addEventListener("click", () => {
+    const rows = [csvHeader, ...allOrders.map(orderToCsvRow)];
+    const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
+    // Thêm BOM (﻿) để Excel nhận đúng UTF-8, không thì chữ có dấu tiếng Việt
+    // sẽ hiện sai (vd. "Đơn" thành ký tự lạ) khi mở file trực tiếp bằng Excel.
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `don-hang-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+
   async function loadOrders() {
     const { data, error } = await supabase
       .from("orders")
@@ -243,10 +295,30 @@ import AdminLogin from "../../components/AdminLogin.astro";
     padding: 1.5rem 2rem;
   }
 
+  .toolbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
   .status-filter {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 1rem;
+  }
+
+  .export-btn {
+    background: var(--color-secondary);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
   }
 
   .chip {
