@@ -20,6 +20,9 @@ pnpm-debug.log*
 .env
 .env.production
 
+# contains real FTP password — local-only, never commit
+DEPLOY.md
+
 # macOS-specific files
 .DS_Store
 
