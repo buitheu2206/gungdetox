@@ -14,5 +14,7 @@ export default defineConfig({
   redirects: {
     // Nội dung "Quy trình/Giới thiệu" đã gộp vào trang chủ
     '/quy-trinh': '/',
+    // Mục "Nhượng quyền" trên menu đổi thành "Khóa học" — giữ redirect cho link cũ
+    '/nhuong-quyen': '/khoa-hoc',
   },
 });
