@@ -165,6 +165,30 @@
   background: var(--color-primary-dark);
 }
 
+.product-card .footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Dùng chung cho cả 3 loại card — icon tròn nhỏ mở hộp thoại chia sẻ Facebook. */
+.share-fb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: #1877f2;
+  color: #fff;
+  text-decoration: none;
+}
+
+.share-fb-btn:hover {
+  background: #145dbf;
+}
+
 /* ---------- ComboCard ---------- */
 .combo-card {
   position: relative;
@@ -260,8 +284,14 @@
   margin: 0;
 }
 
-.combo-card .cta {
+.combo-card .cta-row {
   margin-top: auto;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.combo-card .cta {
+  flex: 1 1 auto;
   background: var(--color-primary);
   color: #fff;
   text-decoration: none;
@@ -369,8 +399,14 @@
   color: #6b7280;
 }
 
-.set-card .cta {
+.set-card .cta-row {
   margin-top: auto;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.set-card .cta {
+  flex: 1 1 auto;
   background: var(--theme-color);
   color: #fff;
   text-decoration: none;

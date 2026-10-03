@@ -71,6 +71,24 @@ function esc(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+const fbIconSvg =
+  '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M22 12.06C22 6.48 17.52 2 11.94 2 6.36 2 1.88 6.48 1.88 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.42V9.91c0-2.39 1.42-3.71 3.6-3.71 1.04 0 2.13.19 2.13.19v2.34h-1.2c-1.18 0-1.55.74-1.55 1.49v1.79h2.64l-.42 2.91h-2.22V22c4.78-.76 8.44-4.92 8.44-9.94Z"/></svg>';
+
+// Phải khớp với `site` trong astro.config.mjs. Luôn dùng domain thật cố định
+// thay vì location.origin — nếu không, link share build lúc dev (localhost)
+// sẽ không mở được trên Facebook (Facebook không bò được localhost), khác với
+// blog/[slug].astro vốn build link share bằng Astro.site lúc build nên luôn
+// đúng domain thật bất kể xem từ đâu.
+const SITE_ORIGIN = "https://gungdetox.com";
+
+// Nút chia sẻ sản phẩm lên Facebook trên card — link chia sẻ luôn là trang chi
+// tiết sản phẩm (/san-pham/<slug>), không phải trang /san-pham chung.
+function fbShareButtonHtml(path: string, extraClass = ""): string {
+  const url = `${SITE_ORIGIN}${path}`;
+  const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+  return `<a class="share-fb-btn${extraClass ? ` ${extraClass}` : ""}" href="${fbUrl}" target="_blank" rel="noopener noreferrer" title="Chia sẻ lên Facebook" aria-label="Chia sẻ lên Facebook">${fbIconSvg}</a>`;
+}
+
 export function productCardHtml(p: ProductRow): string {
   const badge = p.badge
     ? `<span class="badge badge-${p.badge}">${badgeLabel[p.badge] ?? p.badge}</span>`
@@ -89,7 +107,10 @@ export function productCardHtml(p: ProductRow): string {
         ${p.volume ? `<p class="volume">${esc(p.volume)}</p>` : ""}
         <div class="footer-row">
           <span class="price">${money(p.price_retail)}</span>
-          <a class="cta" href="/dat-hang?product=${encodeURIComponent(p.slug)}">Đặt món này</a>
+          <div class="footer-actions">
+            <a class="cta" href="/dat-hang?product=${encodeURIComponent(p.slug)}">Đặt món này</a>
+            ${fbShareButtonHtml(`/san-pham/${p.slug}`)}
+          </div>
         </div>
       </div>
     </article>
@@ -120,7 +141,10 @@ export function comboCardHtml(p: ProductRow): string {
           : ""
       }
       <p class="note">Giá chưa gồm phí ship</p>
-      <a class="cta" href="/dat-hang?product=${encodeURIComponent(p.slug)}">Chọn combo này</a>
+      <div class="cta-row">
+        <a class="cta" href="/dat-hang?product=${encodeURIComponent(p.slug)}">Chọn combo này</a>
+        ${fbShareButtonHtml(`/san-pham/${p.slug}`)}
+      </div>
     </article>
   `;
 }
@@ -158,7 +182,10 @@ export function comboVariantGroupCardHtml(name: string, variants: ProductRow[]):
           .join("")}
       </fieldset>
       <p class="note">Giá chưa gồm phí ship</p>
-      <a class="cta variant-cta" href="/dat-hang?product=${encodeURIComponent(first.slug)}">Chọn combo này</a>
+      <div class="cta-row">
+        <a class="cta variant-cta" href="/dat-hang?product=${encodeURIComponent(first.slug)}">Chọn combo này</a>
+        ${fbShareButtonHtml(`/san-pham/${first.slug}`, "variant-share")}
+      </div>
     </article>
   `;
 }
@@ -174,7 +201,10 @@ export function setDetoxCardHtml(p: ProductRow, setNumber: number): string {
       <h3><a href="/san-pham/${encodeURIComponent(p.slug)}">${esc(p.name)}</a></h3>
       <p class="goal">${esc(p.set_goal ?? "")}</p>
       <p class="price">${money(p.price)}<span> / set (7 chai)</span></p>
-      <a class="cta" href="/dat-hang?product=${encodeURIComponent(p.slug)}">Chọn set này</a>
+      <div class="cta-row">
+        <a class="cta" href="/dat-hang?product=${encodeURIComponent(p.slug)}">Chọn set này</a>
+        ${fbShareButtonHtml(`/san-pham/${p.slug}`)}
+      </div>
     </article>
   `;
 }

@@ -187,6 +187,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       const priceEl = card.querySelector(".variant-price") as HTMLElement;
       const ctaEl = card.querySelector(".variant-cta") as HTMLAnchorElement;
       const linkEl = card.querySelector(".variant-link") as HTMLAnchorElement;
+      const shareEl = card.querySelector(".variant-share") as HTMLAnchorElement | null;
       const imgEl = card.querySelector(".variant-image") as HTMLImageElement | null;
 
       function applyVariant(i: number) {
@@ -195,6 +196,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         priceEl.textContent = v.price != null ? `${v.price.toLocaleString("vi-VN")}đ` : "Đang cập nhật giá";
         ctaEl.href = `/dat-hang?product=${encodeURIComponent(v.slug)}`;
         linkEl.href = `/san-pham/${encodeURIComponent(v.slug)}`;
+        if (shareEl) {
+          // Domain cố định, không dùng location.origin — xem comment SITE_ORIGIN trong templates.ts
+          const shareUrl = `https://gungdetox.com/san-pham/${encodeURIComponent(v.slug)}`;
+          shareEl.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+        }
         if (imgEl && v.image) imgEl.src = v.image;
       }
 
