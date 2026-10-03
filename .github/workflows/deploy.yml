@@ -1,0 +1,41 @@
+# Cần tạo 5 secret trong GitHub repo: Settings → Secrets and variables → Actions
+#   FTP_HOST, FTP_USERNAME, FTP_PASSWORD        — xem hướng dẫn deploy thủ công trước đây
+#   PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY — build cần gọi Supabase để tạo
+#                                                   trang /blog/[slug] và /san-pham/[slug]
+name: Deploy to production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest code
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Upload dist/ via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          local-dir: ./dist/
+          server-dir: ./
