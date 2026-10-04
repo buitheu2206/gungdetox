@@ -4,6 +4,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
 ---
 
 <BaseLayout title="Quản trị blog — GỪNG DETOX">
+  <link href="https://cdn.quilljs.com/2.0.3/quill.snow.css" rel="stylesheet" />
   <main class="admin-page">
     <AdminLogin>
       <h1>Quản trị Blog</h1>
@@ -28,10 +29,13 @@ import AdminLogin from "../../components/AdminLogin.astro";
             <input type="text" id="f-read-time" placeholder="3 phút" />
           </label>
         </div>
-        <label>
-          Nội dung
-          <textarea id="f-body" rows="8" required></textarea>
-        </label>
+        <div class="field-group">
+          <span class="field-label">Nội dung</span>
+          <div id="f-body-editor" class="quill-editor"></div>
+          <small class="field-hint">
+            Bôi đen văn bản để in đậm, gạch đầu dòng, hoặc chèn link.
+          </small>
+        </div>
         <label>
           Ảnh đại diện
           <input type="file" id="f-image" accept="image/*" />
@@ -71,8 +75,11 @@ import AdminLogin from "../../components/AdminLogin.astro";
   </main>
 </BaseLayout>
 
+<script is:inline src="https://cdn.quilljs.com/2.0.3/quill.js"></script>
+
 <script>
   import { supabase } from "../../lib/supabase";
+  import { renderPostBodyHtml } from "../../lib/templates";
 
   const form = document.getElementById("post-form") as HTMLFormElement;
   const editIdInput = document.getElementById("edit-id") as HTMLInputElement;
@@ -85,6 +92,24 @@ import AdminLogin from "../../components/AdminLogin.astro";
   const mainImageInput = document.getElementById("f-image") as HTMLInputElement;
   const mainImagePreview = document.getElementById("main-image-preview") as HTMLDivElement;
   const galleryInput = document.getElementById("f-gallery") as HTMLInputElement;
+
+  // Quill (rich-text editor) nạp qua <script src="cdn.quilljs.com"> ở global
+  // window.Quill — xem hướng dẫn thêm 1 dòng trống giữa đoạn không còn áp dụng
+  // nữa vì giờ lưu HTML thật, enter 1 lần cũng tự xuống dòng/đoạn đúng ý.
+  const quill = new (window as any).Quill("#f-body-editor", {
+    theme: "snow",
+    modules: {
+      toolbar: [
+        [{ header: [2, 3, false] }],
+        ["bold", "italic", "underline", "strike"],
+        ["blockquote"],
+        [{ list: "ordered" }, { list: "bullet" }],
+        [{ align: [] }],
+        ["link"],
+        ["clean"],
+      ],
+    },
+  });
 
   let posts: any[] = [];
   let currentImageUrl: string | null = null;
@@ -160,6 +185,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
   function resetForm() {
     form.reset();
     editIdInput.value = "";
+    quill.setText("");
     currentImageUrl = null;
     currentImageEl.textContent = "";
     mainImagePreview.innerHTML = "";
@@ -175,7 +201,9 @@ import AdminLogin from "../../components/AdminLogin.astro";
     field("f-title").value = p.title;
     field("f-tag").value = p.tag ?? "";
     field("f-read-time").value = p.read_time ?? "";
-    (document.getElementById("f-body") as HTMLTextAreaElement).value = p.body;
+    // Bài viết cũ (trước khi có Quill) là văn bản thuần — chuyển qua <p> trước khi
+    // nạp vào editor để vẫn hiển thị tách đoạn đúng, không dính thành 1 khối.
+    quill.root.innerHTML = renderPostBodyHtml(p.body);
     currentImageUrl = p.image_url ?? null;
     currentImageEl.textContent = currentImageUrl ? `Ảnh hiện tại: ${currentImageUrl}` : "Chưa có ảnh";
     mainImagePreview.innerHTML = "";
@@ -237,6 +265,11 @@ import AdminLogin from "../../components/AdminLogin.astro";
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    if (!quill.getText().trim()) {
+      alert("Vui lòng nhập nội dung bài viết");
+      return;
+    }
+
     let imageUrl = currentImageUrl;
     const fileInput = document.getElementById("f-image") as HTMLInputElement;
     const file = fileInput.files?.[0];
@@ -261,12 +294,16 @@ import AdminLogin from "../../components/AdminLogin.astro";
       currentGalleryImages.push(supabase.storage.from("post-images").getPublicUrl(path).data.publicUrl);
     }
 
+    // Dọn khoảng trắng/dấu phẩy thừa ở các field hay bị dính khi copy-paste tay
+    // (vd. gõ "detox, " rồi quên xoá dấu phẩy) — tránh tag hiển thị lỗi ngoài trang.
+    const cleanTag = field("f-tag").value.trim().replace(/,+$/, "").trim();
+
     const payload = {
-      slug: field("f-slug").value,
-      title: field("f-title").value,
-      tag: field("f-tag").value || null,
-      read_time: field("f-read-time").value || null,
-      body: (document.getElementById("f-body") as HTMLTextAreaElement).value,
+      slug: field("f-slug").value.trim(),
+      title: field("f-title").value.trim(),
+      tag: cleanTag || null,
+      read_time: field("f-read-time").value.trim() || null,
+      body: quill.root.innerHTML,
       image_url: imageUrl,
       gallery_images: currentGalleryImages.length ? currentGalleryImages : null,
     };
@@ -319,6 +356,22 @@ import AdminLogin from "../../components/AdminLogin.astro";
     font-weight: 600;
   }
 
+  /* Dùng div thường (không phải <label>) để bọc Quill — Quill tự tạo 1 <select>
+     ẩn làm control thật cho mỗi picker (vd. header). Nếu bọc trong <label>,
+     trình duyệt tự bắn thêm 1 click "ngầm" vào select ẩn đó mỗi lần bấm bất kỳ
+     đâu trong label (hành vi chuẩn của label với control có thể gắn nhãn),
+     khiến picker vừa mở đã bị đóng lại ngay do nhận 2 click liên tiếp. */
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .field-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
   input,
   textarea {
     padding: 0.5rem 0.6rem;
@@ -326,6 +379,28 @@ import AdminLogin from "../../components/AdminLogin.astro";
     border: 1px solid #d1d5db;
     font-family: var(--font-body);
     font-weight: 400;
+  }
+
+  .field-hint {
+    font-weight: 400;
+    color: #6b7280;
+    font-size: 0.75rem;
+  }
+
+  /* Quill biến chính thẻ #f-body-editor thành .ql-container (không bọc thêm div),
+     và chèn .ql-toolbar làm anh em đứng trước nó — không phải con/cháu — nên 2
+     rule dưới đây target trực tiếp 2 lớp đó thay vì lồng qua .quill-editor. */
+  :global(.ql-toolbar) {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+
+  :global(.quill-editor.ql-container) {
+    min-height: 180px;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
   }
 
   .current-image {

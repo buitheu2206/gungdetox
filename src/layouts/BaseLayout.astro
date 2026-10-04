@@ -4,6 +4,7 @@ import "../styles/cards.css";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import ZaloButton from "../components/ZaloButton.astro";
+import ShareModal from "../components/ShareModal.astro";
 
 interface Props {
   title: string;
@@ -56,5 +57,6 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
     <slot />
     <Footer />
     <ZaloButton />
+    <ShareModal />
   </body>
 </html>

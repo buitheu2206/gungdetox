@@ -71,8 +71,40 @@ function esc(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-const fbIconSvg =
-  '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M22 12.06C22 6.48 17.52 2 11.94 2 6.36 2 1.88 6.48 1.88 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.42V9.91c0-2.39 1.42-3.71 3.6-3.71 1.04 0 2.13.19 2.13.19v2.34h-1.2c-1.18 0-1.55.74-1.55 1.49v1.79h2.64l-.42 2.91h-2.22V22c4.78-.76 8.44-4.92 8.44-9.94Z"/></svg>';
+// Tách nội dung bài viết thành từng đoạn <p>. Bài viết thêm bằng tay qua trang
+// admin đôi khi được dán nguyên caption Facebook — loại này chỉ có 1 dấu xuống
+// dòng giữa các câu, không có dòng trống giữa các đoạn như văn bản thường, nên
+// nếu tách theo "\n\n" (chuẩn) thì cả bài dính thành 1 khối văn bản dài, rất khó
+// đọc. Phát hiện trường hợp này (không có dòng trống nào) và coi mỗi dòng là 1
+// đoạn riêng thay vì dính cục — vẫn tôn trọng đúng ý người viết khi họ ĐÃ tự
+// cách dòng trống giữa các đoạn (trường hợp bình thường, đa số bài viết).
+export function splitIntoParagraphs(body?: string | null): string[] {
+  const text = (body ?? "").trim();
+  if (!text) return [];
+  const hasBlankLineBreaks = /\n[ \t]*\n/.test(text);
+  return text
+    .split(hasBlankLineBreaks ? /\n[ \t]*\n+/ : /\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
+// Trang admin/blog.astro dùng Quill (rich-text editor) nên bài viết MỚI lưu
+// xuống cột `body` là HTML thật (đậm/gạch đầu dòng/link...), không còn văn bản
+// thuần — render thẳng bằng set:html. Bài viết CŨ (thêm từ trước khi có Quill)
+// vẫn là văn bản thuần không có thẻ HTML nào, nên phát hiện trường hợp đó và
+// dùng lại splitIntoParagraphs để không vỡ layout các bài cũ.
+export function renderPostBodyHtml(body?: string | null): string {
+  const text = (body ?? "").trim();
+  if (!text) return "";
+  const isRichHtml = /<[a-z][\s\S]*>/i.test(text);
+  if (isRichHtml) return text;
+  return splitIntoParagraphs(text)
+    .map((p) => `<p>${esc(p)}</p>`)
+    .join("");
+}
+
+const shareIconSvg =
+  '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"></line><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"></line></svg>';
 
 // Phải khớp với `site` trong astro.config.mjs. Luôn dùng domain thật cố định
 // thay vì location.origin — nếu không, link share build lúc dev (localhost)
@@ -81,12 +113,14 @@ const fbIconSvg =
 // đúng domain thật bất kể xem từ đâu.
 const SITE_ORIGIN = "https://gungdetox.com";
 
-// Nút chia sẻ sản phẩm lên Facebook trên card — link chia sẻ luôn là trang chi
-// tiết sản phẩm (/san-pham/<slug>), không phải trang /san-pham chung.
-function fbShareButtonHtml(path: string, extraClass = ""): string {
+// Nút chia sẻ nhỏ trên card — mở ShareModal dùng chung toàn site (xem
+// src/components/ShareModal.astro, đặt 1 lần trong BaseLayout) qua event
+// delegation, nên card tạo bằng innerHTML (sau khi fetch Supabase) vẫn bắt được
+// mà không cần tự gắn listener riêng. Link chia sẻ luôn là trang chi tiết sản
+// phẩm (/san-pham/<slug>), không phải trang /san-pham chung.
+function shareButtonHtml(path: string, title: string, extraClass = ""): string {
   const url = `${SITE_ORIGIN}${path}`;
-  const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-  return `<a class="share-fb-btn${extraClass ? ` ${extraClass}` : ""}" href="${fbUrl}" target="_blank" rel="noopener noreferrer" title="Chia sẻ lên Facebook" aria-label="Chia sẻ lên Facebook">${fbIconSvg}</a>`;
+  return `<button type="button" class="share-fb-btn${extraClass ? ` ${extraClass}` : ""}" data-share-trigger data-share-url="${url}" data-share-title="${esc(title)}" title="Chia sẻ" aria-label="Chia sẻ">${shareIconSvg}</button>`;
 }
 
 export function productCardHtml(p: ProductRow): string {
@@ -109,7 +143,7 @@ export function productCardHtml(p: ProductRow): string {
           <span class="price">${money(p.price_retail)}</span>
           <div class="footer-actions">
             <a class="cta" href="/dat-hang?product=${encodeURIComponent(p.slug)}">Đặt món này</a>
-            ${fbShareButtonHtml(`/san-pham/${p.slug}`)}
+            ${shareButtonHtml(`/san-pham/${p.slug}`, p.name)}
           </div>
         </div>
       </div>
@@ -143,7 +177,7 @@ export function comboCardHtml(p: ProductRow): string {
       <p class="note">Giá chưa gồm phí ship</p>
       <div class="cta-row">
         <a class="cta" href="/dat-hang?product=${encodeURIComponent(p.slug)}">Chọn combo này</a>
-        ${fbShareButtonHtml(`/san-pham/${p.slug}`)}
+        ${shareButtonHtml(`/san-pham/${p.slug}`, p.name)}
       </div>
     </article>
   `;
@@ -184,7 +218,7 @@ export function comboVariantGroupCardHtml(name: string, variants: ProductRow[]):
       <p class="note">Giá chưa gồm phí ship</p>
       <div class="cta-row">
         <a class="cta variant-cta" href="/dat-hang?product=${encodeURIComponent(first.slug)}">Chọn combo này</a>
-        ${fbShareButtonHtml(`/san-pham/${first.slug}`, "variant-share")}
+        ${shareButtonHtml(`/san-pham/${first.slug}`, name, "variant-share")}
       </div>
     </article>
   `;
@@ -203,7 +237,7 @@ export function setDetoxCardHtml(p: ProductRow, setNumber: number): string {
       <p class="price">${money(p.price)}<span> / set (7 chai)</span></p>
       <div class="cta-row">
         <a class="cta" href="/dat-hang?product=${encodeURIComponent(p.slug)}">Chọn set này</a>
-        ${fbShareButtonHtml(`/san-pham/${p.slug}`)}
+        ${shareButtonHtml(`/san-pham/${p.slug}`, p.name)}
       </div>
     </article>
   `;
@@ -213,17 +247,23 @@ export function blogCardHtml(post: PostRow): string {
   const formattedDate = post.published_at
     ? new Date(post.published_at).toLocaleDateString("vi-VN")
     : "";
+  const href = `/blog/${encodeURIComponent(post.slug)}`;
   return `
-    <a class="blog-card" href="/blog/${encodeURIComponent(post.slug)}">
-      <div class="blog-media">
-        ${post.image_url ? `<img src="${post.image_url}" alt="${esc(post.title)}" loading="lazy" />` : `<div class="blog-media-placeholder"></div>`}
-        ${post.video_url ? `<video src="${post.video_url}" muted loop playsinline class="blog-hover-video"></video>` : ""}
-      </div>
+    <article class="blog-card">
+      <a class="blog-media-link" href="${href}">
+        <div class="blog-media">
+          ${post.image_url ? `<img src="${post.image_url}" alt="${esc(post.title)}" loading="lazy" />` : `<div class="blog-media-placeholder"></div>`}
+          ${post.video_url ? `<video src="${post.video_url}" muted loop playsinline class="blog-hover-video"></video>` : ""}
+        </div>
+      </a>
       <div class="blog-body">
         ${post.tag ? `<span class="tag">${esc(tagLabel[post.tag] ?? post.tag)}</span>` : ""}
-        <h3>${esc(post.title)}</h3>
-        <p class="blog-meta">${formattedDate}${post.read_time ? ` · ${esc(post.read_time)}` : ""}</p>
+        <h3><a href="${href}">${esc(post.title)}</a></h3>
+        <div class="blog-footer-row">
+          <p class="blog-meta">${formattedDate}${post.read_time ? ` · ${esc(post.read_time)}` : ""}</p>
+          ${shareButtonHtml(href, post.title)}
+        </div>
       </div>
-    </a>
+    </article>
   `;
 }

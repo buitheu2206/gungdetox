@@ -1,7 +1,8 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import ShareButton from "../../components/ShareButton.astro";
 import { supabase } from "../../lib/supabase";
-import { blogCardHtml, tagLabel, type PostRow } from "../../lib/templates";
+import { blogCardHtml, tagLabel, renderPostBodyHtml, type PostRow } from "../../lib/templates";
 
 // Cùng pattern với /san-pham/[slug].astro: pre-render tại build time (getStaticPaths)
 // cho URL đẹp/SEO, script phía client fetch lại đúng slug để cập nhật nội dung
@@ -18,16 +19,12 @@ const formattedDate = post.published_at
   ? new Date(post.published_at).toLocaleDateString("vi-VN")
   : "";
 
-const paragraphs: string[] = (post.body ?? "").split(/\n\n+/).filter(Boolean);
 const images = [post.image_url, ...(post.gallery_images ?? [])].filter(Boolean) as string[];
 
 const relatedPosts = allPosts
   .filter((p) => p.slug !== post.slug)
   .sort((a, b) => (a.tag === post.tag ? -1 : 0) - (b.tag === post.tag ? -1 : 0))
   .slice(0, 3);
-
-const shareUrl = new URL(Astro.url.pathname, Astro.site).toString();
-const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
 ---
 
 <BaseLayout
@@ -71,25 +68,9 @@ const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComp
           }
         </div>
 
-        <div class="content" id="p-body">
-          {paragraphs.map((para) => <p>{para}</p>)}
-        </div>
+        <div class="content" id="p-body" set:html={renderPostBodyHtml(post.body)} />
 
-        <div class="share-row">
-          <span class="share-label">Chia sẻ:</span>
-          <a
-            class="share-fb"
-            href={fbShareUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Chia sẻ bài viết này lên Facebook"
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-              <path d="M22 12.06C22 6.48 17.52 2 11.94 2 6.36 2 1.88 6.48 1.88 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.42V9.91c0-2.39 1.42-3.71 3.6-3.71 1.04 0 2.13.19 2.13.19v2.34h-1.2c-1.18 0-1.55.74-1.55 1.49v1.79h2.64l-.42 2.91h-2.22V22c4.78-.76 8.44-4.92 8.44-9.94Z"/>
-            </svg>
-            Chia sẻ lên Facebook
-          </a>
-        </div>
+        <ShareButton />
 
         <div class="cta-banner">
           <p>Muốn thử ngay hôm nay?</p>
@@ -113,7 +94,7 @@ const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComp
 
 <script>
   import { supabase } from "../../lib/supabase";
-  import { tagLabel } from "../../lib/templates";
+  import { tagLabel, renderPostBodyHtml } from "../../lib/templates";
 
   const page = document.querySelector(".post-page") as HTMLElement;
   const slug = page?.dataset.slug;
@@ -192,14 +173,7 @@ const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComp
       renderThumbs(images);
 
       const bodyEl = document.getElementById("p-body");
-      if (bodyEl && p.body) {
-        bodyEl.innerHTML = "";
-        for (const para of p.body.split(/\n\n+/).filter(Boolean)) {
-          const pEl = document.createElement("p");
-          pEl.textContent = para;
-          bodyEl.appendChild(pEl);
-        }
-      }
+      if (bodyEl && p.body) bodyEl.innerHTML = renderPostBodyHtml(p.body);
     });
 </script>
 
@@ -305,41 +279,71 @@ const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComp
     border-color: var(--color-primary);
   }
 
-  .content p {
+  /* Nội dung bên trong #p-body được bơm bằng set:html/innerHTML (chuỗi HTML từ
+     Quill), không phải JSX dựng lúc build, nên KHÔNG có attribute scoped
+     data-astro-cid-* — mọi rule nhắm vào thẻ con bên trong đều phải bọc
+     :global() thì mới áp dụng được (lỗi hay gặp, xem comment tương tự ở
+     dat-hang.astro/san-pham/[slug].astro). */
+  .content :global(p) {
     margin: 0 0 1.1rem;
     line-height: 1.7;
     white-space: pre-wrap;
   }
 
-  .share-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-    margin-top: 1.6rem;
+  .content :global(ul),
+  .content :global(ol) {
+    margin: 0 0 1.1rem;
+    padding-left: 1.4rem;
+    line-height: 1.7;
   }
 
-  .share-label {
-    font-size: 0.85rem;
+  .content :global(li) {
+    margin-bottom: 0.3rem;
+  }
+
+  .content :global(a) {
+    color: var(--color-primary);
     font-weight: 600;
+  }
+
+  .content :global(strong) {
+    font-weight: 700;
+  }
+
+  .content :global(h2),
+  .content :global(h3) {
+    margin: 1.4rem 0 0.7rem;
+    color: var(--color-secondary);
+  }
+
+  .content :global(h2) {
+    font-size: 1.3rem;
+  }
+
+  .content :global(h3) {
+    font-size: 1.1rem;
+  }
+
+  .content :global(.ql-align-center) {
+    text-align: center;
+  }
+
+  .content :global(.ql-align-right) {
+    text-align: right;
+  }
+
+  .content :global(.ql-align-justify) {
+    text-align: justify;
+  }
+
+  .content :global(blockquote) {
+    margin: 0 0 1.1rem;
+    padding: 0.8rem 1.1rem;
+    border-left: 3px solid var(--color-primary);
+    background: var(--color-bg-alt);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-style: italic;
     color: var(--color-text-muted);
-  }
-
-  .share-fb {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    background: #1877f2;
-    color: #fff;
-    text-decoration: none;
-    padding: 0.5rem 1rem;
-    border-radius: 999px;
-    font-size: 0.85rem;
-    font-weight: 600;
-  }
-
-  .share-fb:hover {
-    background: #145dbf;
   }
 
   .back {

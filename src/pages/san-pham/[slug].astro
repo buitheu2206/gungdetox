@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import ShareButton from "../../components/ShareButton.astro";
 import { supabase } from "../../lib/supabase";
 import { productCardHtml, comboCardHtml, setDetoxCardHtml, type ProductRow } from "../../lib/templates";
 
@@ -131,6 +132,8 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
               <li><span aria-hidden="true">{b.icon}</span> {b.text}</li>
             ))}
           </ul>
+
+          <ShareButton />
         </div>
       </div>
     </div>
