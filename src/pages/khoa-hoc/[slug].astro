@@ -1,0 +1,235 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ShareButton from "../../components/ShareButton.astro";
+import { packages } from "../../lib/courses";
+
+export async function getStaticPaths() {
+  return packages.map((p) => ({ params: { slug: p.slug }, props: { pkg: p } }));
+}
+
+const { pkg } = Astro.props;
+---
+
+<BaseLayout
+  title={`${pkg.name} — Khóa học GỪNG DETOX`}
+  description={`${pkg.tagline} — ${pkg.price}`}
+  image={pkg.image}
+>
+  <main class="package-detail-page">
+    <nav class="breadcrumb">
+      <a href="/khoa-hoc">Khóa học</a> / <span>{pkg.name}</span>
+    </nav>
+
+    <div class="detail-grid">
+      <div class="detail-media">
+        <img src={pkg.image} alt={`Chi tiết ${pkg.name}`} />
+      </div>
+
+      <div class="detail-info">
+        {pkg.recommended && <span class="recommended-badge">★ Khuyến nghị</span>}
+        <span class="package-icon">{pkg.icon}</span>
+        <h1>{pkg.name}</h1>
+        <p class="package-price">{pkg.price}</p>
+        <p class="package-tagline">{pkg.tagline}</p>
+
+        <div class="cta-row">
+          <a class="package-cta" href="https://forms.gle/hLtzhyzPiQtnxnbe6" target="_blank" rel="noopener">
+            Đăng ký khóa học
+          </a>
+          <a class="hotline-btn" href="tel:0888267009">📞 0888 267 009</a>
+        </div>
+        <ShareButton />
+      </div>
+    </div>
+
+    <section class="detail-section">
+      <h2>📦 Bạn nhận được gì</h2>
+      <ul class="highlight-list">
+        {pkg.highlights.map((item) => <li>{item}</li>)}
+      </ul>
+    </section>
+
+    <section class="detail-section">
+      <h2>🤍 Phù hợp với</h2>
+      <ul class="suitable-list">
+        {pkg.suitableFor.map((item) => <li>{item}</li>)}
+      </ul>
+    </section>
+
+    <p class="detail-note">📌 {pkg.note}</p>
+
+    <p class="back"><a href="/khoa-hoc">← Xem tất cả các gói</a></p>
+  </main>
+</BaseLayout>
+
+<style>
+  .package-detail-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+
+  .breadcrumb {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1.2rem;
+  }
+
+  .breadcrumb a {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+    align-items: center;
+    margin-bottom: 2.5rem;
+  }
+
+  @media (max-width: 720px) {
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .detail-media img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    object-position: top;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    display: block;
+  }
+
+  .detail-info {
+    position: relative;
+  }
+
+  .recommended-badge {
+    display: inline-block;
+    background: #e07b1a;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    margin-bottom: 0.8rem;
+  }
+
+  .package-icon {
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .detail-info h1 {
+    margin: 0 0 0.3rem;
+  }
+
+  .package-price {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--color-secondary);
+    margin: 0 0 0.2rem;
+  }
+
+  .package-tagline {
+    font-weight: 600;
+    color: var(--color-primary);
+    margin: 0 0 1.2rem;
+  }
+
+  .cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .package-cta {
+    display: inline-block;
+    background: var(--color-primary);
+    color: #fff;
+    text-decoration: none;
+    padding: 0.8rem 1.6rem;
+    border-radius: 999px;
+    font-weight: 600;
+    box-shadow: var(--shadow-md);
+  }
+
+  .package-cta:hover {
+    background: var(--color-primary-dark);
+  }
+
+  .hotline-btn {
+    display: inline-block;
+    background: #fff;
+    color: var(--color-primary);
+    border: 1.5px solid var(--color-primary);
+    text-decoration: none;
+    padding: 0.8rem 1.6rem;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  .detail-section {
+    margin-bottom: 2rem;
+  }
+
+  .detail-section h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+
+  .highlight-list,
+  .suitable-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .highlight-list li,
+  .suitable-list li {
+    position: relative;
+    padding-left: 1.6rem;
+    line-height: 1.5;
+    color: var(--color-text);
+  }
+
+  .highlight-list li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+
+  .suitable-list li::before {
+    content: "♥";
+    position: absolute;
+    left: 0;
+    color: var(--color-accent);
+  }
+
+  .detail-note {
+    background: var(--color-bg-alt);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.2rem;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .back a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 600;
+  }
+</style>

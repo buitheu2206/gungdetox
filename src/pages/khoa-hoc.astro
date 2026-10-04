@@ -1,51 +1,13 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ShareButton from "../components/ShareButton.astro";
+import { packages } from "../lib/courses";
 
 const features = [
   { icon: "🌿", title: "Công thức độc quyền", desc: "Chuẩn vị GỪNG DETOX" },
   { icon: "📋", title: "Quy trình vận hành", desc: "Dễ học – Dễ làm" },
   { icon: "📣", title: "Đồng hành marketing", desc: "Hỗ trợ quảng cáo, nội dung, khai trương" },
   { icon: "🤝", title: "Đào tạo tận tâm", desc: "Hướng dẫn chi tiết 3 ngày tại tiệm" },
-];
-
-const packages = [
-  {
-    key: "online",
-    name: "Khởi động Online",
-    tagline: "Tự học – Hỗ trợ kênh bán hàng",
-    price: "15.000.000đ / dòng sản phẩm",
-    icon: "💻",
-    image: "/images/nhuong-quyen/package-online.webp",
-    recommended: false,
-  },
-  {
-    key: "essential",
-    name: "Gói 1 — Học thực tế",
-    tagline: "Chuyển giao công thức",
-    price: "29.000.000đ",
-    icon: "🌱",
-    image: "/images/nhuong-quyen/package-essential.webp",
-    recommended: false,
-  },
-  {
-    key: "professional",
-    name: "Gói 2 — Học + Marketing",
-    tagline: "Xây dựng thương hiệu",
-    price: "39.000.000đ",
-    icon: "🚀",
-    image: "/images/nhuong-quyen/package-professional.webp",
-    recommended: true,
-  },
-  {
-    key: "premium",
-    name: "Gói 3 — Full đồng hành",
-    tagline: "Đồng hành khởi nghiệp",
-    price: "50.000.000đ",
-    icon: "👑",
-    image: "/images/nhuong-quyen/package-premium.webp",
-    recommended: false,
-  },
 ];
 
 const includedGroups = [
@@ -161,13 +123,14 @@ const includedGroups = [
           packages.map((p) => (
             <div class={`surface-card package-card theme-${p.key}`}>
               {p.recommended && <span class="recommended-badge">★ Khuyến nghị</span>}
-              <a class="package-image-link" href={p.image} target="_blank" rel="noopener">
+              <a class="package-image-link" href={`/khoa-hoc/${p.slug}`}>
                 <img class="package-image" src={p.image} alt={`Chi tiết ${p.name}`} loading="lazy" />
               </a>
               <span class="package-icon">{p.icon}</span>
-              <h3>{p.name}</h3>
+              <h3><a href={`/khoa-hoc/${p.slug}`}>{p.name}</a></h3>
               <p class="package-price">{p.price}</p>
               <p class="package-tagline">{p.tagline}</p>
+              <a class="package-detail-link" href={`/khoa-hoc/${p.slug}`}>Xem chi tiết gói này →</a>
               <a class="package-cta" href="https://forms.gle/hLtzhyzPiQtnxnbe6" target="_blank" rel="noopener">
                 Đăng ký khóa học
               </a>
@@ -529,6 +492,15 @@ const includedGroups = [
     margin: 0.5rem 0 0.2rem;
   }
 
+  .package-card h3 a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .package-card h3 a:hover {
+    color: var(--color-primary);
+  }
+
   .package-price {
     font-family: var(--font-display);
     font-size: 1.6rem;
@@ -541,6 +513,19 @@ const includedGroups = [
     font-weight: 600;
     color: var(--color-primary);
     margin: 0 0 0.9rem;
+  }
+
+  .package-detail-link {
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    text-decoration: none;
+    margin-bottom: 0.8rem;
+  }
+
+  .package-detail-link:hover {
+    text-decoration: underline;
   }
 
   .package-cta {
