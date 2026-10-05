@@ -1,6 +1,8 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import AdminLogin from "../../components/AdminLogin.astro";
+import ImageUpload from "../../components/ImageUpload.astro";
+import CustomInput from "../../components/CustomInput.astro";
 ---
 
 <BaseLayout title="Quản trị blog — GỪNG DETOX">
@@ -11,23 +13,11 @@ import AdminLogin from "../../components/AdminLogin.astro";
 
       <form id="post-form" class="post-form">
         <input type="hidden" id="edit-id" />
-        <label>
-          Slug (định danh, không dấu)
-          <input type="text" id="f-slug" required />
-        </label>
-        <label>
-          Tiêu đề
-          <input type="text" id="f-title" required />
-        </label>
+        <CustomInput label="Slug (định danh, không dấu)" type="text" id="f-slug" required />
+        <CustomInput label="Tiêu đề" type="text" id="f-title" required />
         <div class="grid-2">
-          <label>
-            Tag
-            <input type="text" id="f-tag" placeholder="detox, eat-clean..." />
-          </label>
-          <label>
-            Thời gian đọc
-            <input type="text" id="f-read-time" placeholder="3 phút" />
-          </label>
+          <CustomInput label="Tag" type="text" id="f-tag" placeholder="detox, eat-clean..." />
+          <CustomInput label="Thời gian đọc" type="text" id="f-read-time" placeholder="3 phút" />
         </div>
         <div class="field-group">
           <span class="field-label">Nội dung</span>
@@ -36,17 +26,13 @@ import AdminLogin from "../../components/AdminLogin.astro";
             Bôi đen văn bản để in đậm, gạch đầu dòng, hoặc chèn link.
           </small>
         </div>
-        <label>
-          Ảnh đại diện
-          <input type="file" id="f-image" accept="image/*" />
-        </label>
-        <div id="main-image-preview" class="main-image-preview"></div>
+        <ImageUpload id="f-image" label="Ảnh đại diện" />
+        <div id="main-image-preview" class="main-image-preview" hidden>
+          <button type="button" id="remove-main-image" class="remove-main-image" aria-label="Xoá ảnh đại diện" title="Xoá ảnh đại diện">×</button>
+        </div>
         <p id="current-image" class="current-image"></p>
 
-        <label>
-          Ảnh phụ (thêm nhiều ảnh cho trang chi tiết bài viết)
-          <input type="file" id="f-gallery" accept="image/*" multiple />
-        </label>
+        <ImageUpload id="f-gallery" label="Ảnh phụ (thêm nhiều ảnh cho trang chi tiết bài viết)" multiple />
         <div id="gallery-preview" class="gallery-preview"></div>
 
         <div class="form-actions">
@@ -78,6 +64,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
 <script is:inline src="https://cdn.quilljs.com/2.0.3/quill.js"></script>
 
 <script>
+  import { initMainImagePreview } from "../../lib/image-preview";
   import { supabase } from "../../lib/supabase";
   import { renderPostBodyHtml } from "../../lib/templates";
 
@@ -123,12 +110,9 @@ import AdminLogin from "../../components/AdminLogin.astro";
   const cidAttr = Array.from(mainImagePreview.attributes).find((a) => a.name.startsWith("data-astro-cid-"));
   const cid = cidAttr ? ` ${cidAttr.name}=""` : "";
 
-  // Ảnh đại diện: xem trước ngay khi chọn file, không cần đợi lưu mới thấy.
-  mainImageInput.addEventListener("change", () => {
-    const file = mainImageInput.files?.[0];
-    mainImagePreview.innerHTML = file
-      ? `<img src="${URL.createObjectURL(file)}" alt="Xem trước ảnh đại diện"${cid} /><span class="thumb-filename"${cid}>${file.name}</span>`
-      : "";
+  const renderMainImagePreview = initMainImagePreview(mainImageInput, mainImagePreview, currentImageEl, {
+    getUrl: () => currentImageUrl,
+    clearUrl: () => { currentImageUrl = null; },
   });
 
   // Đồng bộ lại input.files từ mảng pendingGalleryFiles sau khi xoá bớt 1 ảnh —
@@ -140,7 +124,8 @@ import AdminLogin from "../../components/AdminLogin.astro";
   }
 
   galleryInput.addEventListener("change", () => {
-    pendingGalleryFiles = Array.from(galleryInput.files ?? []);
+    pendingGalleryFiles.push(...Array.from(galleryInput.files ?? []));
+    syncGalleryInputFiles();
     renderGalleryPreview();
   });
 
@@ -188,7 +173,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
     quill.setText("");
     currentImageUrl = null;
     currentImageEl.textContent = "";
-    mainImagePreview.innerHTML = "";
+    renderMainImagePreview();
     currentGalleryImages = [];
     pendingGalleryFiles = [];
     renderGalleryPreview();
@@ -196,6 +181,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
   }
 
   function fillForm(p: any) {
+    form.reset();
     editIdInput.value = p.id;
     field("f-slug").value = p.slug;
     field("f-title").value = p.title;
@@ -206,7 +192,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
     quill.root.innerHTML = renderPostBodyHtml(p.body);
     currentImageUrl = p.image_url ?? null;
     currentImageEl.textContent = currentImageUrl ? `Ảnh hiện tại: ${currentImageUrl}` : "Chưa có ảnh";
-    mainImagePreview.innerHTML = "";
+    renderMainImagePreview();
     currentGalleryImages = [...(p.gallery_images ?? [])];
     pendingGalleryFiles = [];
     renderGalleryPreview();
@@ -396,11 +382,23 @@ import AdminLogin from "../../components/AdminLogin.astro";
   }
 
   :global(.quill-editor.ql-container) {
-    min-height: 180px;
     font-family: var(--font-body);
     font-size: 0.95rem;
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
+  }
+
+  :global(.quill-editor .ql-editor) {
+    min-height: 180px;
+    cursor: text;
+  }
+
+  :global(.quill-editor.ql-container:focus-within) {
+    border-color: var(--color-primary);
+  }
+
+  :global(.quill-editor .ql-editor:focus-visible) {
+    outline: none;
   }
 
   .current-image {
@@ -449,6 +447,9 @@ import AdminLogin from "../../components/AdminLogin.astro";
   }
 
   .main-image-preview {
+    position: relative;
+    width: 70px;
+    height: 70px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -463,6 +464,15 @@ import AdminLogin from "../../components/AdminLogin.astro";
     flex-shrink: 0;
   }
 
+  .remove-main-image:hover {
+    background: var(--color-accent-dark);
+  }
+
+  .remove-main-image:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
   .thumb-filename {
     font-size: 0.75rem;
     color: #6b7280;
@@ -472,6 +482,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
     text-overflow: ellipsis;
   }
 
+  .remove-main-image,
   .remove-gallery-img,
   .remove-pending-img {
     position: absolute;

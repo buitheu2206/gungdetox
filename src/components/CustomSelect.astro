@@ -115,6 +115,17 @@ const { id, required = false } = Astro.props;
     color: var(--color-primary);
     background: var(--color-primary-light);
   }
+
+  .custom-select-list :global(.option-group) {
+    font-weight: 700;
+    color: var(--color-secondary);
+    background: transparent;
+    cursor: default;
+  }
+
+  .custom-select-list :global(.group-option) {
+    padding-left: 1.2rem;
+  }
 </style>
 
 <script>
@@ -127,12 +138,29 @@ const { id, required = false } = Astro.props;
     // Dựng lại <li> từ chính <option> của select gốc mỗi lần mở — tránh phải
     // giữ 2 nguồn dữ liệu (option thật + option hiển thị) đồng bộ tay.
     function renderOptions() {
-      list.innerHTML = Array.from(select.options)
-        .map(
-          (o, i) =>
-            `<li role="option" data-index="${i}" aria-selected="${o.selected}">${o.textContent}</li>`
-        )
-        .join("");
+      list.replaceChildren();
+      const options = Array.from(select.options);
+      for (const child of Array.from(select.children)) {
+        if (child instanceof HTMLOptGroupElement) {
+          const heading = document.createElement("li");
+          heading.className = "option-group";
+          heading.setAttribute("role", "presentation");
+          heading.textContent = child.label;
+          list.append(heading);
+        }
+        const groupOptions = child instanceof HTMLOptGroupElement
+          ? Array.from(child.children) : [child];
+        for (const option of groupOptions) {
+          if (!(option instanceof HTMLOptionElement)) continue;
+          const item = document.createElement("li");
+          if (child instanceof HTMLOptGroupElement) item.className = "group-option";
+          item.setAttribute("role", "option");
+          item.dataset.index = String(options.indexOf(option));
+          item.setAttribute("aria-selected", String(option.selected));
+          item.textContent = option.textContent;
+          list.append(item);
+        }
+      }
     }
 
     function syncLabel() {
@@ -156,7 +184,7 @@ const { id, required = false } = Astro.props;
     });
 
     list.addEventListener("click", (e) => {
-      const li = (e.target as HTMLElement).closest("li");
+      const li = (e.target as HTMLElement).closest<HTMLLIElement>("li[data-index]");
       if (!li) return;
       select.selectedIndex = Number(li.dataset.index);
       select.dispatchEvent(new Event("change", { bubbles: true }));

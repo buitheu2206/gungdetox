@@ -2,6 +2,8 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import AdminLogin from "../../components/AdminLogin.astro";
 import CustomSelect from "../../components/CustomSelect.astro";
+import CustomInput from "../../components/CustomInput.astro";
+import ImageUpload from "../../components/ImageUpload.astro";
 ---
 
 <BaseLayout title="Quản trị sản phẩm — GỪNG DETOX">
@@ -12,10 +14,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
       <form id="product-form" class="product-form">
         <input type="hidden" id="edit-id" />
         <div class="grid-2">
-          <label>
-            Slug (định danh, không dấu)
-            <input type="text" id="f-slug" required />
-          </label>
+          <CustomInput label="Slug (định danh, không dấu)" type="text" id="f-slug" required />
           <label>
             Loại
             <CustomSelect id="f-type" required>
@@ -24,38 +23,14 @@ import CustomSelect from "../../components/CustomSelect.astro";
               <option value="set">Set Detox</option>
             </CustomSelect>
           </label>
-          <label>
-            Tên sản phẩm
-            <input type="text" id="f-name" required />
-          </label>
-          <label>
-            Danh mục (category)
-            <input type="text" id="f-category" placeholder="ginger-shot, kombucha..." />
-          </label>
-          <label>
-            Giá lẻ (đồ uống lẻ)
-            <input type="number" id="f-price-retail" />
-          </label>
-          <label>
-            Giá trọn gói (combo/set)
-            <input type="number" id="f-price" />
-          </label>
-          <label>
-            Dung tích/quy cách
-            <input type="text" id="f-volume" placeholder="30ml/lần, 1 chai..." />
-          </label>
-          <label>
-            Số lần uống/chai (servings)
-            <input type="number" id="f-servings" />
-          </label>
-          <label>
-            Lịch giao (combo)
-            <input type="text" id="f-delivery" placeholder="4 đợt/tuần" />
-          </label>
-          <label>
-            Mục tiêu (chỉ Set Detox)
-            <input type="text" id="f-goal" placeholder="Thải độc – Làm mát..." />
-          </label>
+          <CustomInput label="Tên sản phẩm" type="text" id="f-name" required />
+          <CustomInput label="Danh mục (category)" type="text" id="f-category" placeholder="ginger-shot, kombucha..." />
+          <CustomInput label="Giá lẻ (đồ uống lẻ)" type="number" id="f-price-retail" />
+          <CustomInput label="Giá trọn gói (combo/set)" type="number" id="f-price" />
+          <CustomInput label="Dung tích/quy cách" type="text" id="f-volume" placeholder="30ml/lần, 1 chai..." />
+          <CustomInput label="Số lần uống/chai (servings)" type="number" id="f-servings" />
+          <CustomInput label="Lịch giao (combo)" type="text" id="f-delivery" placeholder="4 đợt/tuần" />
+          <CustomInput label="Mục tiêu (chỉ Set Detox)" type="text" id="f-goal" placeholder="Thải độc – Làm mát..." />
           <label>
             Màu chủ đề (chỉ Set Detox)
             <CustomSelect id="f-color">
@@ -94,17 +69,13 @@ import CustomSelect from "../../components/CustomSelect.astro";
           <label class="inline"><input type="checkbox" id="f-bottle-plastic" /> Nhựa</label>
         </fieldset>
 
-        <label>
-          Ảnh đại diện (thumbnail)
-          <input type="file" id="f-image" accept="image/*" />
-        </label>
-        <div id="main-image-preview" class="main-image-preview"></div>
+        <ImageUpload id="f-image" label="Ảnh đại diện (thumbnail)" />
+        <div id="main-image-preview" class="main-image-preview" hidden>
+          <button type="button" id="remove-main-image" class="remove-main-image" aria-label="Xoá ảnh đại diện" title="Xoá ảnh đại diện">×</button>
+        </div>
         <p id="current-image" class="current-image"></p>
 
-        <label>
-          Ảnh phụ (thêm nhiều ảnh cho trang chi tiết sản phẩm)
-          <input type="file" id="f-gallery" accept="image/*" multiple />
-        </label>
+        <ImageUpload id="f-gallery" label="Ảnh phụ (thêm nhiều ảnh cho trang chi tiết sản phẩm)" multiple />
         <div id="gallery-preview" class="gallery-preview"></div>
 
         <label class="inline"><input type="checkbox" id="f-in-stock" checked /> Còn hàng</label>
@@ -137,6 +108,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
 </BaseLayout>
 
 <script>
+  import { initMainImagePreview } from "../../lib/image-preview";
   import { supabase } from "../../lib/supabase";
 
   const form = document.getElementById("product-form") as HTMLFormElement;
@@ -174,12 +146,9 @@ import CustomSelect from "../../components/CustomSelect.astro";
   const cidAttr = Array.from(mainImagePreview.attributes).find((a) => a.name.startsWith("data-astro-cid-"));
   const cid = cidAttr ? ` ${cidAttr.name}=""` : "";
 
-  // Ảnh đại diện: xem trước ngay khi chọn file, không cần đợi lưu mới thấy.
-  mainImageInput.addEventListener("change", () => {
-    const file = mainImageInput.files?.[0];
-    mainImagePreview.innerHTML = file
-      ? `<img src="${URL.createObjectURL(file)}" alt="Xem trước ảnh đại diện"${cid} /><span class="thumb-filename"${cid}>${file.name}</span>`
-      : "";
+  const renderMainImagePreview = initMainImagePreview(mainImageInput, mainImagePreview, currentImageEl, {
+    getUrl: () => currentImageUrl,
+    clearUrl: () => { currentImageUrl = null; },
   });
 
   // Đồng bộ lại input.files từ mảng pendingGalleryFiles sau khi xoá bớt 1 ảnh —
@@ -191,7 +160,8 @@ import CustomSelect from "../../components/CustomSelect.astro";
   }
 
   galleryInput.addEventListener("change", () => {
-    pendingGalleryFiles = Array.from(galleryInput.files ?? []);
+    pendingGalleryFiles.push(...Array.from(galleryInput.files ?? []));
+    syncGalleryInputFiles();
     renderGalleryPreview();
   });
 
@@ -240,12 +210,13 @@ import CustomSelect from "../../components/CustomSelect.astro";
     currentImageEl.textContent = "";
     currentGalleryImages = [];
     pendingGalleryFiles = [];
-    mainImagePreview.innerHTML = "";
+    renderMainImagePreview();
     renderGalleryPreview();
     cancelBtn.hidden = true;
   }
 
   function fillForm(p: any) {
+    form.reset();
     editIdInput.value = p.id;
     field("f-slug").value = p.slug;
     setSelect("f-type", p.type);
@@ -270,7 +241,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
     (document.getElementById("f-in-stock") as HTMLInputElement).checked = p.in_stock !== false;
     currentImageUrl = p.image_url ?? null;
     currentImageEl.textContent = currentImageUrl ? `Ảnh hiện tại: ${currentImageUrl}` : "Chưa có ảnh";
-    mainImagePreview.innerHTML = "";
+    renderMainImagePreview();
     currentGalleryImages = [...(p.gallery_images ?? [])];
     pendingGalleryFiles = [];
     renderGalleryPreview();
@@ -468,6 +439,11 @@ import CustomSelect from "../../components/CustomSelect.astro";
     font-weight: 400;
   }
 
+  textarea:focus-visible {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+
   fieldset {
     border: none;
     padding: 0;
@@ -528,9 +504,21 @@ import CustomSelect from "../../components/CustomSelect.astro";
   }
 
   .main-image-preview {
+    position: relative;
+    width: 70px;
+    height: 70px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+  }
+
+  .remove-main-image:hover {
+    background: var(--color-accent-dark);
+  }
+
+  .remove-main-image:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
   }
 
   .thumb-filename {
@@ -542,6 +530,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
     text-overflow: ellipsis;
   }
 
+  .remove-main-image,
   .remove-gallery-img,
   .remove-pending-img {
     position: absolute;

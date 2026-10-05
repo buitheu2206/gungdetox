@@ -1,5 +1,8 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import CustomSelect from "../components/CustomSelect.astro";
+import CustomInput from "../components/CustomInput.astro";
+import DatePicker from "../components/DatePicker.astro";
 ---
 
 <BaseLayout
@@ -45,12 +48,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <div class="product-picker">
           <label class="product-picker-select">
             Chọn sản phẩm
-            <select id="product-select"></select>
+            <CustomSelect id="product-select" />
           </label>
-          <label class="product-picker-qty">
-            Số lượng
-            <input type="number" id="quantity" min="1" value="1" />
-          </label>
+          <CustomInput label="Số lượng" type="number" id="quantity" min="1" value="1" />
           <button type="button" id="add-to-cart" class="add-cart-btn">+ Thêm vào giỏ hàng</button>
         </div>
 
@@ -64,10 +64,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <section class="step" data-step="2" hidden>
         <h2>🕐 Bước 2 — Tuỳ chọn</h2>
         <div class="form-row">
-          <label>
-            Ngày giao mong muốn
-            <input type="date" id="delivery-date" required />
-          </label>
+          <DatePicker id="delivery-date" label="Ngày giao mong muốn" required />
         </div>
         <fieldset id="delivery-slot-fieldset" class="delivery-slot-fieldset">
           <legend>Khung giờ giao mong muốn</legend>
@@ -138,7 +135,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <div class="form-row">
           <label>
             Quận
-            <select id="district">
+            <CustomSelect id="district">
               <option value="Quận 1">Quận 1</option>
               <option value="Quận 3">Quận 3</option>
               <option value="Quận 4">Quận 4</option>
@@ -162,12 +159,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
               <option value="Hóc Môn">Hóc Môn</option>
               <option value="Nhà Bè">Nhà Bè</option>
               <option value="Khác">Khác (ngoài khu vực giao chuẩn)</option>
-            </select>
+            </CustomSelect>
           </label>
-          <label>
-            Số chai cũ muốn trả (nếu có)
-            <input type="number" id="bottles-returned" min="0" value="0" />
-          </label>
+          <CustomInput label="Số chai cũ muốn trả (nếu có)" type="number" id="bottles-returned" min="0" value="0" />
         </div>
         <p id="district-warning" class="warning" hidden>
           ⚠️ Ngoài khu vực giao hàng chuẩn — vui lòng liên hệ tiệm để được tư vấn trước khi đặt.
@@ -681,6 +675,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     productSelect.value = initial.slug;
     cart.push({ slug: initial.slug, quantity: 1 });
   }
+  // Refresh the custom label after fetching options and applying the URL selection.
+  productSelect.dispatchEvent(new Event("change"));
   renderCart();
 
   // Không cho chọn ngày giao trong quá khứ.
@@ -786,7 +782,15 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     font-weight: 600;
   }
 
-  .step input,
+  .step :global(.custom-input) {
+    gap: 0.3rem;
+  }
+
+  .step :global(.custom-input label) {
+    font-size: 0.9rem;
+  }
+
+  .step input:not([data-custom-input-control]):not([data-date-input]),
   .step select,
   .step textarea {
     padding: 0.6rem 0.75rem;
@@ -806,7 +810,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     background-position: right 1rem center;
   }
 
-  .step input:focus,
+  .step input:not([data-custom-input-control]):not([data-date-input]):focus,
   .step select:focus,
   .step textarea:focus {
     outline: none;

@@ -1,0 +1,159 @@
+---
+// Keep the native date value and validity API for existing order form handlers.
+interface Props { id: string; label: string; required?: boolean; }
+const { id, label, required = false } = Astro.props;
+---
+
+<div class="date-picker" data-date-picker>
+  <label for={`${id}-trigger`}>{label}</label>
+  <input id={id} type="date" required={required} data-date-input tabindex="-1" aria-label={label} />
+  <button id={`${id}-trigger`} type="button" class="date-trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls={`${id}-calendar`} aria-describedby={`${id}-error`}>
+    <span data-date-label>Chọn ngày giao hàng</span>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M16 3v4M8 3v4M3 11h18" /></svg>
+  </button>
+  <div id={`${id}-calendar`} class="calendar" role="dialog" aria-label="Chọn ngày giao hàng" hidden>
+    <div class="calendar-header">
+      <button type="button" data-month-change="-1" aria-label="Tháng trước">‹</button>
+      <strong data-month-label aria-live="polite"></strong>
+      <button type="button" data-month-change="1" aria-label="Tháng sau">›</button>
+    </div>
+    <div class="weekdays" aria-hidden="true"><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span></div>
+    <div class="calendar-days"></div>
+    <div class="calendar-footer"><button type="button" data-today>Hôm nay</button><button type="button" data-clear>Xoá ngày</button></div>
+  </div>
+  <span id={`${id}-error`} class="date-error" aria-live="polite" hidden>Vui lòng chọn ngày giao hợp lệ.</span>
+</div>
+
+<style>
+  .date-picker { position: relative; display: flex; flex-direction: column; gap: 0.3rem; }
+  label { font-size: 0.9rem; font-weight: 600; }
+  .date-picker input { position: absolute; width: 1px; height: 1px; padding: 0; opacity: 0; pointer-events: none; }
+  .date-trigger { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%; padding: 0.55rem 0.7rem; border: 1px solid #d1d5db; border-radius: var(--radius-sm); background: #fff; font: inherit; font-size: 0.95rem; font-weight: 400; color: var(--color-text); cursor: pointer; }
+  .date-trigger:focus-visible { outline: none; border-color: var(--color-primary); }
+  .date-trigger svg { color: var(--color-primary); flex-shrink: 0; }
+  .calendar { position: absolute; top: calc(100% + 6px); left: 0; width: min(320px, 100%); z-index: 30; padding: 0.8rem; background: #fff; border: 1px solid var(--color-bg-alt); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
+  .calendar-header, .calendar-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .calendar-header strong { color: var(--color-primary); font-size: 0.95rem; }
+  .calendar button { border: none; background: transparent; color: var(--color-primary); padding: 0.4rem 0.6rem; border-radius: 6px; font: inherit; cursor: pointer; }
+  .weekdays, .calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.2rem; text-align: center; }
+  .weekdays { margin: 0.6rem 0; font-size: 0.75rem; color: var(--color-text-muted); }
+  .calendar-days :global(button) { min-height: 34px; padding: 0; border: none; border-radius: 6px; background: transparent; font: inherit; font-size: 0.85rem; color: var(--color-text); cursor: pointer; }
+  .calendar-days :global(button:hover:not(:disabled)) { background: var(--color-primary-light); }
+  .calendar-days :global(button[aria-current="date"]) { box-shadow: inset 0 0 0 1px var(--color-primary); }
+  .calendar-days :global(button[aria-pressed="true"]) { background: var(--color-primary); color: #fff; }
+  .calendar-days :global(button:disabled) { opacity: 0.3; cursor: default; }
+  .calendar button:focus-visible, .calendar-days :global(button:focus-visible) { outline: 1px solid var(--color-primary); }
+  .calendar-footer { margin-top: 0.6rem; border-top: 1px solid var(--color-bg-alt); padding-top: 0.4rem; font-size: 0.8rem; }
+  .date-error { color: var(--color-accent); font-size: 0.8rem; }
+</style>
+
+<script>
+  function dateValue(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  }
+
+  function renderCalendarDays(input: HTMLInputElement, month: Date, days: HTMLElement, monthLabel: HTMLElement) {
+    monthLabel.textContent = `Tháng ${month.getMonth() + 1}, ${month.getFullYear()}`;
+    days.replaceChildren();
+    const first = new Date(month.getFullYear(), month.getMonth(), 1);
+    const offset = (first.getDay() + 6) % 7;
+    for (let index = 0; index < offset; index++) days.append(document.createElement("span"));
+    const count = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+    for (let day = 1; day <= count; day++) {
+      const value = dateValue(new Date(month.getFullYear(), month.getMonth(), day));
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = String(day);
+      button.dataset.date = value;
+      button.setAttribute("aria-label", `Ngày ${day} tháng ${month.getMonth() + 1} năm ${month.getFullYear()}`);
+      button.setAttribute("aria-pressed", String(value === input.value));
+      if (value === dateValue(new Date())) button.setAttribute("aria-current", "date");
+      button.disabled = !!((input.min && value < input.min) || (input.max && value > input.max));
+      days.append(button);
+    }
+  }
+
+  function bindDatePickerEvents(root: HTMLElement, actions: {
+    open: () => void; close: () => void; syncLabel: () => void;
+    chooseDate: (value: string) => void; changeMonth: (offset: number) => void;
+  }) {
+    const { open, close, syncLabel, chooseDate, changeMonth } = actions;
+    const input = root.querySelector("input")!;
+    const trigger = root.querySelector<HTMLButtonElement>(".date-trigger")!;
+    const calendar = root.querySelector<HTMLElement>(".calendar")!;
+    const days = root.querySelector<HTMLElement>(".calendar-days")!;
+    trigger.addEventListener("click", () => { if (calendar.hidden) open(); else close(); });
+    days.addEventListener("click", (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-date]");
+      if (button && !button.disabled) chooseDate(button.dataset.date!);
+    });
+    root.querySelectorAll<HTMLButtonElement>("[data-month-change]").forEach((button) => {
+      button.addEventListener("click", () => {
+        changeMonth(Number(button.dataset.monthChange));
+      });
+    });
+    root.querySelector("[data-today]")!.addEventListener("click", () => {
+      const today = dateValue(new Date());
+      if ((!input.min || today >= input.min) && (!input.max || today <= input.max)) chooseDate(today);
+    });
+    root.querySelector("[data-clear]")!.addEventListener("click", () => chooseDate(""));
+    input.addEventListener("change", syncLabel);
+    input.addEventListener("invalid", (event) => {
+      event.preventDefault();
+      root.querySelector<HTMLElement>(".date-error")!.hidden = false;
+      trigger.focus();
+    });
+    input.addEventListener("focus", () => trigger.focus());
+    root.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") { close(); trigger.focus(); }
+    });
+    document.addEventListener("click", (event) => { if (!root.contains(event.target as Node)) close(); });
+    input.form?.addEventListener("reset", () => { close(); setTimeout(syncLabel); });
+  }
+
+  function initDatePicker(root: HTMLElement) {
+    const input = root.querySelector("input")!;
+    const trigger = root.querySelector<HTMLButtonElement>(".date-trigger")!;
+    const calendar = root.querySelector<HTMLElement>(".calendar")!;
+    const days = root.querySelector<HTMLElement>(".calendar-days")!;
+    const label = root.querySelector<HTMLElement>("[data-date-label]")!;
+    const monthLabel = root.querySelector<HTMLElement>("[data-month-label]")!;
+    const error = root.querySelector<HTMLElement>(".date-error")!;
+    let month = new Date();
+
+    function close() {
+      calendar.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+    }
+
+    function syncLabel() {
+      label.textContent = input.value ? input.value.split("-").reverse().join("/") : "Chọn ngày giao hàng";
+      error.hidden = input.validity.valid;
+    }
+
+
+    function open() {
+      month = input.value ? new Date(`${input.value}T00:00:00`) : new Date();
+      renderCalendarDays(input, month, days, monthLabel);
+      calendar.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+    }
+
+    function chooseDate(value: string) {
+      input.value = value;
+      input.setCustomValidity("");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      syncLabel();
+      close();
+      trigger.focus();
+    }
+
+    bindDatePickerEvents(root, { open, close, syncLabel, chooseDate, changeMonth: (offset) => {
+      month = new Date(month.getFullYear(), month.getMonth() + offset, 1);
+      renderCalendarDays(input, month, days, monthLabel);
+    } });
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-date-picker]").forEach(initDatePicker);
+</script>

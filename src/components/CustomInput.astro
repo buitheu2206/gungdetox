@@ -1,0 +1,87 @@
+---
+// Shared text and number input with a label and native validation feedback.
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"input"> {
+  id: string;
+  label: string;
+}
+
+const { id, label, type = "text", ...attributes } = Astro.props;
+const errorId = `${id}-error`;
+const describedBy = [attributes["aria-describedby"], errorId].filter(Boolean).join(" ");
+---
+
+<div class="custom-input" data-custom-input>
+  <label for={id}>{label}</label>
+  <input {...attributes} id={id} type={type} aria-describedby={describedBy} data-custom-input-control />
+  <span id={errorId} class="input-error" aria-live="polite" hidden></span>
+</div>
+
+<style>
+  .custom-input {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .custom-input input {
+    width: 100%;
+    min-width: 0;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    font-weight: 400;
+  }
+
+  .custom-input input:focus-visible {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+
+  input[aria-invalid="true"] {
+    border-color: var(--color-accent);
+  }
+
+  .input-error {
+    color: var(--color-accent);
+    font-size: 0.75rem;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-custom-input]").forEach((root) => {
+    const input = root.querySelector("input")!;
+    const error = root.querySelector<HTMLElement>(".input-error")!;
+
+    function clearError() {
+      input.removeAttribute("aria-invalid");
+      error.textContent = "";
+      error.hidden = true;
+    }
+
+    function showError() {
+      input.setAttribute("aria-invalid", "true");
+      error.textContent = input.validity.valueMissing
+        ? "Vui lòng nhập trường này."
+        : input.validationMessage;
+      error.hidden = false;
+    }
+
+    input.addEventListener("invalid", showError);
+    input.addEventListener("input", () => {
+      if (!input.hasAttribute("aria-invalid")) return;
+      if (input.validity.valid) clearError();
+      else showError();
+    });
+    input.form?.addEventListener("reset", clearError);
+  });
+</script>

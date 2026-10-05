@@ -1,0 +1,79 @@
+---
+// Keep a native file input so existing preview and save handlers also work for drops.
+interface Props {
+  id: string;
+  label: string;
+  multiple?: boolean;
+}
+const { id, label, multiple = false } = Astro.props;
+---
+
+<div class="image-upload" data-image-upload>
+  <label for={id}>{label}</label>
+  <div class="drop-zone">
+    <p>Kéo thả ảnh vào đây hoặc chọn ảnh</p>
+    <input id={id} type="file" accept="image/*" multiple={multiple} />
+  </div>
+  <p class="upload-error" role="alert" hidden></p>
+</div>
+
+<style>
+  label { font-size: 0.85rem; font-weight: 600; }
+  .drop-zone {
+    margin-top: 0.25rem;
+    padding: 1rem;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    background: #fff;
+  }
+  .drop-zone.drag-over { border-color: var(--color-primary); background: var(--color-primary-light); }
+  .drop-zone p { margin: 0 0 0.5rem; font-size: 0.85rem; }
+  input { max-width: 100%; }
+  .upload-error { color: var(--color-accent); font-size: 0.8rem; }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-image-upload]").forEach((root) => {
+    const input = root.querySelector("input")!;
+    const zone = root.querySelector<HTMLElement>(".drop-zone")!;
+    const error = root.querySelector<HTMLElement>(".upload-error")!;
+    let acceptedFiles = input.files;
+
+    function validateImages(files: File[]): boolean {
+      const valid = files.every((file) => file.type.startsWith("image/"));
+      error.textContent = valid ? "" : "Vui lòng chỉ chọn file ảnh.";
+      error.hidden = valid;
+      return valid;
+    }
+
+    input.addEventListener("click", () => { acceptedFiles = input.files; });
+    input.addEventListener("change", (event) => {
+      if (validateImages(Array.from(input.files ?? []))) return;
+      if (acceptedFiles) input.files = acceptedFiles;
+      event.stopImmediatePropagation();
+    }, true);
+
+    zone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      zone.classList.add("drag-over");
+    });
+    zone.addEventListener("dragleave", (event) => {
+      if (!zone.contains(event.relatedTarget as Node | null)) zone.classList.remove("drag-over");
+    });
+    zone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      zone.classList.remove("drag-over");
+      const files = Array.from(event.dataTransfer?.files ?? []);
+      if (!files.length || !validateImages(files)) return;
+      const transfer = new DataTransfer();
+      (input.multiple ? files : files.slice(0, 1)).forEach((file) => transfer.items.add(file));
+      input.files = transfer.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    input.form?.addEventListener("reset", () => {
+      acceptedFiles = new DataTransfer().files;
+      error.hidden = true;
+      zone.classList.remove("drag-over");
+    });
+  });
+</script>
