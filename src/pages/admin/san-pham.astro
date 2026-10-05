@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import AdminLogin from "../../components/AdminLogin.astro";
+import CustomSelect from "../../components/CustomSelect.astro";
 ---
 
 <BaseLayout title="Quản trị sản phẩm — GỪNG DETOX">
@@ -17,11 +18,11 @@ import AdminLogin from "../../components/AdminLogin.astro";
           </label>
           <label>
             Loại
-            <select id="f-type" required>
+            <CustomSelect id="f-type" required>
               <option value="single">Đồ uống lẻ</option>
-              <option value="combo">Combo thuê bao</option>
+              <option value="combo">Combo</option>
               <option value="set">Set Detox</option>
-            </select>
+            </CustomSelect>
           </label>
           <label>
             Tên sản phẩm
@@ -57,24 +58,24 @@ import AdminLogin from "../../components/AdminLogin.astro";
           </label>
           <label>
             Màu chủ đề (chỉ Set Detox)
-            <select id="f-color">
+            <CustomSelect id="f-color">
               <option value="">— Không —</option>
               <option value="green">Xanh</option>
               <option value="yellow">Vàng</option>
               <option value="red">Đỏ</option>
               <option value="orange">Cam</option>
               <option value="mix">Mix</option>
-            </select>
+            </CustomSelect>
           </label>
           <label>
             Nhãn
-            <select id="f-badge">
+            <CustomSelect id="f-badge">
               <option value="">— Không —</option>
               <option value="best-seller">Best-seller</option>
               <option value="new">Mới</option>
               <option value="sale">Sale</option>
               <option value="out-of-stock">Tạm hết</option>
-            </select>
+            </CustomSelect>
           </label>
         </div>
 
@@ -145,6 +146,15 @@ import AdminLogin from "../../components/AdminLogin.astro";
   const tbody = document.getElementById("products-body")!;
 
   const field = (id: string) => document.getElementById(id) as HTMLInputElement;
+
+  // CustomSelect chỉ tự vẽ lại nhãn hiển thị khi select gốc bắn event "change"
+  // (nghe ở src/components/CustomSelect.astro) — set .value trực tiếp bằng JS
+  // không tự bắn event này, nên set xong phải tự dispatch để đồng bộ giao diện.
+  function setSelect(id: string, value: string) {
+    const el = document.getElementById(id) as HTMLSelectElement;
+    el.value = value;
+    el.dispatchEvent(new Event("change"));
+  }
 
   const galleryPreview = document.getElementById("gallery-preview") as HTMLDivElement;
   const mainImageInput = document.getElementById("f-image") as HTMLInputElement;
@@ -238,7 +248,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
   function fillForm(p: any) {
     editIdInput.value = p.id;
     field("f-slug").value = p.slug;
-    (document.getElementById("f-type") as HTMLSelectElement).value = p.type;
+    setSelect("f-type", p.type);
     field("f-name").value = p.name;
     field("f-category").value = p.category ?? "";
     field("f-price-retail").value = p.price_retail ?? "";
@@ -247,8 +257,8 @@ import AdminLogin from "../../components/AdminLogin.astro";
     field("f-servings").value = p.servings ?? "";
     field("f-delivery").value = p.delivery_schedule ?? "";
     field("f-goal").value = p.set_goal ?? "";
-    (document.getElementById("f-color") as HTMLSelectElement).value = p.color_theme ?? "";
-    (document.getElementById("f-badge") as HTMLSelectElement).value = p.badge ?? "";
+    setSelect("f-color", p.color_theme ?? "");
+    setSelect("f-badge", p.badge ?? "");
     (document.getElementById("f-description") as HTMLTextAreaElement).value = p.description ?? "";
     (document.getElementById("f-origin") as HTMLTextAreaElement).value = p.origin_story ?? "";
     (document.getElementById("f-bottle-glass") as HTMLInputElement).checked = (

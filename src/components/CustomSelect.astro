@@ -1,0 +1,196 @@
+---
+// Bọc 1 <select> gốc để tự vẽ giao diện đẹp hơn, nhưng vẫn giữ nguyên hành vi
+// form/JS cũ (getElementById, .value = ..., required, form.reset()...) — chỉ
+// cần đổi thẻ `<select id="x">...</select>` thành `<CustomSelect id="x">...</CustomSelect>`,
+// giữ nguyên các <option> bên trong làm slot.
+interface Props {
+  id: string;
+  required?: boolean;
+}
+
+const { id, required = false } = Astro.props;
+---
+
+<span class="custom-select" data-custom-select>
+  <select id={id} required={required} tabindex="-1">
+    <slot />
+  </select>
+  <button type="button" class="custom-select-trigger" aria-haspopup="listbox">
+    <span class="custom-select-value"></span>
+    <svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true">
+      <path
+        d="M5 7l5 5 5-5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"></path>
+    </svg>
+  </button>
+  <ul class="custom-select-list" role="listbox" hidden></ul>
+</span>
+
+<style>
+  .custom-select {
+    position: relative;
+    display: block;
+  }
+
+  .custom-select select {
+    position: absolute;
+    inset: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .custom-select-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 0.55rem 0.7rem;
+    font: inherit;
+    font-size: 0.95rem;
+    color: var(--color-text);
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .custom-select-trigger:hover {
+    border-color: var(--color-primary);
+  }
+
+  .custom-select-trigger:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+
+  .custom-select-trigger svg {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    transition: transform 0.15s ease;
+  }
+
+  .custom-select.open .custom-select-trigger svg {
+    transform: rotate(180deg);
+  }
+
+  .custom-select-list {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 0.3rem;
+    list-style: none;
+    background: #fff;
+    border: 1px solid var(--color-bg-alt);
+    border-radius: 10px;
+    box-shadow: var(--shadow-md);
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  /* Options created with innerHTML do not receive Astro's scoped attribute. */
+  .custom-select-list :global(li) {
+    padding: 0.5rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .custom-select-list :global(li:hover) {
+    background: var(--color-primary-light);
+  }
+
+  .custom-select-list :global(li[aria-selected="true"]) {
+    font-weight: 600;
+    color: var(--color-primary);
+    background: var(--color-primary-light);
+  }
+</style>
+
+<script>
+  function initCustomSelect(root: HTMLElement) {
+    const select = root.querySelector("select") as HTMLSelectElement;
+    const trigger = root.querySelector(".custom-select-trigger") as HTMLButtonElement;
+    const valueEl = root.querySelector(".custom-select-value") as HTMLElement;
+    const list = root.querySelector(".custom-select-list") as HTMLUListElement;
+
+    // Dựng lại <li> từ chính <option> của select gốc mỗi lần mở — tránh phải
+    // giữ 2 nguồn dữ liệu (option thật + option hiển thị) đồng bộ tay.
+    function renderOptions() {
+      list.innerHTML = Array.from(select.options)
+        .map(
+          (o, i) =>
+            `<li role="option" data-index="${i}" aria-selected="${o.selected}">${o.textContent}</li>`
+        )
+        .join("");
+    }
+
+    function syncLabel() {
+      valueEl.textContent = select.options[select.selectedIndex]?.textContent ?? "";
+    }
+
+    function open() {
+      renderOptions();
+      list.hidden = false;
+      root.classList.add("open");
+    }
+
+    function close() {
+      list.hidden = true;
+      root.classList.remove("open");
+    }
+
+    trigger.addEventListener("click", () => {
+      if (list.hidden) open();
+      else close();
+    });
+
+    list.addEventListener("click", (e) => {
+      const li = (e.target as HTMLElement).closest("li");
+      if (!li) return;
+      select.selectedIndex = Number(li.dataset.index);
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      syncLabel();
+      close();
+    });
+
+    trigger.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") close();
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        if (list.hidden) open();
+        else close();
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!root.contains(e.target as Node)) close();
+    });
+
+    // Label bọc ngoài click vào select ẩn (tabindex=-1 vẫn focus được bằng
+    // label/script) — chuyển focus sang nút hiển thị cho đúng trải nghiệm.
+    select.addEventListener("focus", () => trigger.focus());
+
+    // Đồng bộ lại khi code khác tự set select.value (vd. fillForm lúc sửa sản
+    // phẩm) hoặc khi form.reset() chạy — cả 2 trường hợp select gốc vẫn đổi
+    // đúng giá trị, chỉ cần vẽ lại label hiển thị theo.
+    select.addEventListener("change", syncLabel);
+    select.closest("form")?.addEventListener("reset", () => setTimeout(syncLabel));
+
+    syncLabel();
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-custom-select]").forEach((el) =>
+    initCustomSelect(el)
+  );
+</script>
