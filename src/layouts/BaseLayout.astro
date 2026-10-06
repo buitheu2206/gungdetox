@@ -27,6 +27,16 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script is:inline>
+      // Disable restoration before the browser restores the old scroll position.
+      history.scrollRestoration = "manual";
+      window.addEventListener("pageshow", () => {
+        // Run after the browser applies a destination URL's fragment scroll.
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        });
+      });
+    </script>
     <meta name="description" content={description} />
     <title>{title}</title>
     <link rel="canonical" href={canonicalUrl} />

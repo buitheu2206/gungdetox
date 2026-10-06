@@ -421,4 +421,13 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 1.25rem;
   }
+
+  .related-grid :global(.combo-card .cta-row) {
+    align-items: center;
+  }
+
+  .related-grid :global(.combo-card .cta) {
+    white-space: nowrap;
+    font-size: 0.85rem;
+  }
 </style>
