@@ -97,7 +97,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   // Combo giống nhau, chỉ khác số lượng (vd. 3/5/7 chai Sữa hạt) — gộp lại thành 1 card
   // duy nhất có nút chọn số lượng, thay vì mỗi mức 1 card riêng biệt.
-  const VARIANT_GROUPS: { name: string; slugs: string[] }[] = [
+  const VARIANT_GROUPS: { name: string; slugs: string[]; labels?: string[]; showIndividualCards?: boolean }[] = [
+    {
+      name: "Combo Ginger Shot — Hành trình 4 tháng",
+      slugs: ["combo-3-thang-ginger-shot", "combo-2-thang-dau-ginger-shot", "combo-2-thang-sau-ginger-shot"],
+      labels: ["4 tháng — Cam + Xanh + Đỏ + Thơm (112 chai)", "2 tháng đầu — Cam + Xanh (56 chai)", "2 tháng sau — Đỏ + Thơm (56 chai)"],
+      showIndividualCards: true,
+    },
     {
       name: "Combo Sữa hạt",
       slugs: ["combo-3-chai-sua-hat", "combo-5-chai-sua-hat", "combo-7-chai-sua-hat"],
@@ -149,7 +155,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       : "<p>Chưa có sản phẩm.</p>";
 
     // Tách các combo thuộc 1 nhóm variant ra gộp thành 1 card, phần còn lại vẫn hiện riêng lẻ như cũ
-    const groupedSlugs = new Set(VARIANT_GROUPS.flatMap((g) => g.slugs));
+    const groupedSlugs = new Set(VARIANT_GROUPS.filter((g) => !g.showIndividualCards).flatMap((g) => g.slugs));
     const ungroupedCombos = combos.filter((p) => !groupedSlugs.has(p.slug));
 
     if (!combos.length) {
@@ -164,7 +170,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
               const variants = g.slugs
                 .map((slug) => combos.find((p) => p.slug === slug))
                 .filter((p): p is ProductRow => Boolean(p));
-              return variants.length ? comboVariantGroupCardHtml(g.name, variants) : "";
+              const labels = g.labels ? variants.map((p) => g.labels![g.slugs.indexOf(p.slug)]) : undefined;
+              return variants.length ? comboVariantGroupCardHtml(g.name, variants, labels) : "";
             }).join("") + cardsHtml;
         }
         if (!cardsHtml) return "";

@@ -186,7 +186,7 @@ export function comboCardHtml(p: ProductRow): string {
 // Gộp nhiều sản phẩm cùng dòng (khác nhau ở số lượng, vd. combo 3/5/7 chai Sữa hạt)
 // thành 1 card duy nhất với nút chọn — thay vì mỗi mức số lượng 1 card riêng.
 // `variants` phải được sắp theo thứ tự muốn hiển thị (vd. servings tăng dần).
-export function comboVariantGroupCardHtml(name: string, variants: ProductRow[]): string {
+export function comboVariantGroupCardHtml(name: string, variants: ProductRow[], labels?: string[]): string {
   const data = variants.map((p) => ({
     slug: p.slug,
     name: p.name,
@@ -207,11 +207,11 @@ export function comboVariantGroupCardHtml(name: string, variants: ProductRow[]):
       <h3><a href="/san-pham/${encodeURIComponent(first.slug)}" class="variant-link">${esc(name)}</a></h3>
       <p class="price variant-price">${money(first.price)}</p>
       <fieldset class="variant-options">
-        <legend>Chọn số chai</legend>
+        <legend>${labels ? "Chọn gói" : "Chọn số chai"}</legend>
         ${variants
           .map(
             (p, i) =>
-              `<label><input type="radio" name="variant-${esc(first.slug)}" value="${i}" ${i === 0 ? "checked" : ""}/> ${p.servings ? `${p.servings} chai` : esc(p.name)}</label>`
+              `<label><input type="radio" name="variant-${esc(first.slug)}" value="${i}" ${i === 0 ? "checked" : ""}/> ${labels?.[i] ? esc(labels[i]) : p.servings ? `${p.servings} chai` : esc(p.name)}</label>`
           )
           .join("")}
       </fieldset>
