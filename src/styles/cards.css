@@ -229,8 +229,8 @@
 
 .combo-card .badge {
   position: absolute;
-  top: -0.6rem;
-  left: 1rem;
+  top: 0.5rem;
+  left: 0.5rem;
   background: var(--color-primary);
   color: #fff;
   font-size: 0.7rem;
