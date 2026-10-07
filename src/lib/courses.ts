@@ -18,9 +18,25 @@ export interface CoursePackage {
 
 export const packages: CoursePackage[] = [
   {
+    slug: "cong-thuc",
+    key: "formula",
+    name: "Gói 1 — Công thức",
+    tagline: "Tự học – tự làm – tự triển khai",
+    price: "5.000.000đ / dòng",
+    icon: "📄",
+    image: "/images/nhuong-quyen/package-formula.webp",
+    recommended: false,
+    highlights: [
+      "Công thức, định lượng, tài liệu, giải đáp",
+      "File Google gồm 10 Sheet hướng dẫn",
+    ],
+    suitableFor: ["Tự học – tự làm – tự triển khai"],
+    note: "Thời gian hoàn thiện: 2 ngày. Thanh toán trước khi nhận file.",
+  },
+  {
     slug: "khoi-dong-online",
     key: "online",
-    name: "Khởi động Online",
+    name: "Gói 2 — Khởi động Online",
     tagline: "Tự học – Hỗ trợ kênh bán hàng",
     price: "15.000.000đ / dòng sản phẩm",
     icon: "💻",
@@ -41,7 +57,7 @@ export const packages: CoursePackage[] = [
   {
     slug: "hoc-thuc-te",
     key: "essential",
-    name: "Gói 1 — Học thực tế",
+    name: "Gói 3 — Học thực tế",
     tagline: "Chuyển giao công thức",
     price: "29.000.000đ",
     icon: "🌱",
@@ -62,7 +78,7 @@ export const packages: CoursePackage[] = [
   {
     slug: "hoc-marketing",
     key: "professional",
-    name: "Gói 2 — Học + Marketing",
+    name: "Gói 4 — Học + Marketing",
     tagline: "Xây dựng thương hiệu",
     price: "39.000.000đ",
     icon: "🚀",
@@ -70,7 +86,7 @@ export const packages: CoursePackage[] = [
     recommended: true,
     highlights: [
       "Giai đoạn 1: 15 ngày khởi động Online (tài khoản, Fanpage, Sheet quản lý...)",
-      "Giai đoạn 2: 03 ngày học thực tế tại GỪNG (trọn nội dung Gói 1 — 29tr)",
+      "Giai đoạn 2: 03 ngày học thực tế tại GỪNG (trọn nội dung Gói 3 — 29tr)",
       "Có nền tảng Online sẵn trước khi bắt đầu học trực tiếp",
       "Hỗ trợ Online sau khóa học theo nội dung chuyển giao",
     ],
@@ -83,7 +99,7 @@ export const packages: CoursePackage[] = [
   {
     slug: "full-dong-hanh",
     key: "premium",
-    name: "Gói 3 — Full đồng hành",
+    name: "Gói 5 — Full đồng hành",
     tagline: "Đồng hành khởi nghiệp",
     price: "50.000.000đ",
     icon: "👑",

@@ -27,7 +27,6 @@ const includedGroups = [
     icon: "🎨",
     items: [
       "Thiết lập Fanpage Facebook",
-      "Thiết lập TikTok",
       "Thiết lập Instagram",
       "Thiết lập Threads",
       "Thiết lập bộ nhận diện thương hiệu cơ bản",
@@ -49,7 +48,7 @@ const includedGroups = [
 
 <BaseLayout
   title="Nhượng quyền — GỪNG DETOX"
-  description="GỪNG DETOX chính thức nhận nhượng quyền mô hình đồ uống healthy — 4 hình thức linh hoạt, đồng hành từ công thức đến marketing."
+  description="GỪNG DETOX chính thức nhận nhượng quyền mô hình đồ uống healthy — 5 hình thức linh hoạt, đồng hành từ công thức đến marketing."
 >
   <main class="franchise-page">
     <section class="franchise-hero">
@@ -104,9 +103,9 @@ const includedGroups = [
 
     <section class="packages">
       <p class="eyebrow eyebrow-purple">💼 Lựa chọn phù hợp</p>
-      <h2>4 hình thức nhượng quyền — linh hoạt lựa chọn</h2>
+      <h2>5 hình thức nhượng quyền — linh hoạt lựa chọn</h2>
       <p class="package-intro">
-        1 gói <strong>Chuyển giao Online</strong> (tự học tại nhà) và 3 gói <strong>Chuyển giao Offline</strong>
+        2 gói <strong>Chuyển giao Online</strong> (tự học tại nhà) và 3 gói <strong>Chuyển giao Offline</strong>
         (học trực tiếp 3 ngày tại tiệm) — chọn theo ngân sách và mức độ đồng hành bạn cần.
       </p>
       <img
@@ -128,7 +127,13 @@ const includedGroups = [
               </a>
               <span class="package-icon">{p.icon}</span>
               <h3><a href={`/khoa-hoc/${p.slug}`}>{p.name}</a></h3>
-              <p class="package-price">{p.price}</p>
+              <p class="package-price">
+                {p.price.split(" / ").map((part, index) => (
+                  <span class={index === 0 ? "price-amount" : "price-unit"}>
+                    {index === 0 ? part : `/ ${part}`}
+                  </span>
+                ))}
+              </p>
               <p class="package-tagline">{p.tagline}</p>
               <a class="package-detail-link" href={`/khoa-hoc/${p.slug}`}>Xem chi tiết gói này →</a>
               <a class="package-cta" href="https://forms.gle/hLtzhyzPiQtnxnbe6" target="_blank" rel="noopener">
@@ -165,7 +170,7 @@ const includedGroups = [
         alt="Lộ trình chi tiết Gói Học + Marketing GỪNG DETOX"
         loading="lazy"
       />
-      <p class="roadmap-caption">Lộ trình 5 bước — áp dụng cho Gói 2 (Học + Marketing)</p>
+      <p class="roadmap-caption">Lộ trình 5 bước — áp dụng cho Gói 4 (Học + Marketing)</p>
 
       <img
         class="roadmap-img"
@@ -173,7 +178,7 @@ const includedGroups = [
         alt="Lộ trình nhượng quyền đầy đủ GỪNG DETOX — từ đăng ký đến tự vận hành"
         loading="lazy"
       />
-      <p class="roadmap-caption">Lộ trình đầy đủ 6 bước — áp dụng cho Gói 3 (Full đồng hành)</p>
+      <p class="roadmap-caption">Lộ trình đầy đủ 6 bước — áp dụng cho Gói 5 (Full đồng hành)</p>
     </section>
 
     <section class="included-section">
@@ -408,15 +413,19 @@ const includedGroups = [
 
   .package-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 1.2rem;
     text-align: left;
     margin-top: 2rem;
   }
 
-  @media (max-width: 900px) {
+  @media (max-width: 1100px) {
     .package-grid {
       grid-template-columns: repeat(2, 1fr);
+    }
+
+    .package-cta {
+      font-size: 1rem;
     }
   }
 
@@ -430,8 +439,13 @@ const includedGroups = [
     position: relative;
     padding: 1.4rem;
     border-top: 6px solid var(--color-primary);
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-row: span 7; /* Share a row for each of the card's seven content sections. */
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: subgrid;
+    row-gap: 0;
+    align-items: start;
+    min-width: 0;
   }
 
   .package-card.theme-professional {
@@ -503,10 +517,12 @@ const includedGroups = [
 
   .package-price {
     font-family: var(--font-display);
-    font-size: 1.6rem;
+    font-size: clamp(1rem, 1.6vw, 1.2rem);
     font-weight: 700;
     color: var(--color-secondary);
     margin: 0 0 0.2rem;
+    max-width: 100%;
+    overflow-wrap: break-word;
   }
 
   .package-tagline {
@@ -515,13 +531,28 @@ const includedGroups = [
     margin: 0 0 0.9rem;
   }
 
+  .price-amount,
+  .price-unit {
+    display: block;
+  }
+
+  .price-amount {
+    white-space: normal;
+  }
+
+  .price-unit {
+    font-size: 0.85rem;
+    margin-top: 0.2rem;
+  }
+
   .package-detail-link {
     display: inline-block;
-    font-size: 0.85rem;
+    font-size: clamp(0.72rem, 1.3vw, 0.85rem);
     font-weight: 600;
     color: var(--color-primary);
     text-decoration: none;
     margin-bottom: 0.8rem;
+    white-space: nowrap;
   }
 
   .package-detail-link:hover {
@@ -537,8 +568,9 @@ const includedGroups = [
     width: 100%;
     padding: 0.6rem;
     border-radius: 999px;
-    margin-top: auto;
     font-weight: 600;
+    font-size: 0.78rem;
+    white-space: nowrap;
   }
 
   .package-cta:hover {
