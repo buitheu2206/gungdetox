@@ -60,11 +60,13 @@ const includedGroups = [
             Cơ hội cho chị em tỉnh muốn khởi nghiệp mô hình đồ uống healthy — thương hiệu uy tín,
             đã có lượng khách hàng ổn định tại Sài Gòn.
           </p>
-          <a class="hotline-btn hotline-btn-inline" href="tel:0888267009">📞 0888 267 009</a>
-          <ShareButton />
+          <div class="franchise-hero-actions">
+            <a class="hotline-btn" href="tel:0888267009">📞 0888 267 009</a>
+            <ShareButton />
+          </div>
         </div>
         <div class="franchise-hero-photo">
-          <img src="/images/hero/kitchen-lifestyle.webp" alt="Góc pha chế thật tại GỪNG DETOX" />
+          <img src="/images/hero/franchise-team.jpg" alt="Đội ngũ GỪNG DETOX tại tiệm" />
         </div>
       </div>
     </section>
@@ -73,18 +75,42 @@ const includedGroups = [
       <p class="eyebrow eyebrow-orange">🌱 Câu chuyện GỪNG DETOX</p>
       <h2>Một mô hình đã được kiểm chứng, không phải ý tưởng trên giấy</h2>
       <p>
-        Từ một tiệm nhỏ ở Sài Gòn, GỪNG DETOX hôm nay đã có lượng khách quen ổn định mỗi ngày —
-        không nhờ quảng cáo rầm rộ, mà nhờ đúng một điều: làm mới mỗi ngày, không gian dối nguyên liệu.
+        Từ một tiệm nhỏ ở Sài Gòn, GỪNG DETOX từng bước xây được một lượng khách hàng quen ổn định mỗi ngày.
       </p>
       <p>
-        Nhu cầu sống xanh, ăn sạch, uống lành đang lớn dần ở khắp nơi, không chỉ riêng Sài Gòn. Nhưng
-        để tự xây một thương hiệu đồ uống healthy từ con số 0 — từ công thức, quy trình vận hành, đến
-        cách giữ chân khách mỗi ngày — là một hành trình dài và không ít rủi ro.
+        Không phải bằng những chiến dịch quảng cáo ồn ào, mà bằng một nguyên tắc rất đơn giản:
+        làm thật – nguyên liệu thật – sản phẩm làm mới mỗi ngày – và đặt chất lượng lên trước lợi nhuận.
       </p>
       <p>
-        Nhượng quyền GỪNG DETOX sinh ra để rút ngắn hành trình đó. Bạn không bắt đầu từ tờ giấy trắng,
-        mà bắt đầu từ một mô hình đã được kiểm chứng bằng khách hàng thật, đơn hàng thật, mỗi ngày. 💚
+        Ngày càng nhiều người quan tâm đến việc ăn sạch, uống lành, sống khỏe. Và nhu cầu ấy không chỉ
+        nằm ở Sài Gòn, mà đang mở ra ở rất nhiều tỉnh thành.
       </p>
+      <p>
+        Nhưng nếu tự bắt đầu một thương hiệu đồ uống healthy từ con số 0, bạn sẽ phải tự mình giải rất nhiều bài toán:
+      </p>
+      <p>
+        Công thức nào phù hợp?<br />
+        Nguyên liệu nhập ở đâu?<br />
+        Định lượng thế nào để vừa ngon vừa kiểm soát giá vốn?<br />
+        Quy trình vận hành ra sao?<br />
+        Đóng gói, bảo quản, bán hàng thế nào?<br />
+        Và quan trọng nhất – làm sao để khách mua lần đầu rồi quay lại mỗi ngày?
+      </p>
+      <p>Đó là lý do GỪNG DETOX xây dựng mô hình nhượng quyền.</p>
+      <p>Bạn không cần bắt đầu bằng một tờ giấy trắng.</p>
+      <p>
+        Bạn bắt đầu với một mô hình đã được xây dựng, thử nghiệm và vận hành từ thực tế – từ sản phẩm,
+        công thức, quy trình đến cách bán hàng và chăm sóc khách hàng.
+      </p>
+      <p>
+        GỪNG không bán cho bạn một cái tên.<br />
+        GỪNG chuyển giao một cách làm.
+      </p>
+      <p>
+        Để thay vì mất nhiều năm tự thử – tự sai – tự điều chỉnh, bạn có thể rút ngắn hành trình và bắt đầu
+        kinh doanh bài bản ngay từ đầu. 💚
+      </p>
+      <p>GỪNG DETOX – sống lành, uống xanh.</p>
     </section>
 
     <section class="features">
@@ -289,6 +315,10 @@ const includedGroups = [
     .franchise-hero-text {
       text-align: center;
     }
+
+    .franchise-hero-actions {
+      justify-content: center;
+    }
   }
 
   .lead {
@@ -296,8 +326,18 @@ const includedGroups = [
     font-size: 1.05rem;
   }
 
-  .hotline-btn-inline {
-    margin-top: 0.5rem;
+  .franchise-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-top: 1.2rem;
+  }
+
+  .franchise-hero-actions :global(.share-trigger) {
+    margin-top: 0;
+    padding: 0.8rem 1.2rem;
+    min-height: 3.5rem;
   }
 
   .eyebrow {
