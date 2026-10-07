@@ -96,6 +96,7 @@ create policy "Admin xoá đơn hàng" on orders for delete to authenticated usi
 
 -- ============================================================
 -- KHO LƯU ẢNH (Storage buckets) cho trang admin upload ảnh
+-- Sau khi tạo tài khoản Auth, chạy secure-storage-policies.sql để giới hạn quyền quản trị.
 -- ============================================================
 insert into storage.buckets (id, name, public) values ('product-images', 'product-images', true);
 insert into storage.buckets (id, name, public) values ('post-images', 'post-images', true);

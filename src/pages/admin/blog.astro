@@ -64,6 +64,7 @@ import CustomInput from "../../components/CustomInput.astro";
 <script is:inline src="https://cdn.quilljs.com/2.0.3/quill.js"></script>
 
 <script>
+  import { deleteContentWithImages } from "../../lib/delete-content";
   import { initMainImagePreview } from "../../lib/image-preview";
   import { supabase } from "../../lib/supabase";
   import { renderPostBodyHtml } from "../../lib/templates";
@@ -225,10 +226,19 @@ import CustomInput from "../../components/CustomInput.astro";
     });
     document.querySelectorAll<HTMLButtonElement>(".delete-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        if (!confirm("Xoá bài viết này?")) return;
-        const { error } = await supabase.from("posts").delete().eq("id", btn.dataset.id);
-        if (error) alert("Lỗi xoá: " + error.message);
-        else await loadPosts();
+        if (btn.disabled || !confirm("Xoá bài viết này và toàn bộ ảnh đã tải lên của bài viết?")) return;
+        btn.disabled = true;
+        try {
+          const warning = await deleteContentWithImages(supabase, "posts", btn.dataset.id ?? "");
+          if (editIdInput.value === btn.dataset.id) resetForm();
+          if (warning) alert(warning);
+          await loadPosts();
+        } catch (error) {
+          console.error("Lỗi xoá bài viết", { id: btn.dataset.id, error });
+          alert("Lỗi xoá: " + (error instanceof Error ? error.message : String(error)));
+        } finally {
+          btn.disabled = false;
+        }
       });
     });
   }

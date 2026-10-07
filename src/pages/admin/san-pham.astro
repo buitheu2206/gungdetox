@@ -108,6 +108,7 @@ import ImageUpload from "../../components/ImageUpload.astro";
 </BaseLayout>
 
 <script>
+  import { deleteContentWithImages } from "../../lib/delete-content";
   import { initMainImagePreview } from "../../lib/image-preview";
   import { supabase } from "../../lib/supabase";
 
@@ -297,10 +298,19 @@ import ImageUpload from "../../components/ImageUpload.astro";
     });
     document.querySelectorAll<HTMLButtonElement>(".delete-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        if (!confirm("Xoá sản phẩm này?")) return;
-        const { error } = await supabase.from("products").delete().eq("id", btn.dataset.id);
-        if (error) alert("Lỗi xoá: " + error.message);
-        else await loadProducts();
+        if (btn.disabled || !confirm("Xoá sản phẩm này và toàn bộ ảnh đã tải lên của sản phẩm?")) return;
+        btn.disabled = true;
+        try {
+          const warning = await deleteContentWithImages(supabase, "products", btn.dataset.id ?? "");
+          if (editIdInput.value === btn.dataset.id) resetForm();
+          if (warning) alert(warning);
+          await loadProducts();
+        } catch (error) {
+          console.error("Lỗi xoá sản phẩm", { id: btn.dataset.id, error });
+          alert("Lỗi xoá: " + (error instanceof Error ? error.message : String(error)));
+        } finally {
+          btn.disabled = false;
+        }
       });
     });
   }
