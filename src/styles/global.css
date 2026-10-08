@@ -100,6 +100,53 @@ a {
   color: #fff;
 }
 
+/* Native checkbox behavior, shared appearance for every page and dynamic row. */
+input[type="checkbox"] {
+  appearance: none;
+  width: 1.2rem;
+  height: 1.2rem;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  vertical-align: middle;
+  border: 1.5px solid #b6bca8;
+  border-radius: 5px;
+  background: #fff center / 1rem 1rem no-repeat;
+  cursor: pointer;
+}
+
+input[type="checkbox"]:hover:not(:disabled) {
+  border-color: var(--color-primary);
+}
+
+input[type="checkbox"]:checked,
+input[type="checkbox"]:indeterminate {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m4 10 4 4 8-8' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+input[type="checkbox"]:indeterminate {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10h10' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (forced-colors: active) {
+  input[type="checkbox"] {
+    appearance: auto;
+    background: none;
+  }
+}
+
 /* Hiệu ứng nổi nhẹ dùng chung cho card — thêm chiều sâu thay vì viền mỏng phẳng */
 .surface-card {
   background: #fff;

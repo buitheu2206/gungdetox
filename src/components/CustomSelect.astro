@@ -15,7 +15,7 @@ const { id, required = false } = Astro.props;
   <select id={id} required={required} tabindex="-1">
     <slot />
   </select>
-  <button type="button" class="custom-select-trigger" aria-haspopup="listbox">
+  <button type="button" class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false" aria-controls={`${id}-options`}>
     <span class="custom-select-value"></span>
     <svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true">
       <path
@@ -27,7 +27,7 @@ const { id, required = false } = Astro.props;
         stroke-linejoin="round"></path>
     </svg>
   </button>
-  <ul class="custom-select-list" role="listbox" hidden></ul>
+  <ul id={`${id}-options`} class="custom-select-list" role="listbox" popover="auto"></ul>
 </span>
 
 <style>
@@ -82,11 +82,8 @@ const { id, required = false } = Astro.props;
   }
 
   .custom-select-list {
-    position: absolute;
-    z-index: 20;
-    top: calc(100% + 4px);
-    left: 0;
-    right: 0;
+    position: fixed;
+    inset: auto;
     margin: 0;
     padding: 0.3rem;
     list-style: none;
@@ -98,6 +95,11 @@ const { id, required = false } = Astro.props;
     overflow-y: auto;
   }
 
+  .custom-select-trigger:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+
   /* Options created with innerHTML do not receive Astro's scoped attribute. */
   .custom-select-list :global(li) {
     padding: 0.5rem 0.6rem;
@@ -106,7 +108,8 @@ const { id, required = false } = Astro.props;
     cursor: pointer;
   }
 
-  .custom-select-list :global(li:hover) {
+  .custom-select-list :global(li:hover),
+  .custom-select-list :global(li:focus-visible) {
     background: var(--color-primary-light);
   }
 
@@ -129,94 +132,7 @@ const { id, required = false } = Astro.props;
 </style>
 
 <script>
-  function initCustomSelect(root: HTMLElement) {
-    const select = root.querySelector("select") as HTMLSelectElement;
-    const trigger = root.querySelector(".custom-select-trigger") as HTMLButtonElement;
-    const valueEl = root.querySelector(".custom-select-value") as HTMLElement;
-    const list = root.querySelector(".custom-select-list") as HTMLUListElement;
-
-    // Dựng lại <li> từ chính <option> của select gốc mỗi lần mở — tránh phải
-    // giữ 2 nguồn dữ liệu (option thật + option hiển thị) đồng bộ tay.
-    function renderOptions() {
-      list.replaceChildren();
-      const options = Array.from(select.options);
-      for (const child of Array.from(select.children)) {
-        if (child instanceof HTMLOptGroupElement) {
-          const heading = document.createElement("li");
-          heading.className = "option-group";
-          heading.setAttribute("role", "presentation");
-          heading.textContent = child.label;
-          list.append(heading);
-        }
-        const groupOptions = child instanceof HTMLOptGroupElement
-          ? Array.from(child.children) : [child];
-        for (const option of groupOptions) {
-          if (!(option instanceof HTMLOptionElement)) continue;
-          const item = document.createElement("li");
-          if (child instanceof HTMLOptGroupElement) item.className = "group-option";
-          item.setAttribute("role", "option");
-          item.dataset.index = String(options.indexOf(option));
-          item.setAttribute("aria-selected", String(option.selected));
-          item.textContent = option.textContent;
-          list.append(item);
-        }
-      }
-    }
-
-    function syncLabel() {
-      valueEl.textContent = select.options[select.selectedIndex]?.textContent ?? "";
-    }
-
-    function open() {
-      renderOptions();
-      list.hidden = false;
-      root.classList.add("open");
-    }
-
-    function close() {
-      list.hidden = true;
-      root.classList.remove("open");
-    }
-
-    trigger.addEventListener("click", () => {
-      if (list.hidden) open();
-      else close();
-    });
-
-    list.addEventListener("click", (e) => {
-      const li = (e.target as HTMLElement).closest<HTMLLIElement>("li[data-index]");
-      if (!li) return;
-      select.selectedIndex = Number(li.dataset.index);
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-      syncLabel();
-      close();
-    });
-
-    trigger.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") close();
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        if (list.hidden) open();
-        else close();
-      }
-    });
-
-    document.addEventListener("click", (e) => {
-      if (!root.contains(e.target as Node)) close();
-    });
-
-    // Label bọc ngoài click vào select ẩn (tabindex=-1 vẫn focus được bằng
-    // label/script) — chuyển focus sang nút hiển thị cho đúng trải nghiệm.
-    select.addEventListener("focus", () => trigger.focus());
-
-    // Đồng bộ lại khi code khác tự set select.value (vd. fillForm lúc sửa sản
-    // phẩm) hoặc khi form.reset() chạy — cả 2 trường hợp select gốc vẫn đổi
-    // đúng giá trị, chỉ cần vẽ lại label hiển thị theo.
-    select.addEventListener("change", syncLabel);
-    select.closest("form")?.addEventListener("reset", () => setTimeout(syncLabel));
-
-    syncLabel();
-  }
+  import { initCustomSelect } from "../lib/initCustomSelect";
 
   document.querySelectorAll<HTMLElement>("[data-custom-select]").forEach((el) =>
     initCustomSelect(el)

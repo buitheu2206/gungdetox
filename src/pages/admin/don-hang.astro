@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import AdminLogin from "../../components/AdminLogin.astro";
+import CustomSelect from "../../components/CustomSelect.astro";
 ---
 
 <BaseLayout title="Quản trị đơn hàng — GỪNG DETOX">
@@ -45,6 +46,9 @@ import AdminLogin from "../../components/AdminLogin.astro";
           </tbody>
         </table>
       </div>
+      <template id="order-status-template">
+        <CustomSelect id="order-status" />
+      </template>
     </AdminLogin>
   </main>
 </BaseLayout>
@@ -52,6 +56,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
 <script>
   import { supabase } from "../../lib/supabase";
   import { orderCode } from "../../lib/templates";
+  import { initCustomSelect, syncCustomSelect } from "../../lib/initCustomSelect";
 
   const statusLabel: Record<string, string> = {
     processing: "Đang xử lý",
@@ -68,6 +73,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
 
   const tbody = document.getElementById("orders-body")!;
   const statusChips = document.querySelectorAll<HTMLButtonElement>("#status-filter .chip");
+  const statusTemplate = document.getElementById("order-status-template") as HTMLTemplateElement;
 
   // Astro chỉ gắn attribute scope CSS (data-astro-cid-*) cho phần tử render lúc build —
   // <tr>/<td> dựng bằng innerHTML ở đây không tự có, nên mọi CSS trong file này (viền,
@@ -122,6 +128,56 @@ import AdminLogin from "../../components/AdminLogin.astro";
     return allOrders.filter((o) => o.phone === phone && o.created_at <= createdAt).length;
   }
 
+  function initOrderStatusSelect(sel: HTMLSelectElement): HTMLSelectElement {
+    const root = statusTemplate.content.firstElementChild!.cloneNode(true) as HTMLElement;
+    const customSelect = root.querySelector("select")!;
+    customSelect.id = `order-status-${sel.dataset.id}`;
+    customSelect.className = sel.className;
+    customSelect.dataset.id = sel.dataset.id;
+    const selectedStatus = sel.value;
+    customSelect.replaceChildren(...sel.childNodes);
+    customSelect.value = selectedStatus;
+    const list = root.querySelector<HTMLElement>(".custom-select-list")!;
+    list.id = `${customSelect.id}-options`;
+    const trigger = root.querySelector<HTMLButtonElement>(".custom-select-trigger")!;
+    trigger.setAttribute("aria-controls", list.id);
+    trigger.setAttribute("aria-label", `Trạng thái đơn ${sel.closest("tr")!.querySelector(".code")!.textContent}`);
+    sel.replaceWith(root);
+    initCustomSelect(root);
+    return customSelect;
+  }
+
+  async function updateOrderStatus(sel: HTMLSelectElement) {
+    const id = sel.dataset.id!;
+    const newStatus = sel.value;
+    const order = allOrders.find((o) => o.id === id);
+    const previousStatus = order?.status ?? "processing";
+    const newHistory = [
+      ...(order?.status_history ?? []),
+      { status: newStatus, at: new Date().toISOString() },
+    ];
+    sel.disabled = true;
+    syncCustomSelect(sel);
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: newStatus, status_history: newHistory })
+        .eq("id", id);
+      if (error) throw error;
+      if (order) {
+        order.status = newStatus;
+        order.status_history = newHistory;
+      }
+    } catch (error) {
+      sel.value = previousStatus;
+      console.error("Lỗi cập nhật trạng thái đơn hàng", { id, newStatus, error });
+      alert("Lỗi cập nhật trạng thái: " + ((error as { message?: string })?.message ?? String(error)));
+    } finally {
+      sel.disabled = false;
+      syncCustomSelect(sel);
+    }
+  }
+
   function render(orders: any[]) {
     if (orders.length === 0) {
       tbody.innerHTML = `<tr${cid}><td colspan="14"${cid}>Không có đơn nào khớp bộ lọc.</td></tr>`;
@@ -138,7 +194,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
       <tr data-id="${o.id}"${cid}>
         <td class="code"${cid}>${orderCode(o.phone, o.id)}</td>
         <td${cid}>${new Date(o.created_at).toLocaleDateString("vi-VN")}<br${cid} />${new Date(o.created_at).toLocaleTimeString("vi-VN")}</td>
-        <td${cid}>${o.customer_name}<br${cid} />${customerBadge}</td>
+        <td class="customer-cell"${cid}>${o.customer_name} ${customerBadge}</td>
         <td${cid}>${o.phone}</td>
         <td class="address-cell"${cid}>${o.address}, ${o.district}</td>
         <td${cid}>${deliveryDate !== "—" ? `<span class="badge badge-delivery"${cid}>${deliveryDate}</span>` : "—"}</td>
@@ -185,25 +241,9 @@ import AdminLogin from "../../components/AdminLogin.astro";
       });
     });
 
-    document.querySelectorAll<HTMLSelectElement>(".status-select").forEach((sel) => {
-      sel.addEventListener("change", async () => {
-        const id = sel.dataset.id!;
-        const newStatus = sel.value;
-        const order = allOrders.find((o) => o.id === id);
-        const newHistory = [
-          ...(order?.status_history ?? []),
-          { status: newStatus, at: new Date().toISOString() },
-        ];
-        const { error } = await supabase
-          .from("orders")
-          .update({ status: newStatus, status_history: newHistory })
-          .eq("id", id);
-        if (error) alert("Lỗi cập nhật: " + error.message);
-        else if (order) {
-          order.status = newStatus;
-          order.status_history = newHistory;
-        }
-      });
+    document.querySelectorAll<HTMLSelectElement>(".status-select").forEach((select) => {
+      const customSelect = initOrderStatusSelect(select);
+      customSelect.addEventListener("change", () => updateOrderStatus(customSelect));
     });
   }
 
@@ -352,7 +392,7 @@ import AdminLogin from "../../components/AdminLogin.astro";
     padding: 0.55rem 0.6rem;
     text-align: left;
     white-space: nowrap;
-    vertical-align: top;
+    vertical-align: middle;
     border: 1px solid #c9bfa8;
   }
 
@@ -370,12 +410,6 @@ import AdminLogin from "../../components/AdminLogin.astro";
 
   tbody tr:hover td {
     background: color-mix(in srgb, var(--color-primary) 8%, #fff);
-  }
-
-  .status-select {
-    padding: 0.3rem 0.5rem;
-    border-radius: 6px;
-    border: 1px solid #d1d5db;
   }
 
   .paid-toggle {
@@ -404,6 +438,11 @@ import AdminLogin from "../../components/AdminLogin.astro";
   .badge-new {
     background: color-mix(in srgb, var(--color-primary) 16%, #fff);
     color: var(--color-primary);
+  }
+
+  .customer-cell .badge {
+    margin-left: 0.4rem;
+    vertical-align: middle;
   }
 
   .badge-returning {
