@@ -3,6 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import CustomSelect from "../components/CustomSelect.astro";
 import CustomInput from "../components/CustomInput.astro";
 import DatePicker from "../components/DatePicker.astro";
+import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
 ---
 
 <BaseLayout
@@ -199,11 +200,11 @@ import DatePicker from "../components/DatePicker.astro";
                   </span>
                 </label>
                 <label class="option-card">
-                  <input type="radio" name="payment-method" value="cod" />
+                  <input type="radio" name="payment-method" value="deposit" />
                   <span class="option-icon">💵</span>
                   <span class="option-text">
-                    <span class="option-title">Tiền mặt (COD)</span>
-                    <span class="option-subtitle">Khi nhận hàng</span>
+                    <span class="option-title">{DEPOSIT_LABEL}</span>
+                    <span class="option-subtitle">Để xác nhận đơn</span>
                   </span>
                 </label>
               </div>
@@ -211,10 +212,11 @@ import DatePicker from "../components/DatePicker.astro";
 
             <div class="bank-info" id="bank-info">
               <p class="bank-info-title">💳 Thông tin chuyển khoản</p>
+              <p id="payment-instructions">Vui lòng chuyển khoản trước khi giao hàng.</p>
               <div class="bank-info-body">
                 <img
                   class="qr-code"
-                  src="https://img.vietqr.io/image/970436-1065425789-qr_only.png"
+                  src={BANK_QR_URL}
                   alt="Mã QR chuyển khoản Vietcombank HKD GUNG DETOX"
                   width="200"
                   height="200"
@@ -276,6 +278,7 @@ import DatePicker from "../components/DatePicker.astro";
 <script>
   import { supabase } from "../lib/supabase";
   import { orderCode } from "../lib/templates";
+  import { getPaymentInstructions } from "../lib/payment";
 
   interface ProductRow {
     slug: string;
@@ -329,8 +332,23 @@ import DatePicker from "../components/DatePicker.astro";
   const thankYou = document.getElementById("thank-you") as HTMLElement;
   const stepsIndicator = document.getElementById("steps-indicator")!;
   const bankInfo = document.getElementById("bank-info") as HTMLElement;
+  const bankTitle = bankInfo.querySelector(".bank-info-title") as HTMLElement;
+  const bankQr = bankInfo.querySelector(".qr-code") as HTMLImageElement;
+  const paymentInstructions = document.getElementById("payment-instructions") as HTMLElement;
+  const depositInput = document.querySelector<HTMLInputElement>(
+    'input[name="payment-method"][value="deposit"]'
+  )!;
   const paymentMethodInputs =
     document.querySelectorAll<HTMLInputElement>('input[name="payment-method"]');
+
+  function updatePaymentInstructions(code?: string) {
+    const payment = getPaymentInstructions(depositInput.checked, code);
+    bankInfo.hidden = false;
+    bankTitle.textContent = payment.title;
+    paymentInstructions.textContent = payment.instructions;
+    bankQr.src = payment.qrUrl;
+    return payment;
+  }
 
   function money(n?: number | null) {
     return n != null ? `${n.toLocaleString("vi-VN")}đ` : "Đang cập nhật giá";
@@ -563,10 +581,9 @@ import DatePicker from "../components/DatePicker.astro";
   });
 
   paymentMethodInputs.forEach((input) => {
-    input.addEventListener("change", () => {
-      bankInfo.hidden = input.value !== "bank_transfer" || !input.checked;
-    });
+    input.addEventListener("change", () => updatePaymentInstructions());
   });
+  updatePaymentInstructions();
 
   document.querySelectorAll<HTMLButtonElement>(".copy-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -605,9 +622,10 @@ import DatePicker from "../components/DatePicker.astro";
     const bottleType =
       (form.querySelector('input[name="bottle-type"]:checked') as HTMLInputElement)?.value ??
       "glass";
-    const paymentMethod =
-      (form.querySelector('input[name="payment-method"]:checked') as HTMLInputElement)?.value ??
-      "cod";
+    const payment = updatePaymentInstructions();
+    const orderNote = [deliveryNoteInput.value.trim() || "(không có)", payment.orderNote]
+      .filter(Boolean)
+      .join(". ");
 
     const { data, error } = await supabase
       .from("orders")
@@ -620,13 +638,13 @@ import DatePicker from "../components/DatePicker.astro";
         bottle_type: bottleType,
         bottles_returned:
           Number((document.getElementById("bottles-returned") as HTMLInputElement).value) || 0,
-        payment_method: paymentMethod,
+        payment_method: payment.paymentMethod,
         // orders chưa có cột delivery_date/delivery_time/delivery_note riêng (không có
         // quyền chạy ALTER TABLE từ phiên này — cần Supabase Management API token hoặc
         // mật khẩu DB), nên đang ghép tạm vào shipping_fee_note theo mẫu cố định
         // "Giao ngày DD/MM/YYYY [lúc HH:MM]. Ghi chú của khách: ... ." để admin đọc/trích
         // xuất lại được (xem admin/don-hang.astro). Nên tách thành cột riêng khi có quyền chạy SQL.
-        shipping_fee_note: `Giao ngày ${formatDeliveryDate(deliveryDateInput.value)}${deliveryTimeRangeText() ? ` (${deliveryTimeRangeText()})` : ""}. Ghi chú của khách: ${deliveryNoteInput.value.trim() || "(không có)"}. Phí ship tùy theo khoảng cách và thời tiết hôm giao, tiệm sẽ báo lại qua Zalo trước khi giao.`,
+        shipping_fee_note: `Giao ngày ${formatDeliveryDate(deliveryDateInput.value)}${deliveryTimeRangeText() ? ` (${deliveryTimeRangeText()})` : ""}. Ghi chú của khách: ${orderNote}. Phí ship tùy theo khoảng cách và thời tiết hôm giao, tiệm sẽ báo lại qua Zalo trước khi giao.`,
       })
       .select()
       .single();
@@ -642,6 +660,8 @@ import DatePicker from "../components/DatePicker.astro";
     const code = orderCode(data.phone, data.id);
     (document.getElementById("order-id") as HTMLElement).textContent = code;
     (document.getElementById("copy-order-id") as HTMLElement).dataset.copy = code;
+    updatePaymentInstructions(code);
+    thankYou.insertBefore(bankInfo, thankYou.querySelector(".thank-you-actions"));
   });
 
   // Load danh sách sản phẩm + đọc query string ?product=slug
