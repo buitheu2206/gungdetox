@@ -1,0 +1,258 @@
+---
+// Shared preview for content images, including images added after fetching data.
+---
+
+<dialog id="image-preview" aria-label="Xem ảnh">
+  <div class="preview-stage">
+    <img id="image-preview-image" alt="" />
+    <p id="image-preview-error" role="status" hidden>Không tải được ảnh. Vui lòng đóng và thử lại.</p>
+    <button type="button" data-preview-close aria-label="Đóng xem ảnh" autofocus>✕</button>
+  </div>
+  <button type="button" data-preview-previous aria-label="Ảnh trước">‹</button>
+  <button type="button" data-preview-next aria-label="Ảnh tiếp theo">›</button>
+</dialog>
+
+<script>
+  const IMAGE_SELECTOR = "main img:not(.gallery-thumbs img)";
+  const SLIDE_DISTANCE = 48;
+  const SLIDE_OPTIONS = { duration: 240, easing: "ease-out" };
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const dialog = document.getElementById("image-preview") as HTMLDialogElement;
+  const stage = dialog.querySelector<HTMLElement>(".preview-stage")!;
+  const previewImage = document.getElementById("image-preview-image") as HTMLImageElement;
+  const errorMessage = document.getElementById("image-preview-error")!;
+  const previous = dialog.querySelector<HTMLButtonElement>("[data-preview-previous]")!;
+  const next = dialog.querySelector<HTMLButtonElement>("[data-preview-next]")!;
+  let photos: { src: string; title: string }[] = [];
+  let selectedIndex = 0;
+  let opener: HTMLElement | null = null;
+
+  function getPreviewImage(target: EventTarget | null): HTMLImageElement | null {
+    if (!(target instanceof HTMLElement)) return null;
+    const image = target instanceof HTMLImageElement ? target : target.closest("a, button")?.querySelector("img");
+    return image?.matches(IMAGE_SELECTOR) ? image : null;
+  }
+
+  function showPhoto(index: number) {
+    resetSlide();
+    selectedIndex = (index + photos.length) % photos.length;
+    const photo = photos[selectedIndex];
+    previewImage.hidden = false;
+    errorMessage.hidden = true;
+    previewImage.src = photo.src;
+    previewImage.alt = photo.title;
+    dialog.setAttribute("aria-label", `Xem ảnh: ${photo.title}`);
+    previous.hidden = next.hidden = photos.length < 2;
+  }
+
+  function resetSlide() {
+    previewImage.getAnimations().forEach((animation) => animation.cancel());
+    stage.querySelector(".preview-outgoing")?.remove();
+  }
+
+  function changePhoto(direction: number) {
+    if (!dialog.open || photos.length < 2) return;
+    const bounds = previewImage.getBoundingClientRect();
+    const outgoing = previewImage.cloneNode() as HTMLImageElement;
+    showPhoto(selectedIndex + direction);
+    if (reducedMotion.matches) return;
+    outgoing.removeAttribute("id");
+    outgoing.setAttribute("aria-hidden", "true");
+    outgoing.classList.add("preview-outgoing");
+    outgoing.style.width = `${bounds.width}px`;
+    outgoing.style.height = `${bounds.height}px`;
+    stage.append(outgoing);
+    outgoing.animate([
+      { transform: "translateX(0)", opacity: 1 },
+      { transform: `translateX(${-direction * SLIDE_DISTANCE}px)`, opacity: 0 },
+    ], SLIDE_OPTIONS).onfinish = () => outgoing.remove();
+    previewImage.animate([
+      { transform: `translateX(${direction * SLIDE_DISTANCE}px)`, opacity: 0 },
+      { transform: "translateX(0)", opacity: 1 },
+    ], SLIDE_OPTIONS);
+  }
+
+  function openPreview(image: HTMLImageElement) {
+    const scope = image.closest(".shop-gallery-grid, .gallery, section, .content, .gallery-preview") ?? image.closest("main")!;
+    const thumbnails = [...scope.querySelectorAll<HTMLImageElement>(".gallery-thumbs img")];
+    const candidates = thumbnails.length ? [...thumbnails, image] : [...scope.querySelectorAll<HTMLImageElement>("img")];
+    const images = candidates.filter((photo) => photo.src && photo.getClientRects().length);
+    photos = [...new Map(images.map((photo) => [photo.currentSrc || photo.src, {
+      src: photo.currentSrc || photo.src,
+      title: photo.closest("figure")?.querySelector("figcaption")?.textContent?.trim() || photo.alt || image.alt || "Xem ảnh",
+    }])).values()];
+    if (!photos.length) return;
+    opener = image.closest<HTMLElement>("a, button") ?? image;
+    showPhoto(photos.findIndex((photo) => photo.src === (image.currentSrc || image.src)));
+    dialog.showModal();
+  }
+
+  function makeImagesFocusable() {
+    document.querySelectorAll<HTMLImageElement>(IMAGE_SELECTOR).forEach((image) => {
+      if (image.closest("a, button")) return;
+      image.tabIndex = 0;
+      image.setAttribute("role", "button");
+      image.setAttribute("aria-label", image.alt ? `Xem ảnh: ${image.alt}` : "Xem ảnh lớn");
+    });
+  }
+
+  document.addEventListener("click", (event) => {
+    const image = getPreviewImage(event.target);
+    if (!image) return;
+    event.preventDefault();
+    openPreview(image);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (dialog.open) return;
+    const image = getPreviewImage(event.target);
+    if (!image || !["Enter", " "].includes(event.key)) return;
+    event.preventDefault();
+    openPreview(image);
+  });
+  dialog.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    event.preventDefault();
+    changePhoto(event.key === "ArrowLeft" ? -1 : 1);
+  });
+  dialog.addEventListener("click", (event) => {
+    const bounds = dialog.getBoundingClientRect();
+    if (event.target === dialog && (event.clientX < bounds.left || event.clientX > bounds.right
+      || event.clientY < bounds.top || event.clientY > bounds.bottom)) dialog.close();
+  });
+  dialog.querySelector("[data-preview-close]")!.addEventListener("click", () => dialog.close());
+  previous.addEventListener("click", () => changePhoto(-1));
+  next.addEventListener("click", () => changePhoto(1));
+  dialog.addEventListener("close", () => {
+    resetSlide();
+    opener?.focus({ preventScroll: true });
+  });
+  previewImage.addEventListener("error", () => {
+    previewImage.hidden = true;
+    errorMessage.hidden = false;
+    console.error("Could not load image preview", { src: previewImage.src });
+  });
+  makeImagesFocusable();
+  const main = document.querySelector("main");
+  if (main) new MutationObserver(makeImagesFocusable).observe(main, {
+    childList: true, subtree: true, attributes: true, attributeFilter: ["src", "alt"],
+  });
+</script>
+
+<style>
+  :global(main img:not(.gallery-thumbs img)) {
+    cursor: zoom-in;
+  }
+
+  :global(main img[role="button"]:focus-visible) {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 3px;
+  }
+
+  :global(body:has(#image-preview[open])) {
+    overflow: hidden;
+  }
+
+  dialog {
+    --preview-duration: 220ms;
+    width: fit-content;
+    max-width: calc(100vw - 9rem);
+    max-height: 80dvh;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #fffdf8;
+    overflow: visible;
+    opacity: 0;
+    transition: opacity var(--preview-duration) ease,
+      display var(--preview-duration) allow-discrete,
+      overlay var(--preview-duration) allow-discrete;
+  }
+
+  dialog[open] {
+    opacity: 1;
+  }
+
+  dialog::backdrop {
+    background: transparent;
+    backdrop-filter: blur(8px);
+    transition: background var(--preview-duration) ease,
+      display var(--preview-duration) allow-discrete,
+      overlay var(--preview-duration) allow-discrete;
+  }
+
+  dialog[open]::backdrop {
+    background: #14170f99;
+  }
+
+  .preview-stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    transform: scale(0.96);
+    transition: transform var(--preview-duration) ease;
+  }
+
+  dialog[open] .preview-stage {
+    transform: scale(1);
+  }
+
+  @starting-style {
+    dialog[open] { opacity: 0; }
+    dialog[open]::backdrop { background: transparent; }
+    dialog[open] .preview-stage { transform: scale(0.96); }
+  }
+
+  .preview-stage img {
+    width: auto;
+    height: auto;
+    max-width: min(940px, calc(100vw - 9rem));
+    max-height: 80dvh;
+    object-fit: contain;
+  }
+
+  .preview-outgoing {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    pointer-events: none;
+  }
+
+  button {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border: 1px solid #ffffff30;
+    border-radius: 50%;
+    background: #20231ed9;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1.3rem;
+  }
+
+  button:hover, button:focus-visible {
+    background: var(--color-primary);
+    outline: 2px solid #fffdf8;
+    outline-offset: 2px;
+  }
+
+  [data-preview-previous], [data-preview-next] {
+    position: fixed;
+    top: calc(50dvh - 22px);
+    font-size: 2rem;
+  }
+
+  [data-preview-previous] { left: 1rem; }
+  [data-preview-next] { right: 1rem; }
+  [data-preview-close] {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 1;
+    font-size: 1.3rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    dialog { --preview-duration: 0ms; }
+  }
+</style>

@@ -137,13 +137,12 @@ const shopPhotos = [
       <p class="eyebrow eyebrow-green">📷 Một ngày ở GỪNG</p>
       <h2 id="shop-gallery-title">Hình ảnh tiệm</h2>
       <p class="shop-gallery-intro">Từ góc quầy xanh đến lúc pha chế, đóng chai và chuẩn bị đơn — những khoảnh khắc quen thuộc ở tiệm mình.</p>
-      <p class="shop-gallery-hint">Bấm vào ảnh để xem bản lớn trong tab mới.</p>
       <div class="shop-gallery-grid">
         {shopPhotos.map((photo) => (
           <figure class="shop-gallery-photo">
-            <a href={`/images/shop/${photo.name}.webp`} target="_blank" rel="noopener" aria-label={`Xem ảnh: ${photo.caption} (mở tab mới)`}>
+            <button type="button" aria-label={`Xem ảnh: ${photo.caption}`}>
               <img src={`/images/shop/${photo.name}.webp`} alt={photo.alt} width={photo.width} height={photo.height} loading="lazy" decoding="async" />
-            </a>
+            </button>
             <figcaption>{photo.caption}</figcaption>
           </figure>
         ))}
@@ -586,14 +585,8 @@ const shopPhotos = [
 
   .shop-gallery-intro {
     max-width: 650px;
-    margin: 0 0 0.5rem;
-    color: var(--color-text-muted);
-  }
-
-  .shop-gallery-hint {
     margin: 0 0 1.5rem;
-    font-size: 0.8rem;
-    color: var(--color-primary);
+    color: var(--color-text-muted);
   }
 
   .shop-gallery-grid {
@@ -606,15 +599,18 @@ const shopPhotos = [
     margin: 0 0 1rem;
   }
 
-  .shop-gallery-photo a {
+  .shop-gallery-photo button {
     display: block;
+    width: 100%;
+    border: 0;
+    padding: 0;
     border-radius: var(--radius-md);
     overflow: hidden;
     background: var(--color-bg-warm);
     cursor: zoom-in;
   }
 
-  .shop-gallery-photo a:focus-visible {
+  .shop-gallery-photo button:focus-visible {
     outline: 3px solid var(--color-primary);
     outline-offset: 3px;
   }
