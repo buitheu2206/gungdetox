@@ -1,0 +1,3 @@
+[functions.resend-email]
+# Authentication is checked inside the handler using ORDER_WEBHOOK_SECRET.
+verify_jwt = false

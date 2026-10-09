@@ -1,0 +1,14 @@
+{
+  "type": "INSERT",
+  "table": "orders",
+  "schema": "public",
+  "record": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "customer_name": "KHÁCH THỬ — không phải đơn thật",
+    "phone": "0900000000",
+    "address": "Địa chỉ thử nghiệm",
+    "district": "Quận thử nghiệm",
+    "items": [{ "productSlug": "ginger-shot", "quantity": 2 }],
+    "shipping_fee_note": "Giao ngày 09/10/2026 (Chiều (13h - 17h)). Ghi chú của khách: Email kiểm tra thông báo, không có đơn hàng nào được tạo. Phí ship tùy theo khoảng cách."
+  }
+}
