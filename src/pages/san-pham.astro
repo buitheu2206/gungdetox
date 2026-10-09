@@ -202,6 +202,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       </div>
     </section>
 
+    <section id="subscription" hidden>
+      <h2>🔄 Combo thuê bao — giao định kỳ</h2>
+      <div id="subscription-groups"></div>
+    </section>
+
     <section>
       <h2>Đồ uống lẻ</h2>
       <div class="grid" id="single-grid">
@@ -295,6 +300,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   const singleGrid = document.getElementById("single-grid")!;
   const setGrid = document.getElementById("set-grid")!;
   const comboGroupsEl = document.getElementById("combo-groups")!;
+  const subscriptionSection = document.getElementById("subscription")!;
+  const subscriptionGroupsEl = document.getElementById("subscription-groups")!;
   const chips = document.querySelectorAll<HTMLButtonElement>(".chip");
 
   // Astro chỉ áp CSS scoped (data-astro-cid-*) cho phần tử render lúc build; các
@@ -306,7 +313,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   let allProducts: ProductRow[] = [];
 
-  function render(products: ProductRow[]) {
+  function render(products: ProductRow[], filter = "all") {
     const singles = products.filter((p) => p.type === "single");
     const sets = products
       .filter((p) => p.type === "set")
@@ -342,11 +349,24 @@ import BaseLayout from "../layouts/BaseLayout.astro";
             }).join("") + cardsHtml;
         }
         if (!cardsHtml) return "";
-        return `<div class="combo-subgroup"${cid}><h3${cid}>${title}</h3><div class="grid"${cid}>${cardsHtml}</div></div>`;
+        return `<div class="combo-subgroup" data-combo-subgroup="${key}"${cid}><h3${cid}>${title}</h3><div class="grid"${cid}>${cardsHtml}</div></div>`;
       }).join("");
     }
 
+    moveSubscriptionGroup(filter);
     bindVariantGroups();
+  }
+
+  function moveSubscriptionGroup(filter: string) {
+    subscriptionSection.hidden = true;
+    subscriptionGroupsEl.replaceChildren();
+    if (filter !== "all") return;
+    const group = comboGroupsEl.querySelector<HTMLElement>('[data-combo-subgroup="subscription"]');
+    const grid = group?.querySelector<HTMLElement>(".grid");
+    if (!group || !grid) return;
+    subscriptionGroupsEl.replaceChildren(grid);
+    group.remove();
+    subscriptionSection.hidden = false;
   }
 
   function bindVariantGroups() {
@@ -389,14 +409,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       intro.hidden = intro.dataset.intro !== filter;
     });
     if (filter === "all" || filter === "combo") {
-      render(allProducts);
+      render(allProducts, filter);
       return;
     }
     if (filter === "set-detox") {
-      render(allProducts.filter((p) => p.type === "set"));
+      render(allProducts.filter((p) => p.type === "set"), filter);
       return;
     }
-    render(allProducts.filter((p) => p.category === filter));
+    render(allProducts.filter((p) => p.category === filter), filter);
   }
 
   chips.forEach((chip) => {
