@@ -9,7 +9,7 @@ import { productCardHtml, comboCardHtml, setDetoxCardHtml, type ProductRow } fro
 // Sản phẩm thêm SAU lần build gần nhất sẽ chưa có trang riêng cho tới khi build lại
 // — đây là đánh đổi chấp nhận được của site tĩnh (không có server để route động thật sự).
 // Script phía client bên dưới sẽ tự fetch lại đúng slug này để cập nhật nếu admin
-// đã sửa nội dung sau lần build, nên KHÔNG cần rebuild chỉ vì sửa giá/mô tả/ảnh.
+// đã sửa nội dung sau lần build. Metadata chia sẻ vẫn cần rebuild để cập nhật.
 export async function getStaticPaths() {
   const { data } = await supabase.from("products").select("*");
   const allProducts = data ?? [];
@@ -63,6 +63,7 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
 <BaseLayout
   title={`${product.name} — GỪNG DETOX`}
   description={product.description ?? product.set_goal ?? `${product.name} tại GỪNG DETOX`}
+  image={images[0] || undefined}
 >
   <main class="detail-page" data-slug={product.slug}>
     <nav class="breadcrumb">

@@ -5,7 +5,6 @@ interface Props {
   price: number;
   servings?: number | null;
   deliverySchedule?: string | null;
-  bottleOptions?: string[] | null;
   note?: string | null;
   badge?: string | null;
 }
@@ -15,15 +14,10 @@ const {
   price,
   servings,
   deliverySchedule,
-  bottleOptions = [],
   note = "Giá chưa gồm phí ship",
   badge,
 } = Astro.props;
 
-const bottleLabel: Record<string, string> = {
-  glass: "Thủy tinh",
-  plastic: "Nhựa",
-};
 ---
 
 <article class="combo-card">
@@ -32,18 +26,6 @@ const bottleLabel: Record<string, string> = {
   <p class="price">{price.toLocaleString("vi-VN")}đ</p>
 
   {servings && <p class="meta">{servings} lần uống{deliverySchedule ? ` · giao ${deliverySchedule}` : ""}</p>}
-
-  {bottleOptions.length > 0 && (
-    <fieldset class="bottle-options">
-      <legend>Chọn loại chai</legend>
-      {bottleOptions.map((option, i) => (
-        <label>
-          <input type="radio" name={`bottle-${name}`} value={option} checked={i === 0} />
-          {bottleLabel[option] ?? option}
-        </label>
-      ))}
-    </fieldset>
-  )}
 
   <p class="note">{note}</p>
 

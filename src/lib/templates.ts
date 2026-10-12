@@ -51,11 +51,6 @@ const badgeLabel: Record<string, string> = {
   "out-of-stock": "Tạm hết",
 };
 
-const bottleLabel: Record<string, string> = {
-  glass: "Thủy tinh",
-  plastic: "Nhựa",
-};
-
 export const tagLabel: Record<string, string> = {
   "eat-clean": "Eat Clean",
   detox: "Detox",
@@ -152,7 +147,6 @@ export function productCardHtml(p: ProductRow): string {
 }
 
 export function comboCardHtml(p: ProductRow): string {
-  const bottleOptions = p.bottle_options ?? [];
   return `
     <article class="combo-card">
       ${p.image_url ? `<div class="media"><img src="${p.image_url}" alt="${esc(p.name)}" loading="lazy" /></div>` : ""}
@@ -162,16 +156,6 @@ export function comboCardHtml(p: ProductRow): string {
       ${
         p.servings
           ? `<p class="meta">${p.servings} lần uống${p.delivery_schedule ? ` · giao ${esc(p.delivery_schedule)}` : ""}</p>`
-          : ""
-      }
-      ${
-        bottleOptions.length > 0
-          ? `<fieldset class="bottle-options"><legend>Chọn loại chai</legend>${bottleOptions
-              .map(
-                (o, i) =>
-                  `<label><input type="radio" name="bottle-${p.slug}" value="${o}" ${i === 0 ? "checked" : ""}/> ${bottleLabel[o] ?? o}</label>`
-              )
-              .join("")}</fieldset>`
           : ""
       }
       <p class="note">Giá chưa gồm phí ship</p>
