@@ -10,13 +10,14 @@ Sau khi sửa mẫu, chạy `node scripts/build-order-email-function.mjs` từ t
 
 Khi deploy qua CLI, giữ ba file `index.ts`, `handler.ts`, `email-template.ts`. Khi deploy qua Dashboard, chạy `node scripts/build-order-email-function.mjs --dashboard` để xuất `index.ts` gộp phần handler, rồi thêm riêng file `email-template.ts` qua **Add File**. Nội dung HTML không nằm trong mã được xuất cho `index.ts`.
 
-## Cấu hình và gửi thử
+## Cấu hình
 
 1. Tạo tài khoản Resend bằng `nghiabh.it@gmail.com`. Địa chỉ gửi thử `onboarding@resend.dev` chỉ gửi được đến email tài khoản Resend; muốn gửi đến danh sách khác cần xác minh tên miền gửi.
 2. Trong Supabase **Edge Functions → Secrets**, thiết lập các biến trong `.env.example`. Tạo `ORDER_WEBHOOK_SECRET` ngẫu nhiên bằng `openssl rand -hex 32`. Không lưu key hoặc secret vào Git hay code phía trình duyệt.
 3. Trong Dashboard **Edge Functions → resend-email → Code**, dán mã xuất từ script `--dashboard` vào file `index.ts`; thêm hoặc cập nhật file `email-template.ts` bằng nội dung file cùng tên trong repo, rồi chọn **Deploy updates**. Giữ thiết lập hiện có **Verify JWT with legacy secret: OFF**; handler kiểm tra secret riêng và từ chối yêu cầu thiếu hoặc sai `x-order-webhook-secret`. Bản local có `config.toml` tương ứng nếu sau này deploy bằng CLI.
-4. Trong mục **Test** của function, dùng POST, header `x-order-webhook-secret` bằng secret đã cấu hình và body từ `test-payload.json`. Payload này không tạo đơn thật. Kiểm tra email trong Resend và hộp thư người nhận; phản hồi thành công chỉ xác nhận Resend đã nhận yêu cầu, không đảm bảo thư đã vào inbox.
-5. Sau khi gửi thử thành công, vào **Integrations → Database Webhooks**. Nếu chưa cài, chọn **Install integration** để bật `pg_net` và các hàm webhook của Supabase. Tạo webhook cho bảng `public.orders`, chỉ chọn sự kiện **INSERT**. Dùng HTTP POST đến URL của function, kèm `Content-Type: application/json` và `x-order-webhook-secret` bằng `ORDER_WEBHOOK_SECRET`. Tạo trigger bằng SQL với `supabase_functions.http_request` và timeout `20000` ms để chờ được request Resend có timeout `15000` ms; form Dashboard hiện giới hạn timeout ở `10000` ms. Chỉ tạo webhook sau khi hoàn tất bước thử, vì webhook bắt đầu chạy với các đơn mới ngay khi được lưu.
+4. Kiểm tra API key, địa chỉ gửi và danh sách nhận trong tài khoản Resend trước khi bật webhook.
+5. Sau khi hoàn tất cấu hình email, vào **Integrations → Database Webhooks**. Nếu chưa cài, chọn **Install integration** để bật `pg_net` và các hàm webhook của Supabase. Tạo webhook cho bảng `public.orders`, chỉ chọn sự kiện **INSERT**. Dùng HTTP POST đến URL của function, kèm `Content-Type: application/json` và `x-order-webhook-secret` bằng `ORDER_WEBHOOK_SECRET`. Tạo trigger bằng SQL với `supabase_functions.http_request` và timeout `20000` ms để chờ được request Resend có timeout `15000` ms; form Dashboard hiện giới hạn timeout ở `10000` ms. Webhook bắt đầu chạy với các đơn mới ngay khi được lưu.
+6. Khi có đơn thật, kiểm tra log của function, trạng thái email trong Resend và hộp thư người nhận. Phản hồi thành công chỉ xác nhận Resend đã nhận yêu cầu, không đảm bảo thư đã vào inbox.
 
 SQL tạo webhook (thay hai placeholder bằng project ref và secret đã cấu hình; không lưu bản chứa secret vào Git):
 

@@ -76,7 +76,7 @@ function buildEmailHtml(template: string, code: string, details: EmailDetails, i
 
 function buildEmail(order: Order, config: NotificationConfig) {
   const recipients = config.recipients.split(",").map((email) => email.trim());
-  if (!recipients.length || recipients.some((email) => !EMAIL_PATTERN.test(email))) {
+  if (recipients.some((email) => !EMAIL_PATTERN.test(email))) {
     throw new Error("Set ORDER_NOTIFICATION_TO to valid comma-separated email addresses.");
   }
   const code = `${order.phone.replace(/\D/g, "").slice(-6)}-${order.id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
@@ -108,8 +108,8 @@ function buildEmail(order: Order, config: NotificationConfig) {
   };
 }
 
-async function sendEmail(order: Order, config: NotificationConfig, fetcher: typeof fetch): Promise<string> {
-  const response = await fetcher(RESEND_ENDPOINT, {
+async function sendEmail(order: Order, config: NotificationConfig): Promise<string> {
+  const response = await fetch(RESEND_ENDPOINT, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
@@ -127,7 +127,7 @@ async function sendEmail(order: Order, config: NotificationConfig, fetcher: type
 }
 
 export async function handleOrderNotification(
-  request: Request, config: NotificationConfig, fetcher: typeof fetch = fetch,
+  request: Request, config: NotificationConfig,
 ): Promise<Response> {
   if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
   if (!config.webhookSecret) {
@@ -149,7 +149,7 @@ export async function handleOrderNotification(
     return new Response("Invalid order webhook", { status: 400 });
   }
   try {
-    const emailId = await sendEmail(order, config, fetcher);
+    const emailId = await sendEmail(order, config);
     console.info("Order notification accepted by Resend", { orderId: order.id, emailId });
     return Response.json({ emailId });
   } catch (error) {
