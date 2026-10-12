@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { handleOrderNotification } from "../supabase/functions/resend-email/handler.ts";
+import { EMAIL_TEMPLATE } from "../supabase/functions/resend-email/email-template.ts";
 
 const payload = JSON.parse(readFileSync(new URL("../supabase/functions/resend-email/test-payload.json", import.meta.url), "utf8"));
 const emailTemplate = readFileSync(new URL("../supabase/functions/resend-email/email-template.html", import.meta.url), "utf8");
@@ -10,7 +15,7 @@ const config = {
   apiKey: "test-resend-key",
   from: "GỪNG DETOX <onboarding@resend.dev>",
   recipients: "nghiabh.it@gmail.com",
-  emailTemplate,
+  emailTemplate: EMAIL_TEMPLATE,
 };
 
 function request(body = payload, secret = config.webhookSecret) {
@@ -93,10 +98,31 @@ test("should display missing delivery time explicitly for old orders", async () 
   assert.match(email.text, /Thời điểm nhận hàng: Chưa có thông tin/);
 });
 
-test("should deploy the current HTML file including its embedded CSS", () => {
+test("should load the current HTML and CSS from a separate template module", () => {
   const entry = readFileSync(new URL("../supabase/functions/resend-email/index.ts", import.meta.url), "utf8");
-  assert.ok(entry.includes(`const EMAIL_TEMPLATE = ${JSON.stringify(emailTemplate)};`), "Run node scripts/build-order-email-function.mjs after editing the template");
+  assert.equal(EMAIL_TEMPLATE, emailTemplate, "Run node scripts/build-order-email-function.mjs after editing the template");
+  assert.ok(!entry.includes("<!doctype html>"), "The entry point must not embed the email HTML");
   assert.ok(emailTemplate.includes("<style>"));
+});
+
+test("should preserve literal HTML when generating a separate Dashboard template", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "order-email-template-"));
+  const functionDirectory = join(directory, "supabase/functions/resend-email");
+  mkdirSync(functionDirectory, { recursive: true });
+  mkdirSync(join(directory, "scripts"));
+  const script = readFileSync(new URL("../scripts/build-order-email-function.mjs", import.meta.url), "utf8");
+  writeFileSync(join(directory, "scripts/build-order-email-function.mjs"), script);
+  const html = '<p>Backtick: `; interpolation: ${customer}; backslash: \\</p>\n';
+  writeFileSync(join(functionDirectory, "email-template.html"), html);
+  writeFileSync(join(functionDirectory, "handler.ts"), "export function handleOrderNotification() {}\n");
+  writeFileSync(join(functionDirectory, "index.ts"), 'import { handleOrderNotification } from "./handler.ts";\nimport { EMAIL_TEMPLATE } from "./email-template.ts";\n');
+  const result = spawnSync(process.execPath, [join(directory, "scripts/build-order-email-function.mjs"), "--dashboard"], { encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  const template = await import(pathToFileURL(join(functionDirectory, "email-template.ts")).href);
+  assert.equal(template.EMAIL_TEMPLATE, html);
+  assert.ok(result.stdout.includes('from "./email-template.ts"'));
+  assert.ok(!result.stdout.includes(html));
+  assert.ok(!result.stdout.includes('from "./handler.ts"'));
 });
 
 test("should report invalid recipients and provider failures instead of claiming delivery", async () => {
