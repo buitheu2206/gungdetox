@@ -1,0 +1,322 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import AdminLogin from "../components/AdminLogin.astro";
+---
+
+<BaseLayout title="Chi tiết đơn hàng — GỪNG DETOX" description="Thông tin và trạng thái đơn hàng tại tiệm GỪNG." noindex>
+  <main class="order-detail-page">
+    <nav class="breadcrumb" aria-label="Điều hướng">
+      <a href="/admin/don-hang">Quản lý đơn hàng</a><span aria-hidden="true">/</span><span>Chi tiết đơn</span>
+    </nav>
+    <header class="order-heading">
+      <div><p class="eyebrow">GỪNG DETOX · QUẢN LÝ ĐƠN</p><h1>Chi tiết đơn hàng</h1><p class="order-code-line">Mã đơn <strong id="detail-code">—</strong></p></div>
+    </header>
+
+    <AdminLogin>
+    <div class="detail-actions"><a class="secondary-button" href="/admin/don-hang">← Danh sách đơn hàng</a><button type="button" class="secondary-button" id="refresh-order">↻ Cập nhật trạng thái</button></div>
+    <p id="detail-message" class="detail-message" role="status" hidden></p>
+    <noscript><p class="detail-message">Vui lòng bật JavaScript để tra cứu đơn hàng.</p></noscript>
+
+    <div id="order-details" hidden>
+      <section class="status-panel" aria-labelledby="status-title">
+        <div class="status-copy"><span class="status-icon" id="status-icon" aria-hidden="true">🫚</span><div><p class="eyebrow">TRẠNG THÁI HIỆN TẠI</p><h2 id="status-title"></h2><p id="status-description"></p></div></div>
+        <ol class="order-progress" id="order-progress">
+          <li data-step="processing"><span aria-hidden="true">1</span>Đang xử lý</li>
+          <li data-step="delivering"><span aria-hidden="true">2</span>Đang giao</li>
+          <li data-step="delivered"><span aria-hidden="true">3</span>Đã giao</li>
+        </ol>
+      </section>
+      <div class="order-grid">
+        <div class="order-main-column">
+          <section class="detail-card" aria-labelledby="products-title">
+            <div class="card-heading"><h2 id="products-title">Sản phẩm đã chọn</h2><span id="item-count" class="small-badge"></span></div>
+            <ul class="detail-items" id="detail-items"></ul>
+            <div class="bottle-summary"><span>Loại chai <strong id="detail-bottle"></strong></span><span>Chai gửi lại <strong id="detail-returned"></strong></span></div>
+          </section>
+          <section class="detail-card" aria-labelledby="delivery-title">
+            <h2 id="delivery-title">Thông tin giao hàng</h2>
+            <dl class="delivery-details">
+              <div><dt>Người nhận</dt><dd id="detail-customer"></dd></div>
+              <div><dt>Số điện thoại</dt><dd id="detail-contact"></dd></div>
+              <div class="full-row"><dt>Địa chỉ giao hàng</dt><dd id="detail-address"></dd></div>
+              <div><dt>Thời điểm nhận hàng</dt><dd id="detail-delivery"></dd></div>
+              <div><dt>Ngày đặt đơn</dt><dd id="detail-created"></dd></div>
+              <div class="full-row"><dt>Ghi chú</dt><dd id="detail-note"></dd></div>
+            </dl>
+          </section>
+          <section class="detail-card" aria-labelledby="history-title"><h2 id="history-title">Lịch sử đơn hàng</h2><ol id="detail-history" class="order-history"></ol></section>
+        </div>
+        <aside class="order-sidebar">
+          <section class="detail-card payment-card" aria-labelledby="payment-title">
+            <p class="eyebrow">THANH TOÁN</p><h2 id="payment-title"></h2><p class="payment-badge" id="detail-paid"></p>
+            <p id="detail-payment-note"></p>
+            <p class="shipping-note">Phí giao hàng được tiệm xác nhận qua Zalo trước khi giao.</p>
+          </section>
+          <section class="help-card"><span aria-hidden="true">💚</span><h2>Chăm chút từng đơn</h2><p>Liên hệ khách để xác nhận lịch giao, phí ship hoặc hỗ trợ thay đổi đơn hàng.</p><a class="primary-button" id="call-customer">Gọi khách hàng</a><a class="phone-link" href="/admin/don-hang">Cập nhật thanh toán và trạng thái →</a></section>
+        </aside>
+      </div>
+    </div>
+    <template id="detail-item-template"><li><div class="item-image"><img alt="" loading="lazy" hidden /><span aria-hidden="true">🫚</span></div><div class="item-copy"><a class="item-name"></a><span class="item-slug"></span></div><span class="item-quantity"></span></li></template>
+    <template id="detail-history-template"><li><span class="history-dot" aria-hidden="true"></span><div><strong></strong><time></time></div></li></template>
+    </AdminLogin>
+  </main>
+</BaseLayout>
+
+<script>
+  import { supabase } from "../lib/supabase";
+  import { orderCode, type ProductRow } from "../lib/templates";
+  import { ORDER_STATUS_LABELS, getDeliveryDetails, getOrderCodeBounds, type OrderRow } from "../lib/order-details";
+  import { getPaymentInstructions, DEPOSIT_LABEL } from "../lib/payment";
+
+  const lookup = getOrderCodeBounds(location.pathname.split("/").filter(Boolean).at(-1) ?? "");
+  const details = document.getElementById("order-details")!;
+  const message = document.getElementById("detail-message")!;
+  const refresh = document.getElementById("refresh-order") as HTMLButtonElement;
+  const itemTemplate = document.getElementById("detail-item-template") as HTMLTemplateElement;
+  const historyTemplate = document.getElementById("detail-history-template") as HTMLTemplateElement;
+  const statusDescriptions: Record<string, { icon: string; text: string }> = {
+    processing: { icon: "🫚", text: "Đơn đang chờ xác nhận hoặc được tiệm chuẩn bị." },
+    delivering: { icon: "🚲", text: "Đơn đã được chuyển sang trạng thái giao hàng." },
+    delivered: { icon: "✓", text: "Đơn hàng đã giao thành công." },
+    cancelled: { icon: "—", text: "Đơn hàng đã được huỷ." },
+  };
+  const dateFormat = new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Ho_Chi_Minh" });
+  let loadVersion = 0;
+
+  function setText(id: string, value: string) {
+    document.getElementById(id)!.textContent = value;
+  }
+
+  function showMessage(text: string) {
+    message.textContent = text;
+    message.hidden = false;
+  }
+
+  function formatDate(value: string) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "Chưa có thông tin" : dateFormat.format(date);
+  }
+
+  function renderStatus(order: OrderRow) {
+    const status = statusDescriptions[order.status];
+    setText("status-title", ORDER_STATUS_LABELS[order.status] ?? "Chưa có trạng thái");
+    setText("status-icon", status?.icon ?? "🫚");
+    setText("status-description", status?.text ?? "Vui lòng kiểm tra lại trạng thái trong danh sách đơn hàng.");
+    const progress = document.getElementById("order-progress")!;
+    progress.hidden = !status || order.status === "cancelled";
+    const steps = [...progress.querySelectorAll<HTMLElement>("[data-step]")];
+    const currentStep = steps.findIndex((step) => step.dataset.step === order.status);
+    steps.forEach((step, index) => {
+      step.dataset.complete = String(index <= currentStep);
+      if (index === currentStep) step.setAttribute("aria-current", "step");
+      else step.removeAttribute("aria-current");
+    });
+  }
+
+  function renderItems(order: OrderRow, products: ProductRow[]) {
+    const rows = order.items.map((item) => {
+      const row = itemTemplate.content.firstElementChild!.cloneNode(true) as HTMLElement;
+      const product = products.find((product) => product.slug === item.productSlug);
+      const name = row.querySelector<HTMLAnchorElement>(".item-name")!;
+      name.textContent = product?.name ?? item.productSlug;
+      if (product) name.href = `/san-pham/${encodeURIComponent(product.slug)}`;
+      row.querySelector(".item-slug")!.textContent = item.productSlug;
+      row.querySelector(".item-quantity")!.textContent = `× ${item.quantity}`;
+      const image = row.querySelector("img")!;
+      if (product?.image_url && /^https?:\/\//i.test(product.image_url)) {
+        image.src = product.image_url;
+        image.alt = product.name;
+        image.hidden = false;
+        const fallback = row.querySelector<HTMLElement>(".item-image span")!;
+        fallback.hidden = true;
+        image.addEventListener("error", () => {
+          image.hidden = true;
+          fallback.hidden = false;
+          console.error("Không tải được ảnh sản phẩm trong đơn hàng", { slug: item.productSlug });
+        });
+      }
+      return row;
+    });
+    document.getElementById("detail-items")!.replaceChildren(...rows);
+    setText("item-count", `${order.items.length} sản phẩm`);
+  }
+
+  function renderHistory(order: OrderRow) {
+    const events = [{ status: "processing", at: order.created_at }, ...(order.status_history ?? [])];
+    const rows = events.filter((event) => event && typeof event.at === "string" && typeof event.status === "string").map((event, index) => {
+      const row = historyTemplate.content.firstElementChild!.cloneNode(true) as HTMLElement;
+      row.querySelector("strong")!.textContent = index === 0 ? "Đơn hàng được tạo" : ORDER_STATUS_LABELS[event.status] ?? event.status;
+      const time = row.querySelector("time")!;
+      time.textContent = formatDate(event.at);
+      if (!Number.isNaN(Date.parse(event.at))) time.dateTime = event.at;
+      return row;
+    });
+    document.getElementById("detail-history")!.replaceChildren(...rows);
+  }
+
+  function renderOrder(order: OrderRow, products: ProductRow[]) {
+    const delivery = getDeliveryDetails(order.shipping_fee_note);
+    setText("detail-customer", order.customer_name);
+    setText("detail-contact", order.phone);
+    setText("detail-address", [order.address, order.district].filter(Boolean).join(", "));
+    setText("detail-delivery", delivery.schedule);
+    setText("detail-created", formatDate(order.created_at));
+    setText("detail-note", delivery.note);
+    setText("detail-bottle", ({ glass: "Thủy tinh", plastic: "Nhựa" } as Record<string, string>)[order.bottle_type] ?? order.bottle_type);
+    setText("detail-returned", `${order.bottles_returned ?? 0} chai`);
+    const isDeposit = order.shipping_fee_note?.includes(getPaymentInstructions(true).orderNote) ?? false;
+    setText("payment-title", isDeposit ? DEPOSIT_LABEL : order.payment_method === "bank_transfer" ? "Chuyển khoản" : "Tiền mặt (COD)");
+    setText("detail-paid", order.paid ? "Đã thanh toán" : "Chưa thanh toán");
+    document.getElementById("detail-paid")!.dataset.paid = String(order.paid);
+    setText("detail-payment-note", isDeposit ? getPaymentInstructions(true).instructions : order.payment_method === "bank_transfer" ? getPaymentInstructions(false).instructions : "Khách thanh toán khi nhận hàng.");
+    const call = document.getElementById("call-customer") as HTMLAnchorElement;
+    call.href = `tel:${order.phone.replace(/[^\d+]/g, "")}`;
+    renderStatus(order);
+    renderItems(order, products);
+    renderHistory(order);
+    details.hidden = false;
+  }
+
+  async function fetchOrder() {
+    if (!lookup) throw new Error("Mã đơn không hợp lệ. Vui lòng mở đơn từ danh sách quản lý.");
+    const { data, error } = await supabase.from("orders")
+      .select("id, phone, customer_name, address, district, items, bottle_type, bottles_returned, shipping_fee_note, payment_method, paid, status, status_history, created_at")
+      .like("phone", `%${lookup.phoneSuffix}`)
+      .gte("id", lookup.minId).lte("id", lookup.maxId).limit(2);
+    if (error) throw new Error("Không tải được đơn hàng. Vui lòng thử lại.", { cause: error });
+    if (!data?.length) throw new Error("Không tìm thấy đơn hàng này. Vui lòng kiểm tra mã đơn hoặc quay lại danh sách.");
+    if (data.length !== 1) throw new Error("Mã đơn trùng với nhiều đơn hàng. Vui lòng kiểm tra trong danh sách quản lý.");
+    const order = data[0] as OrderRow;
+    if (orderCode(order.phone, order.id) !== lookup.code || !Array.isArray(order.items)
+      || order.items.some((item) => !item || typeof item.productSlug !== "string" || !Number.isInteger(item.quantity) || item.quantity < 1)
+      || (order.status_history != null && !Array.isArray(order.status_history))) {
+      throw new Error("Dữ liệu đơn hàng không hợp lệ. Vui lòng kiểm tra lại trong danh sách quản lý.");
+    }
+    return order;
+  }
+
+  async function loadOrder() {
+    const version = ++loadVersion;
+    refresh.disabled = true;
+    details.hidden = true;
+    message.hidden = true;
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (!user) {
+        if (authError && authError.name !== "AuthSessionMissingError") console.error("Không xác minh được đăng nhập quản trị", { error: authError });
+        return;
+      }
+      if (version !== loadVersion) return;
+      showMessage("Đang tải thông tin đơn hàng…");
+      const order = await fetchOrder();
+      const { data: products, error } = await supabase.from("products").select("slug, name, image_url").in("slug", order.items.map((item) => item.productSlug));
+      if (version !== loadVersion) return;
+      renderOrder(order, (products ?? []) as ProductRow[]);
+      message.hidden = true;
+      if (error) {
+        console.error("Không tải được tên và ảnh sản phẩm của đơn hàng", { code: lookup?.code, error });
+        showMessage("Đã tải đơn hàng. Tên và ảnh sản phẩm tạm thời chưa tải được; đang hiển thị mã sản phẩm.");
+      }
+    } catch (error) {
+      if (version !== loadVersion) return;
+      console.error("Không tải được trang chi tiết đơn hàng", { code: lookup?.code, error });
+      showMessage(error instanceof Error ? error.message : "Không tải được đơn hàng. Vui lòng thử lại.");
+    } finally {
+      if (version === loadVersion) refresh.disabled = false;
+    }
+  }
+
+  setText("detail-code", lookup?.code ?? "Mã không hợp lệ");
+  refresh.addEventListener("click", loadOrder);
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (!session) {
+      loadVersion++;
+      details.hidden = true;
+      message.hidden = true;
+      refresh.disabled = false;
+    } else if (event === "SIGNED_IN") {
+      // Auth callbacks run under a lock; defer calls to getUser until it is released.
+      setTimeout(loadOrder, 0);
+    }
+  });
+  void loadOrder();
+</script>
+
+<style>
+  .order-detail-page { max-width: 1120px; margin: auto; padding: 2rem 1.5rem 4rem; }
+  .breadcrumb { display: flex; flex-wrap: wrap; gap: .6rem; color: var(--color-text-muted); font-size: .8rem; margin-bottom: 2rem; }
+  .breadcrumb a { text-decoration: none; }
+  .order-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+  .eyebrow { color: var(--color-primary); font-size: .72rem; font-weight: 700; letter-spacing: .12em; margin: 0 0 .65rem; }
+  h1 { margin-bottom: .5rem; }
+  .order-code-line { margin: 0; color: var(--color-text-muted); }
+  .order-code-line strong { color: var(--color-secondary); margin-left: .5rem; font-family: monospace; }
+  .primary-button, .secondary-button { display: inline-flex; justify-content: center; align-items: center; gap: .4rem; border-radius: 999px; padding: .75rem 1.2rem; font: 600 .85rem var(--font-body); cursor: pointer; text-decoration: none; }
+  .primary-button { background: var(--color-primary); color: white; border: 1px solid var(--color-primary); }
+  .secondary-button { background: transparent; border: 1px solid #d9ddcc; color: var(--color-primary); }
+  button:disabled { opacity: .6; cursor: wait; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+  .detail-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1.5rem; }
+  .detail-message { padding: 1rem 1.5rem; background: var(--color-bg-alt); color: var(--color-secondary); border-radius: var(--radius-md); }
+  .status-panel { padding: 1.8rem 2rem; background: var(--color-primary-light); border-radius: var(--radius-lg); margin-bottom: 1.5rem; }
+  .status-copy { display: flex; gap: 1rem; align-items: center; }
+  .status-icon { display: grid; place-items: center; width: 56px; height: 56px; flex-shrink: 0; border-radius: 50%; background: #fffdf8aa; font-size: 1.5rem; }
+  .status-copy h2 { font-size: 1.5rem; margin-bottom: .35rem; padding: 0; }
+  .status-copy h2::after { display: none; }
+  .status-copy p:last-child { margin: 0; font-size: .9rem; color: var(--color-text-muted); }
+  .order-progress { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); padding: 1.2rem 0 0; margin: 1.3rem 0 0; border-top: 1px solid #4e673522; gap: 1rem; }
+  .order-progress li { display: flex; align-items: center; gap: .6rem; color: var(--color-text-muted); font-size: .85rem; }
+  .order-progress li span { width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid #a5b28f; border-radius: 50%; flex-shrink: 0; }
+  .order-progress li[data-complete="true"] { color: var(--color-primary); font-weight: 600; }
+  .order-progress li[data-complete="true"] span { background: var(--color-primary); color: white; border-color: var(--color-primary); }
+  .order-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1.5rem; align-items: start; }
+  .order-main-column, .order-sidebar { display: grid; gap: 1.5rem; min-width: 0; }
+  .detail-card { padding: 1.5rem; background: white; border: 1px solid #e8e2d7; border-radius: var(--radius-lg); }
+  .detail-card h2, .help-card h2 { font-size: 1.1rem; margin-bottom: 1.4rem; }
+  .card-heading { display: flex; justify-content: space-between; gap: .75rem; align-items: start; }
+  .small-badge { background: var(--color-bg-alt); border-radius: 999px; padding: .25rem .7rem; font-size: .75rem; white-space: nowrap; }
+  .detail-items { list-style: none; padding: 0; margin: 0; }
+  .detail-items li { display: flex; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--color-bg-alt); }
+  .detail-items li:first-child { padding-top: 0; }
+  .item-image { width: 68px; height: 68px; flex-shrink: 0; display: grid; place-items: center; border-radius: var(--radius-md); overflow: hidden; background: var(--color-bg-warm); font-size: 1.5rem; }
+  .item-image img { width: 100%; height: 100%; object-fit: cover; }
+  .item-copy { display: grid; gap: .25rem; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .item-name { color: var(--color-secondary); font-weight: 600; text-decoration: none; }
+  .item-slug { color: var(--color-text-muted); font-size: .75rem; }
+  .item-quantity { font-size: .85rem; font-weight: 600; white-space: nowrap; color: var(--color-primary); }
+  .bottle-summary { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; margin-top: 1rem; font-size: .8rem; color: var(--color-text-muted); }
+  .bottle-summary strong { margin-left: .4rem; color: var(--color-secondary); }
+  .delivery-details { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem 1.5rem; margin: 0; }
+  .delivery-details dt { font-size: .75rem; color: var(--color-text-muted); margin-bottom: .25rem; }
+  .delivery-details dd { margin: 0; font-size: .9rem; overflow-wrap: anywhere; }
+  .full-row { grid-column: 1 / -1; }
+  .order-history { list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; }
+  .order-history li { display: flex; gap: .8rem; align-items: baseline; font-size: .85rem; }
+  .history-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--color-primary); }
+  .order-history time { display: block; font-size: .75rem; color: var(--color-text-muted); margin-top: .2rem; }
+  .payment-card { background: var(--color-bg-warm); }
+  .payment-badge { display: inline-block; color: var(--color-accent); background: #b5431110; border-radius: 999px; padding: .35rem .7rem; font-size: .8rem; font-weight: 600; margin: 0; }
+  .payment-badge[data-paid="true"] { color: var(--color-primary); background: var(--color-primary-light); }
+  .payment-card p:not(.eyebrow):not(.payment-badge) { font-size: .85rem; }
+  .shipping-note { color: var(--color-text-muted); border-top: 1px solid #4e291416; padding-top: 1rem; }
+  .help-card { padding: 1.5rem; border-radius: var(--radius-lg); text-align: center; background: var(--color-bg-alt); }
+  .help-card > span { font-size: 1.5rem; }
+  .help-card h2 { margin-top: .7rem; margin-bottom: .7rem; padding: 0; }
+  .help-card h2::after { display: none; }
+  .help-card p { color: var(--color-text-muted); font-size: .85rem; }
+  .help-card .primary-button { width: 100%; }
+  .phone-link { display: block; font-size: .85rem; margin-top: .8rem; text-decoration: none; }
+  @media (max-width: 760px) {
+    .order-detail-page { padding: 1.5rem 1rem 3rem; }
+    .order-heading { align-items: start; flex-direction: column; }
+    .order-grid { grid-template-columns: 1fr; }
+    .status-panel { padding: 1.3rem; }
+    .order-progress { gap: .5rem; }
+    .order-progress li { flex-direction: column; font-size: .75rem; gap: .4rem; }
+    .detail-card { padding: 1.25rem; }
+    .delivery-details { grid-template-columns: 1fr; }
+    .item-image { width: 56px; height: 56px; }
+    .detail-items li { gap: .75rem; }
+    .item-name { font-size: .85rem; }
+  }
+</style>

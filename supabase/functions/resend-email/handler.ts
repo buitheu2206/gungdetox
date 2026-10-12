@@ -18,7 +18,7 @@ interface Order {
 }
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
-const ADMIN_ORDERS_URL = "https://gungdetox.com/admin/don-hang";
+const ORDER_DETAILS_ORIGIN = "https://gungdetox.com/don-hang/";
 const EMAIL_TIMEOUT_MS = 15_000;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_PATTERN = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i;
@@ -62,7 +62,7 @@ function buildEmailHtml(template: string, code: string, details: EmailDetails, i
     customer_phone: escapeHtml(details.customerPhone),
     delivery_address: escapeHtml(details.deliveryAddress),
     delivery_time: escapeHtml(details.deliveryTime),
-    admin_orders_url: ADMIN_ORDERS_URL,
+    order_details_url: `${ORDER_DETAILS_ORIGIN}${encodeURIComponent(code)}`,
     product_rows: items.map((item) => `<tr>
       <td style="padding:14px 16px;border-bottom:1px solid #f5f0e6;overflow-wrap:anywhere;">${escapeHtml(item.productSlug)}</td>
       <td align="center" style="padding:14px 16px;border-bottom:1px solid #f5f0e6;font-weight:600;color:#4e6735;">${item.quantity}</td>
@@ -103,7 +103,7 @@ function buildEmail(order: Order, config: NotificationConfig) {
       "Sản phẩm:",
       ...order.items.map((item) => `- ${item.productSlug} × ${item.quantity}`),
       `Thông tin giao hàng: ${order.shipping_fee_note || "—"}`,
-      `Quản lý đơn hàng: ${ADMIN_ORDERS_URL}`,
+      `Chi tiết đơn hàng: ${ORDER_DETAILS_ORIGIN}${encodeURIComponent(code)}`,
     ].join("\n"),
   };
 }

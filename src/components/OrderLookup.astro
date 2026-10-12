@@ -29,13 +29,7 @@
 <script>
   import { supabase } from "../lib/supabase";
   import { orderCode } from "../lib/templates";
-
-  const statusLabel: Record<string, string> = {
-    processing: "Đang xử lý",
-    delivering: "Đang giao",
-    delivered: "Đã giao",
-    cancelled: "Đã huỷ",
-  };
+  import { ORDER_STATUS_LABELS as statusLabel } from "../lib/order-details";
 
   // Thứ tự nhóm hiển thị — đơn đang chờ xử lý/giao lên trước để khách thấy ngay việc cần quan tâm.
   const statusOrder = ["processing", "delivering", "delivered", "cancelled"];

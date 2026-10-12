@@ -14,6 +14,7 @@ src/pages/
 ├── san-pham.astro           Danh sách sản phẩm (lẻ / combo / 5 Set Detox)
 ├── san-pham/[slug].astro    Chi tiết 1 sản phẩm
 ├── dat-hang.astro           Đặt hàng (4 bước) + tra cứu đơn theo SĐT
+├── don-hang.astro           Chi tiết /don-hang/{order_code}, yêu cầu đăng nhập quản trị
 ├── blog.astro, blog/[slug].astro
 ├── khoa-hoc.astro           Nhượng quyền / chuyển giao công thức
 ├── lien-he.astro
@@ -38,6 +39,16 @@ Supabase Auth (email/password), gác cổng ở `src/components/AdminLogin.astro
 
 RLS: ai cũng đọc được `products`/`posts`/`orders` (để trang public hiện được), chỉ tài khoản
 `authenticated` mới ghi/sửa/xoá.
+
+Trang chi tiết đơn xác minh phiên đăng nhập trước khi truy vấn và không đưa dữ liệu khách vào
+HTML build hoặc sitemap. Đây là kiểm soát giao diện; policy SELECT công khai của `orders`
+hiện vẫn cho phép đọc qua API. Cần thiết kế lại API tra cứu khách trước khi siết policy này
+để tránh làm hỏng tra cứu theo SĐT và bước đặt hàng đang dùng `.insert().select()`.
+
+URL `/don-hang/{order_code}` được rewrite về `don-hang/index.html` bởi `public/.htaccess`
+trên hosting Apache/LiteSpeed có bật `mod_rewrite`; `src/middleware.ts` xử lý tương tự khi dev.
+Nếu hosting đã có `.htaccess` riêng, gộp block rewrite của đơn hàng vào cấu hình đó trước
+khi deploy để giữ các quy tắc hiện có. Nút email mới cần deploy lại function `resend-email`.
 
 ## Cài đặt & chạy local
 

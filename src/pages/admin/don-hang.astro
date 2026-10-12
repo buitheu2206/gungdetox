@@ -57,13 +57,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
   import { supabase } from "../../lib/supabase";
   import { orderCode } from "../../lib/templates";
   import { initCustomSelect, syncCustomSelect } from "../../lib/initCustomSelect";
-
-  const statusLabel: Record<string, string> = {
-    processing: "Đang xử lý",
-    delivering: "Đang giao",
-    delivered: "Đã giao",
-    cancelled: "Đã huỷ",
-  };
+  import { ORDER_STATUS_LABELS as statusLabel, getDeliveryDetails } from "../../lib/order-details";
 
   const bottleLabel: Record<string, string> = { glass: "Thủy tinh", plastic: "Nhựa" };
   const paymentMethodLabel: Record<string, string> = {
@@ -95,31 +89,16 @@ import CustomSelect from "../../components/CustomSelect.astro";
   // không có sẵn), nên đang trích tạm từ shipping_fee_note — dat-hang.astro luôn ghi
   // đúng theo mẫu "Giao ngày DD/MM/YYYY [(HH:MM-HH:MM)]. Ghi chú của khách: ... . Phí ship..."
   // lúc đặt hàng. Đơn cũ hơn (đặt trước khi có tính năng này) sẽ không khớp mẫu, trả về "—".
-  function extractDeliveryFull(note: string | null | undefined): string | null {
-    if (!note) return null;
-    const match = note.match(/Giao ngày (.+?)\. Ghi chú của khách:/);
-    return match ? match[1] : null;
-  }
-
   function extractDeliveryDate(note: string | null | undefined): string {
-    const full = extractDeliveryFull(note);
-    if (!full) return "—";
-    const match = full.match(/^(.+?)\s*\(/);
-    return match ? match[1] : full;
+    return getDeliveryDetails(note).date;
   }
 
   function extractDeliveryTimeRange(note: string | null | undefined): string {
-    const full = extractDeliveryFull(note);
-    if (!full) return "—";
-    const match = full.match(/\(([^)]+)\)/);
-    return match ? match[1] : "—";
+    return getDeliveryDetails(note).time;
   }
 
   function extractDeliveryNote(note: string | null | undefined): string {
-    if (!note) return "—";
-    const match = note.match(/Ghi chú của khách: (.*?)\. Phí ship/);
-    if (!match || match[1] === "(không có)") return "—";
-    return match[1];
+    return getDeliveryDetails(note).note;
   }
 
   // Khách "quen" = đã có từ 2 đơn trở lên tính đến thời điểm đơn này (kể cả đơn này) — dựa theo
@@ -192,7 +171,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
         const deliveryNote = extractDeliveryNote(o.shipping_fee_note);
         return `
       <tr data-id="${o.id}"${cid}>
-        <td class="code"${cid}>${orderCode(o.phone, o.id)}</td>
+        <td class="code"${cid}><a href="/don-hang/${encodeURIComponent(orderCode(o.phone, o.id))}"${cid}>${orderCode(o.phone, o.id)}</a></td>
         <td${cid}>${new Date(o.created_at).toLocaleDateString("vi-VN")}<br${cid} />${new Date(o.created_at).toLocaleTimeString("vi-VN")}</td>
         <td class="customer-cell"${cid}>${o.customer_name} ${customerBadge}</td>
         <td${cid}>${o.phone}</td>

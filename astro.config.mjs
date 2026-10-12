@@ -8,7 +8,7 @@ export default defineConfig({
   site: 'https://gungdetox.com',
   integrations: [
     sitemap({
-      filter: (page) => !page.includes('/admin/'),
+      filter: (page) => !page.includes('/admin/') && !page.includes('/don-hang'),
     }),
   ],
   redirects: {

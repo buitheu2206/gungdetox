@@ -11,12 +11,14 @@ interface Props {
   title: string;
   description?: string;
   image?: string;
+  noindex?: boolean;
 }
 
 const {
   title,
   description = "GỪNG DETOX — Sống xanh, sống khỏe",
   image = "/images/brand/cover-5-set-detox.jpg",
+  noindex = false,
 } = Astro.props;
 
 const ogImageUrl = new URL(image, Astro.site).toString();
@@ -39,6 +41,7 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
       });
     </script>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
     <link rel="canonical" href={canonicalUrl} />
 

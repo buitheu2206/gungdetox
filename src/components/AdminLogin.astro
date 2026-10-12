@@ -4,7 +4,8 @@
 ---
 
 <div id="admin-login-gate">
-  <form id="admin-login-form" class="admin-login-form">
+  <p id="admin-session-loading" role="status">Đang kiểm tra phiên đăng nhập…</p>
+  <form id="admin-login-form" class="admin-login-form" hidden>
     <h2>Đăng nhập quản trị</h2>
     <input type="email" name="email" placeholder="Email" required />
     <input type="password" name="password" placeholder="Mật khẩu" required />
@@ -25,25 +26,37 @@
   const errorEl = document.getElementById("admin-login-error") as HTMLParagraphElement;
   const contentEl = document.getElementById("admin-content") as HTMLDivElement;
   const logoutBtn = document.getElementById("admin-logout") as HTMLButtonElement;
+  const sessionLoading = document.getElementById("admin-session-loading")!;
 
   function showLoggedIn() {
+    sessionLoading.hidden = true;
     loginForm.hidden = true;
     contentEl.hidden = false;
   }
 
   function showLoggedOut() {
+    sessionLoading.hidden = true;
     loginForm.hidden = false;
     contentEl.hidden = true;
   }
 
   // Kiểm tra phiên đăng nhập hiện có lúc trang tải
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (session) {
-    showLoggedIn();
-  } else {
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+    if (!session) {
+      showLoggedOut();
+    } else {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (user) showLoggedIn();
+      else showLoggedOut();
+    }
+  } catch (error) {
+    console.error("Không kiểm tra được phiên đăng nhập quản trị", { error });
     showLoggedOut();
+    errorEl.textContent = "Không kiểm tra được phiên đăng nhập. Vui lòng đăng nhập lại.";
+    errorEl.hidden = false;
   }
 
   loginForm?.addEventListener("submit", async (e) => {
