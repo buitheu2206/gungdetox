@@ -25,6 +25,15 @@ export function snapshotOrderItems(cart: { slug: string; quantity: number }[], p
   });
 }
 
+// Current prices are a display fallback for legacy orders, never a database backfill.
+export function resolveOrderItems(items: OrderItem[], products: PricedProduct[]): OrderItem[] {
+  return items.map((item) => {
+    if (item.unitPrice != null) return item;
+    const product = products.find((product) => product.slug === item.productSlug);
+    return { ...item, unitPrice: product ? getProductUnitPrice(product) : null };
+  });
+}
+
 export function getOrderAmount(items: OrderItem[]): number | null {
   if (!Array.isArray(items) || !items.length) return null;
   let total = 0;

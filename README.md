@@ -38,8 +38,10 @@ không trang nào import trực tiếp; CSS thật nằm ở `src/styles/cards.c
 Supabase Auth (email/password), gác cổng ở `src/components/AdminLogin.astro`.
 
 Đơn mới lưu `unitPrice` trong từng phần tử `orders.items` (JSONB), không cần đổi schema.
-Bảng quản trị và CSV tính thành tiền từ giá này, chưa gồm phí ship. Đơn cũ hoặc thiếu
-giá hiển thị “—”; không suy ngược giá lịch sử từ giá sản phẩm hiện tại. Giá được chụp
+Bảng quản trị và CSV ưu tiên giá này để tính thành tiền, chưa gồm phí ship. Đơn cũ
+thiếu giá dùng giá sản phẩm hiện tại để hiển thị, không ghi ngược vào DB; giá này có
+thể khác giá lúc đặt. Sản phẩm đã xoá hoặc chưa có giá vẫn hiển thị “—”. Tên sản phẩm
+được lấy từ bảng `products`; nếu không tìm thấy thì giữ mã sản phẩm. Giá được chụp
 từ checkout phía trình duyệt; tiệm vẫn cần xác nhận trước khi thu tiền.
 
 RLS: ai cũng đọc được `products`/`posts`/`orders` (để trang public hiện được), chỉ tài khoản

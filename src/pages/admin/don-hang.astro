@@ -21,6 +21,8 @@ import CustomSelect from "../../components/CustomSelect.astro";
         <button type="button" id="export-csv-btn" class="export-btn">Xuất file CSV</button>
       </div>
 
+      <p id="order-products-warning" role="status" hidden></p>
+
       <div class="table-wrap">
         <table id="orders-table">
           <thead>
@@ -57,10 +59,10 @@ import CustomSelect from "../../components/CustomSelect.astro";
 
 <script>
   import { supabase } from "../../lib/supabase";
-  import { orderCode } from "../../lib/templates";
+  import { orderCode, type ProductRow } from "../../lib/templates";
   import { initCustomSelect, syncCustomSelect } from "../../lib/initCustomSelect";
   import { ORDER_STATUS_LABELS as statusLabel, getDeliveryDetails } from "../../lib/order-details";
-  import { getOrderAmount, type OrderItem } from "../../lib/order-pricing";
+  import { getOrderAmount, resolveOrderItems, type OrderItem } from "../../lib/order-pricing";
 
   const paymentMethodLabel: Record<string, string> = {
     bank_transfer: "Chuyển khoản",
@@ -80,10 +82,11 @@ import CustomSelect from "../../components/CustomSelect.astro";
   const cid = cidAttrName ? ` ${cidAttrName}=""` : "";
 
   let allOrders: any[] = [];
+  let allProducts: ProductRow[] = [];
   let activeStatus = "all";
 
   function itemsSummary(items: OrderItem[]) {
-    return items.map((item) => item.productSlug).join("\n");
+    return items.map((item) => allProducts.find((product) => product.slug === item.productSlug)?.name ?? item.productSlug).join("\n");
   }
 
   function quantitiesSummary(items: OrderItem[]) {
@@ -321,16 +324,28 @@ import CustomSelect from "../../components/CustomSelect.astro";
   });
 
   async function loadOrders() {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) {
-      tbody.innerHTML = `<tr${cid}><td colspan="16"${cid}>Lỗi tải đơn hàng: ${error.message}</td></tr>`;
-      return;
+    try {
+      const [ordersResult, productsResult] = await Promise.all([
+        supabase.from("orders").select("*").order("created_at", { ascending: false }),
+        supabase.from("products").select("slug, name, type, price, price_retail"),
+      ]);
+      if (ordersResult.error) throw ordersResult.error;
+      allProducts = productsResult.data ?? [];
+      allOrders = (ordersResult.data ?? []).map((order) => ({
+        ...order, items: resolveOrderItems(order.items, allProducts),
+      }));
+      applyFilters();
+      if (productsResult.error) {
+        console.error("Không tải được tên và giá sản phẩm cho bảng đơn hàng", { error: productsResult.error });
+        const warning = document.getElementById("order-products-warning")!;
+        warning.textContent = "Không tải được tên và giá sản phẩm. Vui lòng tải lại trang; đơn thiếu giá vẫn hiện “—”.";
+        warning.hidden = false;
+      }
+    } catch (error) {
+      console.error("Không tải được bảng đơn hàng", { error });
+      tbody.innerHTML = `<tr${cid}><td colspan="16"${cid}></td></tr>`;
+      tbody.querySelector("td")!.textContent = `Lỗi tải đơn hàng: ${(error as { message?: string })?.message ?? String(error)}. Vui lòng tải lại trang.`;
     }
-    allOrders = data ?? [];
-    applyFilters();
   }
 
   loadOrders();
