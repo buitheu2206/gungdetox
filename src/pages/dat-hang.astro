@@ -279,6 +279,7 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
   import { supabase } from "../lib/supabase";
   import { orderCode } from "../lib/templates";
   import { getPaymentInstructions } from "../lib/payment";
+  import { getProductUnitPrice as unitPrice, snapshotOrderItems, getOrderAmount } from "../lib/order-pricing";
 
   interface ProductRow {
     slug: string;
@@ -354,10 +355,6 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
     return n != null ? `${n.toLocaleString("vi-VN")}đ` : "Đang cập nhật giá";
   }
 
-  function unitPrice(p: ProductRow) {
-    return p.type === "single" ? p.price_retail : p.price;
-  }
-
   function findProduct(slug: string) {
     return products.find((p) => p.slug === slug) ?? null;
   }
@@ -365,14 +362,7 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
   // null nghĩa là chưa có giá cho ít nhất 1 sản phẩm trong giỏ — không cộng dồn thành 0,
   // vì "0đ" dễ hiểu nhầm là miễn phí thay vì "chưa có giá".
   function cartTotal(): number | null {
-    let hasUnknownPrice = false;
-    const total = cart.reduce((sum, item) => {
-      const p = findProduct(item.slug);
-      const price = p ? unitPrice(p) : null;
-      if (price == null) hasUnknownPrice = true;
-      return sum + (price ?? 0) * item.quantity;
-    }, 0);
-    return hasUnknownPrice ? null : total;
+    return getOrderAmount(snapshotOrderItems(cart, products));
   }
 
   // Astro chỉ áp style scoped (data-astro-cid-*) cho phần tử render lúc build; phần tử
@@ -634,7 +624,7 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
         customer_name: (document.getElementById("customer-name") as HTMLInputElement).value,
         address: (document.getElementById("address") as HTMLInputElement).value,
         district: districtSelect.value,
-        items: cart.map((item) => ({ productSlug: item.slug, quantity: item.quantity })),
+        items: snapshotOrderItems(cart, products),
         bottle_type: bottleType,
         bottles_returned:
           Number((document.getElementById("bottles-returned") as HTMLInputElement).value) || 0,

@@ -37,6 +37,11 @@ không trang nào import trực tiếp; CSS thật nằm ở `src/styles/cards.c
 `supabase/schema.sql` — chạy 1 lần trong Supabase SQL Editor. Đăng nhập admin dùng
 Supabase Auth (email/password), gác cổng ở `src/components/AdminLogin.astro`.
 
+Đơn mới lưu `unitPrice` trong từng phần tử `orders.items` (JSONB), không cần đổi schema.
+Bảng quản trị và CSV tính thành tiền từ giá này, chưa gồm phí ship. Đơn cũ hoặc thiếu
+giá hiển thị “—”; không suy ngược giá lịch sử từ giá sản phẩm hiện tại. Giá được chụp
+từ checkout phía trình duyệt; tiệm vẫn cần xác nhận trước khi thu tiền.
+
 RLS: ai cũng đọc được `products`/`posts`/`orders` (để trang public hiện được), chỉ tài khoản
 `authenticated` mới ghi/sửa/xoá.
 

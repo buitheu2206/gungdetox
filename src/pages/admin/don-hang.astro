@@ -34,6 +34,9 @@ import CustomSelect from "../../components/CustomSelect.astro";
               <th>Khung giờ</th>
               <th>Ghi chú giao hàng</th>
               <th>Sản phẩm</th>
+              <th>Đơn giá</th>
+              <th class="order-quantities-cell">Số lượng</th>
+              <th>Thành tiền</th>
               <th>Chai trả</th>
               <th>Hình thức TT</th>
               <th>Thanh toán</th>
@@ -41,7 +44,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
             </tr>
           </thead>
           <tbody id="orders-body">
-            <tr><td colspan="13">Đang tải...</td></tr>
+            <tr><td colspan="16">Đang tải...</td></tr>
           </tbody>
         </table>
       </div>
@@ -57,8 +60,8 @@ import CustomSelect from "../../components/CustomSelect.astro";
   import { orderCode } from "../../lib/templates";
   import { initCustomSelect, syncCustomSelect } from "../../lib/initCustomSelect";
   import { ORDER_STATUS_LABELS as statusLabel, getDeliveryDetails } from "../../lib/order-details";
+  import { getOrderAmount, type OrderItem } from "../../lib/order-pricing";
 
-  const bottleLabel: Record<string, string> = { glass: "Thủy tinh", plastic: "Nhựa" };
   const paymentMethodLabel: Record<string, string> = {
     bank_transfer: "Chuyển khoản",
     cod: "COD",
@@ -79,8 +82,25 @@ import CustomSelect from "../../components/CustomSelect.astro";
   let allOrders: any[] = [];
   let activeStatus = "all";
 
-  function itemsSummary(items: any[]) {
-    return items.map((i) => `${i.productSlug} × ${i.quantity}`).join(", ");
+  function itemsSummary(items: OrderItem[]) {
+    return items.map((item) => item.productSlug).join("\n");
+  }
+
+  function quantitiesSummary(items: OrderItem[]) {
+    return items.map((item) => item.quantity).join("\n");
+  }
+
+  function moneyLabel(value?: number | null) {
+    return typeof value === "number" && Number.isFinite(value) && value >= 0
+      ? `${value.toLocaleString("vi-VN")}đ` : "—";
+  }
+
+  function unitPricesSummary(items: OrderItem[]) {
+    return items.map((item) => moneyLabel(item.unitPrice)).join("\n");
+  }
+
+  function amountSummary(items: OrderItem[]) {
+    return moneyLabel(getOrderAmount(items));
   }
 
   // orders chưa có cột delivery_date/delivery_note riêng (không có quyền chạy ALTER
@@ -158,7 +178,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
 
   function render(orders: any[]) {
     if (orders.length === 0) {
-      tbody.innerHTML = `<tr${cid}><td colspan="13"${cid}>Không có đơn nào khớp bộ lọc.</td></tr>`;
+      tbody.innerHTML = `<tr${cid}><td colspan="16"${cid}>Không có đơn nào khớp bộ lọc.</td></tr>`;
       return;
     }
     tbody.innerHTML = orders
@@ -178,7 +198,10 @@ import CustomSelect from "../../components/CustomSelect.astro";
         <td${cid}>${deliveryDate !== "—" ? `<span class="badge badge-delivery"${cid}>${deliveryDate}</span>` : "—"}</td>
         <td${cid}>${deliveryTimeRange}</td>
         <td class="delivery-note-cell"${cid}>${deliveryNote}</td>
-        <td${cid}>${itemsSummary(o.items)}</td>
+        <td class="order-items-cell order-products-cell"${cid}></td>
+        <td class="order-items-cell order-prices-cell"${cid}></td>
+        <td class="order-items-cell order-quantities-cell"${cid}></td>
+        <td${cid}>${amountSummary(o.items)}</td>
         <td${cid}>${o.bottles_returned ?? 0}</td>
         <td${cid}>${paymentMethodLabel[o.payment_method] ?? o.payment_method ?? "COD"}</td>
         <td${cid}>
@@ -201,6 +224,12 @@ import CustomSelect from "../../components/CustomSelect.astro";
     `;
       })
       .join("");
+
+    tbody.querySelectorAll<HTMLTableRowElement>("tr[data-id]").forEach((row, index) => {
+      row.querySelector(".order-products-cell")!.textContent = itemsSummary(orders[index].items);
+      row.querySelector(".order-prices-cell")!.textContent = unitPricesSummary(orders[index].items);
+      row.querySelector(".order-quantities-cell")!.textContent = quantitiesSummary(orders[index].items);
+    });
 
     document.querySelectorAll<HTMLInputElement>(".paid-checkbox").forEach((cb) => {
       cb.addEventListener("change", async () => {
@@ -246,7 +275,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
 
   const csvHeader = [
     "Mã đơn", "Ngày đặt", "Khách", "SĐT", "Địa chỉ", "Ngày giao", "Khung giờ",
-    "Ghi chú giao hàng", "Sản phẩm", "Chai", "Chai trả", "Hình thức TT",
+    "Ghi chú giao hàng", "Sản phẩm", "Đơn giá", "Số lượng", "Thành tiền", "Chai trả", "Hình thức TT",
     "Thanh toán", "Trạng thái",
   ];
 
@@ -261,7 +290,9 @@ import CustomSelect from "../../components/CustomSelect.astro";
       extractDeliveryTimeRange(o.shipping_fee_note),
       extractDeliveryNote(o.shipping_fee_note),
       itemsSummary(o.items),
-      bottleLabel[o.bottle_type] ?? o.bottle_type,
+      unitPricesSummary(o.items),
+      quantitiesSummary(o.items),
+      amountSummary(o.items),
       String(o.bottles_returned ?? 0),
       paymentMethodLabel[o.payment_method] ?? o.payment_method ?? "COD",
       o.paid ? "Đã thanh toán" : "Chưa thanh toán",
@@ -295,7 +326,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
       .select("*")
       .order("created_at", { ascending: false });
     if (error) {
-      tbody.innerHTML = `<tr${cid}><td colspan="13"${cid}>Lỗi tải đơn hàng: ${error.message}</td></tr>`;
+      tbody.innerHTML = `<tr${cid}><td colspan="16"${cid}>Lỗi tải đơn hàng: ${error.message}</td></tr>`;
       return;
     }
     allOrders = data ?? [];
@@ -395,6 +426,14 @@ import CustomSelect from "../../components/CustomSelect.astro";
     gap: 0.4rem;
     cursor: pointer;
     white-space: nowrap;
+  }
+
+  .order-items-cell {
+    white-space: pre;
+  }
+
+  .order-quantities-cell {
+    text-align: center;
   }
 
   .code {

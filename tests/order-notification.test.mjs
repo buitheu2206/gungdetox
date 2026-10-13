@@ -24,7 +24,7 @@ test("should link both HTML and text notifications to the specific order detail 
       method: "POST", headers: { "x-order-webhook-secret": "test-secret" },
       body: JSON.stringify({ type: "INSERT", schema: "public", table: "orders", record: {
         id: "abcdef12-1234-1234-1234-123456789012", phone: "0900123456", customer_name: "Khách thử nghiệm",
-        items: [{ productSlug: "ginger-shot", quantity: 2 }], address: "Địa chỉ thử nghiệm", district: "Quận 3",
+        items: [{ productSlug: "ginger-shot", quantity: 2, unitPrice: 40000 }], address: "Địa chỉ thử nghiệm", district: "Quận 3",
       } }),
     }), { webhookSecret: "test-secret", apiKey: "test-key", from: "test@example.com", recipients: "admin@example.com", emailTemplate: EMAIL_TEMPLATE });
     assert.equal(response.status, 200);

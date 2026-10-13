@@ -1,4 +1,6 @@
 // Shared display data and bounded lookup for the human-readable order code.
+import type { OrderItem } from "./order-pricing";
+
 export const ORDER_STATUS_LABELS: Record<string, string> = {
   processing: "Đang xử lý",
   delivering: "Đang giao",
@@ -12,7 +14,7 @@ export interface OrderRow {
   customer_name: string;
   address: string;
   district: string;
-  items: { productSlug: string; quantity: number }[];
+  items: OrderItem[];
   bottle_type: string;
   bottles_returned: number | null;
   shipping_fee_note: string | null;
