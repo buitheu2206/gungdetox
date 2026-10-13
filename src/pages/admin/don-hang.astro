@@ -34,7 +34,6 @@ import CustomSelect from "../../components/CustomSelect.astro";
               <th>Khung giờ</th>
               <th>Ghi chú giao hàng</th>
               <th>Sản phẩm</th>
-              <th>Chai</th>
               <th>Chai trả</th>
               <th>Hình thức TT</th>
               <th>Thanh toán</th>
@@ -42,7 +41,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
             </tr>
           </thead>
           <tbody id="orders-body">
-            <tr><td colspan="14">Đang tải...</td></tr>
+            <tr><td colspan="13">Đang tải...</td></tr>
           </tbody>
         </table>
       </div>
@@ -159,7 +158,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
 
   function render(orders: any[]) {
     if (orders.length === 0) {
-      tbody.innerHTML = `<tr${cid}><td colspan="14"${cid}>Không có đơn nào khớp bộ lọc.</td></tr>`;
+      tbody.innerHTML = `<tr${cid}><td colspan="13"${cid}>Không có đơn nào khớp bộ lọc.</td></tr>`;
       return;
     }
     tbody.innerHTML = orders
@@ -180,7 +179,6 @@ import CustomSelect from "../../components/CustomSelect.astro";
         <td${cid}>${deliveryTimeRange}</td>
         <td class="delivery-note-cell"${cid}>${deliveryNote}</td>
         <td${cid}>${itemsSummary(o.items)}</td>
-        <td${cid}>${bottleLabel[o.bottle_type] ?? o.bottle_type}</td>
         <td${cid}>${o.bottles_returned ?? 0}</td>
         <td${cid}>${paymentMethodLabel[o.payment_method] ?? o.payment_method ?? "COD"}</td>
         <td${cid}>
@@ -297,7 +295,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
       .select("*")
       .order("created_at", { ascending: false });
     if (error) {
-      tbody.innerHTML = `<tr${cid}><td colspan="14"${cid}>Lỗi tải đơn hàng: ${error.message}</td></tr>`;
+      tbody.innerHTML = `<tr${cid}><td colspan="13"${cid}>Lỗi tải đơn hàng: ${error.message}</td></tr>`;
       return;
     }
     allOrders = data ?? [];
