@@ -7,6 +7,8 @@ test("should request a 200000 VND deposit via bank transfer without marking it p
   const qr = new URL(payment.qrUrl);
   assert.equal(payment.paymentMethod, "bank_transfer");
   assert.equal(qr.searchParams.get("amount"), "200000");
+  assert.equal(qr.searchParams.has("addInfo"), false);
+  assert.equal(payment.transferContent, "");
   assert.equal(qr.pathname, "/image/970436-1065425789-qr_only.png");
   assert.match(payment.instructions, /200\.000đ/);
   assert.match(payment.instructions, /sau khi nhận tiền cọc/);
@@ -19,17 +21,22 @@ test("should preserve standard transfer instructions when switching back from de
   assert.equal(new URL(payment.qrUrl).searchParams.has("amount"), false);
   assert.equal(payment.orderNote, "");
   assert.equal(payment.paymentMethod, "bank_transfer");
+  assert.equal(payment.transferContent, "");
+  assert.equal(new URL(payment.qrUrl).searchParams.has("addInfo"), false);
 });
 
-test("should include the created order code in the deposit QR for reconciliation", () => {
-  const payment = getPaymentInstructions(true, "GD-123456-ABCDEF");
+test("should use WEB and the order code as matching deposit transfer content and QR", () => {
+  const payment = getPaymentInstructions(true, "123456-ABCDEF");
   const qr = new URL(payment.qrUrl);
   assert.equal(qr.searchParams.get("amount"), "200000");
-  assert.equal(qr.searchParams.get("addInfo"), "GD-123456-ABCDEF");
+  assert.equal(payment.transferContent, "WEB 123456-ABCDEF");
+  assert.equal(qr.searchParams.get("addInfo"), payment.transferContent);
 });
 
-test("should include the order code in a full-payment QR without imposing the deposit amount", () => {
-  const qr = new URL(getPaymentInstructions(false, "123456-ABCDEF").qrUrl);
-  assert.equal(qr.searchParams.get("addInfo"), "123456-ABCDEF");
+test("should use WEB transfer content for full payment without imposing the deposit amount", () => {
+  const payment = getPaymentInstructions(false, "123456-ABCDEF");
+  const qr = new URL(payment.qrUrl);
+  assert.equal(payment.transferContent, "WEB 123456-ABCDEF");
+  assert.equal(qr.searchParams.get("addInfo"), payment.transferContent);
   assert.equal(qr.searchParams.has("amount"), false);
 });

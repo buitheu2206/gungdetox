@@ -61,7 +61,7 @@ khi deploy để giữ các quy tắc hiện có. Nút email mới cần deploy 
 
 Chạy migration `supabase/payment-receipts.sql` sau schema và sau khi tạo ba tài khoản quản trị.
 Bucket `payment-receipts` là private, nhận JPG/PNG/WebP tối đa 5 MB. Khách gửi một ảnh sau
-khi tạo đơn; mã đơn được điền vào QR và có nút sao chép nội dung chuyển khoản. Ảnh chỉ là
+khi tạo đơn; nội dung `WEB {order_code}` được điền vào QR, hiển thị và có nút sao chép. Ảnh chỉ là
 bằng chứng để tiệm đối chiếu, không tự đánh dấu `paid`.
 
 Quản trị tích ô `Đã thanh toán` trong chi tiết đơn hoặc bảng đơn sau khi đối chiếu tiền nhận.
@@ -78,6 +78,8 @@ Màn thanh toán có nút `Quay lại` về bước xác nhận để xem lại 
 các trường và lựa chọn thanh toán chỉ để xem; bấm `Tiếp tục` dùng lại cùng mã đơn và quyền
 upload, không tạo hoặc cập nhật đơn. QR, nội dung chuyển tiền và ảnh đã chọn được giữ nguyên
 khi quay lại thanh toán. Nút quay lại chỉ bị khoá khi đang gửi ảnh và xác nhận.
+Sau khi xác nhận thành công, màn hình hiển thị lời cảm ơn và thông báo tiệm sẽ liên hệ
+xác nhận đơn hàng; hai nút hành động được thay bằng `Về trang chủ`.
 
 Checkout tạo đơn qua RPC `create_order_with_receipt`, đồng thời cấp quyền upload bằng UUID
 ngẫu nhiên do trình duyệt tạo. Quyền này lưu ở bảng `order_receipt_uploads` không cho client

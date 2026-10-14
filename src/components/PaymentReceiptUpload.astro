@@ -20,6 +20,7 @@ import ImageUpload from "./ImageUpload.astro";
   const preview = document.getElementById("receipt-preview") as HTMLImageElement;
   const submit = document.getElementById("receipt-submit") as HTMLButtonElement;
   const back = document.getElementById("payment-back") as HTMLButtonElement;
+  const home = document.getElementById("payment-home") as HTMLAnchorElement;
   const message = document.getElementById("receipt-message")!;
   let previewUrl: string | undefined;
 
@@ -57,9 +58,15 @@ import ImageUpload from "./ImageUpload.astro";
     showMessage("Đang gửi ảnh và xác nhận chuyển khoản…");
     try {
       await uploadPaymentReceipt(supabase, form.dataset.orderId ?? "", form.dataset.uploadToken ?? "", input.files[0]);
-      showMessage("Đã gửi xác nhận chuyển khoản. Tiệm sẽ đối chiếu tiền vào và xác nhận thanh toán.");
-      submit.textContent = "Đã gửi xác nhận";
-      document.getElementById("payment-step-title")!.textContent = "Đã gửi thông tin chuyển khoản";
+      showMessage("Thông tin đơn hàng đã được gửi thành công.");
+      submit.hidden = true;
+      back.hidden = true;
+      home.hidden = false;
+      home.focus({ preventScroll: true });
+      document.getElementById("payment-step-title")!.textContent = "Cảm ơn bạn đã đặt hàng!";
+      document.getElementById("payment-step-description")!.textContent = "Tiệm sẽ liên hệ qua Zalo/hotline để xác nhận đơn hàng.";
+      document.getElementById("payment-followup-note")!.hidden = true;
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       showMessage(error instanceof Error ? error.message : "Chưa gửi được ảnh. Vui lòng thử lại.", true);
       input.disabled = false;

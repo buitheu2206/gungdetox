@@ -262,7 +262,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     <section id="thank-you" class="thank-you-card" hidden>
       <div class="success-icon" aria-hidden="true">🏦</div>
       <h2 id="payment-step-title">Thanh toán đơn hàng</h2>
-      <p class="thank-you-sub">Chuyển khoản theo thông tin bên dưới, chọn ảnh giao dịch rồi xác nhận.</p>
+      <p id="payment-step-description" class="thank-you-sub">Chuyển khoản theo thông tin bên dưới, chọn ảnh giao dịch rồi xác nhận.</p>
 
       <div class="order-id-box">
         <span class="order-id-label">Mã đơn của bạn</span>
@@ -272,13 +272,14 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
         </div>
       </div>
 
-      <p class="thank-you-note">📞 Tiệm sẽ liên hệ qua Zalo/hotline để xác nhận và báo phí ship cụ thể.</p>
+      <p id="payment-followup-note" class="thank-you-note">📞 Tiệm sẽ liên hệ qua Zalo/hotline để xác nhận và báo phí ship cụ thể.</p>
 
       <PaymentReceiptUpload />
 
       <div class="thank-you-actions">
         <button type="button" id="payment-back" class="thank-you-btn back">Quay lại</button>
         <button type="submit" form="receipt-form" id="receipt-submit" class="thank-you-btn thank-you-btn-primary" disabled>Xác nhận đặt hàng</button>
+        <a href="/" id="payment-home" class="thank-you-btn thank-you-btn-primary" hidden>Về trang chủ</a>
       </div>
     </section>
   </main>
@@ -354,8 +355,8 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     bankQr.hidden = !code;
     document.getElementById("payment-order-hint")!.hidden = !!code;
     document.getElementById("transfer-content-row")!.hidden = !code;
-    document.getElementById("transfer-content")!.textContent = code ?? "";
-    document.getElementById("copy-transfer-content")!.dataset.copy = code ?? "";
+    document.getElementById("transfer-content")!.textContent = payment.transferContent;
+    document.getElementById("copy-transfer-content")!.dataset.copy = payment.transferContent;
     return payment;
   }
 
