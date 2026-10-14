@@ -53,10 +53,10 @@ import CustomSelect from "../../components/CustomSelect.astro";
       <template id="order-status-template">
         <CustomSelect id="order-status" />
       </template>
-      <nav aria-label="Phân trang đơn hàng">
-        <button type="button" id="orders-previous" disabled>Trang trước</button>
-        <span id="orders-page-label" role="status"></span>
-        <button type="button" id="orders-next" disabled>Trang sau</button>
+      <nav class="pagination" aria-label="Phân trang đơn hàng">
+        <button type="button" id="orders-previous" class="page-btn" disabled>‹ Trang trước</button>
+        <span id="orders-page-label" class="page-label" role="status"></span>
+        <button type="button" id="orders-next" class="page-btn" disabled>Trang sau ›</button>
       </nav>
     </AdminLogin>
   </main>
@@ -397,6 +397,40 @@ import CustomSelect from "../../components/CustomSelect.astro";
     background: var(--color-primary);
     color: #fff;
     border-color: var(--color-primary);
+  }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .page-btn {
+    border: 1px solid var(--color-bg-alt);
+    background: #fff;
+    color: var(--color-secondary);
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .page-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-primary) 8%, #fff);
+    border-color: var(--color-primary);
+  }
+
+  .page-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .page-label {
+    font-size: 0.85rem;
+    color: var(--color-secondary);
   }
 
   .table-wrap {
