@@ -27,3 +27,9 @@ test("should include the created order code in the deposit QR for reconciliation
   assert.equal(qr.searchParams.get("amount"), "200000");
   assert.equal(qr.searchParams.get("addInfo"), "GD-123456-ABCDEF");
 });
+
+test("should include the order code in a full-payment QR without imposing the deposit amount", () => {
+  const qr = new URL(getPaymentInstructions(false, "123456-ABCDEF").qrUrl);
+  assert.equal(qr.searchParams.get("addInfo"), "123456-ABCDEF");
+  assert.equal(qr.searchParams.has("amount"), false);
+});

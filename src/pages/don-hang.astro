@@ -1,9 +1,12 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import AdminLogin from "../components/AdminLogin.astro";
+import CustomSelect from "../components/CustomSelect.astro";
+import PaymentReceipt from "../components/PaymentReceipt.astro";
+import { ORDER_STATUS_LABELS } from "../lib/order-details";
 ---
 
-<BaseLayout title="Chi tiết đơn hàng — GỪNG DETOX" description="Thông tin và trạng thái đơn hàng tại tiệm GỪNG." noindex>
+<BaseLayout title="Chi tiết đơn hàng — GỪNG DETOX" description="Chi tiết đơn hàng dành cho quản trị GỪNG DETOX." noindex>
   <main class="order-detail-page">
     <nav class="breadcrumb" aria-label="Điều hướng">
       <a href="/admin/don-hang">Quản lý đơn hàng</a><span aria-hidden="true">/</span><span>Chi tiết đơn</span>
@@ -13,23 +16,19 @@ import AdminLogin from "../components/AdminLogin.astro";
     </header>
 
     <AdminLogin>
-    <div class="detail-actions"><a class="secondary-button" href="/admin/don-hang">← Danh sách đơn hàng</a><button type="button" class="secondary-button" id="refresh-order">↻ Cập nhật trạng thái</button></div>
+    <div class="detail-actions"><a class="secondary-button" href="/admin/don-hang">← Danh sách đơn hàng</a><button type="button" class="secondary-button" id="refresh-order">↻ Tải lại đơn hàng</button></div>
     <p id="detail-message" class="detail-message" role="status" hidden></p>
-    <noscript><p class="detail-message">Vui lòng bật JavaScript để tra cứu đơn hàng.</p></noscript>
+    <noscript><p class="detail-message">Vui lòng bật JavaScript để quản lý đơn hàng.</p></noscript>
 
     <div id="order-details" hidden>
       <section class="status-panel" aria-labelledby="status-title">
-        <div class="status-copy"><span class="status-icon" id="status-icon" aria-hidden="true">🫚</span><div><p class="eyebrow">TRẠNG THÁI HIỆN TẠI</p><h2 id="status-title"></h2><p id="status-description"></p></div></div>
-        <ol class="order-progress" id="order-progress">
-          <li data-step="processing"><span aria-hidden="true">1</span>Đang xử lý</li>
-          <li data-step="delivering"><span aria-hidden="true">2</span>Đang giao</li>
-          <li data-step="delivered"><span aria-hidden="true">3</span>Đã giao</li>
-        </ol>
+        <div class="status-copy"><span class="status-icon" id="status-icon" aria-hidden="true">🫚</span><div><p class="eyebrow">TRẠNG THÁI HIỆN TẠI</p><h2 id="status-title"></h2></div></div>
+        <div class="status-editor"><label for="detail-status">Thay đổi trạng thái</label><CustomSelect id="detail-status">{Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => <option value={value}>{label}</option>)}</CustomSelect><p id="status-save-message" role="status" aria-live="polite" hidden></p></div>
       </section>
       <div class="order-grid">
         <div class="order-main-column">
           <section class="detail-card" aria-labelledby="products-title">
-            <div class="card-heading"><h2 id="products-title">Sản phẩm đã chọn</h2><span id="item-count" class="small-badge"></span></div>
+            <div class="card-heading"><h2 id="products-title">Sản phẩm trong đơn</h2><span id="item-count" class="small-badge"></span></div>
             <ul class="detail-items" id="detail-items"></ul>
             <div class="bottle-summary"><span>Loại chai <strong id="detail-bottle"></strong></span><span>Chai gửi lại <strong id="detail-returned"></strong></span></div>
           </section>
@@ -37,7 +36,7 @@ import AdminLogin from "../components/AdminLogin.astro";
             <h2 id="delivery-title">Thông tin giao hàng</h2>
             <dl class="delivery-details">
               <div><dt>Người nhận</dt><dd id="detail-customer"></dd></div>
-              <div><dt>Số điện thoại</dt><dd id="detail-contact"></dd></div>
+              <div><dt>Số điện thoại</dt><dd><a id="call-customer"></a></dd></div>
               <div class="full-row"><dt>Địa chỉ giao hàng</dt><dd id="detail-address"></dd></div>
               <div><dt>Thời điểm nhận hàng</dt><dd id="detail-delivery"></dd></div>
               <div><dt>Ngày đặt đơn</dt><dd id="detail-created"></dd></div>
@@ -49,10 +48,11 @@ import AdminLogin from "../components/AdminLogin.astro";
         <aside class="order-sidebar">
           <section class="detail-card payment-card" aria-labelledby="payment-title">
             <p class="eyebrow">THANH TOÁN</p><h2 id="payment-title"></h2><p class="payment-badge" id="detail-paid"></p>
-            <p id="detail-payment-note"></p>
-            <p class="shipping-note">Phí giao hàng được tiệm xác nhận qua Zalo trước khi giao.</p>
+            <label class="paid-toggle"><input type="checkbox" id="detail-paid-confirm" disabled /> Đã thanh toán</label>
+            <p id="payment-save-message" role="status" aria-live="polite" hidden></p>
+            <h3>Ảnh giao dịch chuyển khoản</h3>
+            <PaymentReceipt />
           </section>
-          <section class="help-card"><span aria-hidden="true">💚</span><h2>Chăm chút từng đơn</h2><p>Liên hệ khách để xác nhận lịch giao, phí ship hoặc hỗ trợ thay đổi đơn hàng.</p><a class="primary-button" id="call-customer">Gọi khách hàng</a><a class="phone-link" href="/admin/don-hang">Cập nhật thanh toán và trạng thái →</a></section>
         </aside>
       </div>
     </div>
@@ -67,6 +67,10 @@ import AdminLogin from "../components/AdminLogin.astro";
   import { orderCode, type ProductRow } from "../lib/templates";
   import { ORDER_STATUS_LABELS, getDeliveryDetails, getOrderCodeBounds, type OrderRow } from "../lib/order-details";
   import { getPaymentInstructions, DEPOSIT_LABEL } from "../lib/payment";
+  import { renderPaymentReceipt } from "../lib/render-payment-receipt";
+  import { saveOrderStatus } from "../lib/order-status";
+  import { saveOrderPayment } from "../lib/order-payment";
+  import { syncCustomSelect } from "../lib/initCustomSelect";
 
   const lookup = getOrderCodeBounds(location.pathname.split("/").filter(Boolean).at(-1) ?? "");
   const details = document.getElementById("order-details")!;
@@ -74,14 +78,15 @@ import AdminLogin from "../components/AdminLogin.astro";
   const refresh = document.getElementById("refresh-order") as HTMLButtonElement;
   const itemTemplate = document.getElementById("detail-item-template") as HTMLTemplateElement;
   const historyTemplate = document.getElementById("detail-history-template") as HTMLTemplateElement;
-  const statusDescriptions: Record<string, { icon: string; text: string }> = {
-    processing: { icon: "🫚", text: "Đơn đang chờ xác nhận hoặc được tiệm chuẩn bị." },
-    delivering: { icon: "🚲", text: "Đơn đã được chuyển sang trạng thái giao hàng." },
-    delivered: { icon: "✓", text: "Đơn hàng đã giao thành công." },
-    cancelled: { icon: "—", text: "Đơn hàng đã được huỷ." },
-  };
+  const statusIcons: Record<string, string> = { processing: "🫚", delivering: "🚲", delivered: "✓", cancelled: "—" };
   const dateFormat = new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Ho_Chi_Minh" });
   let loadVersion = 0;
+  let currentOrder: OrderRow | null = null;
+  const statusSelect = document.getElementById("detail-status") as HTMLSelectElement;
+  const statusMessage = document.getElementById("status-save-message")!;
+  const paidCheckbox = document.getElementById("detail-paid-confirm") as HTMLInputElement;
+  const paymentMessage = document.getElementById("payment-save-message")!;
+  const receipt = document.querySelector<HTMLElement>("[data-payment-receipt]")!;
 
   function setText(id: string, value: string) {
     document.getElementById(id)!.textContent = value;
@@ -98,19 +103,21 @@ import AdminLogin from "../components/AdminLogin.astro";
   }
 
   function renderStatus(order: OrderRow) {
-    const status = statusDescriptions[order.status];
     setText("status-title", ORDER_STATUS_LABELS[order.status] ?? "Chưa có trạng thái");
-    setText("status-icon", status?.icon ?? "🫚");
-    setText("status-description", status?.text ?? "Vui lòng kiểm tra lại trạng thái trong danh sách đơn hàng.");
-    const progress = document.getElementById("order-progress")!;
-    progress.hidden = !status || order.status === "cancelled";
-    const steps = [...progress.querySelectorAll<HTMLElement>("[data-step]")];
-    const currentStep = steps.findIndex((step) => step.dataset.step === order.status);
-    steps.forEach((step, index) => {
-      step.dataset.complete = String(index <= currentStep);
-      if (index === currentStep) step.setAttribute("aria-current", "step");
-      else step.removeAttribute("aria-current");
-    });
+    setText("status-icon", statusIcons[order.status] ?? "🫚");
+  }
+
+  function renderPayment(order: OrderRow) {
+    setText("detail-paid", order.paid ? "Đã thanh toán" : "Chưa thanh toán");
+    document.getElementById("detail-paid")!.dataset.paid = String(order.paid);
+    paidCheckbox.checked = order.paid;
+  }
+
+  function setOrderSaving(saving: boolean) {
+    refresh.disabled = saving;
+    statusSelect.disabled = saving || !currentOrder;
+    paidCheckbox.disabled = saving || !currentOrder;
+    syncCustomSelect(statusSelect);
   }
 
   function renderItems(order: OrderRow, products: ProductRow[]) {
@@ -157,7 +164,7 @@ import AdminLogin from "../components/AdminLogin.astro";
   function renderOrder(order: OrderRow, products: ProductRow[]) {
     const delivery = getDeliveryDetails(order.shipping_fee_note);
     setText("detail-customer", order.customer_name);
-    setText("detail-contact", order.phone);
+    setText("call-customer", order.phone);
     setText("detail-address", [order.address, order.district].filter(Boolean).join(", "));
     setText("detail-delivery", delivery.schedule);
     setText("detail-created", formatDate(order.created_at));
@@ -166,14 +173,16 @@ import AdminLogin from "../components/AdminLogin.astro";
     setText("detail-returned", `${order.bottles_returned ?? 0} chai`);
     const isDeposit = order.shipping_fee_note?.includes(getPaymentInstructions(true).orderNote) ?? false;
     setText("payment-title", isDeposit ? DEPOSIT_LABEL : order.payment_method === "bank_transfer" ? "Chuyển khoản" : "Tiền mặt (COD)");
-    setText("detail-paid", order.paid ? "Đã thanh toán" : "Chưa thanh toán");
-    document.getElementById("detail-paid")!.dataset.paid = String(order.paid);
-    setText("detail-payment-note", isDeposit ? getPaymentInstructions(true).instructions : order.payment_method === "bank_transfer" ? getPaymentInstructions(false).instructions : "Khách thanh toán khi nhận hàng.");
+    renderPayment(order);
     const call = document.getElementById("call-customer") as HTMLAnchorElement;
     call.href = `tel:${order.phone.replace(/[^\d+]/g, "")}`;
     renderStatus(order);
     renderItems(order, products);
     renderHistory(order);
+    currentOrder = order;
+    statusSelect.value = order.status;
+    syncCustomSelect(statusSelect);
+    void renderPaymentReceipt(receipt, order.id);
     details.hidden = false;
   }
 
@@ -197,7 +206,10 @@ import AdminLogin from "../components/AdminLogin.astro";
 
   async function loadOrder() {
     const version = ++loadVersion;
-    refresh.disabled = true;
+    setOrderSaving(true);
+    currentOrder = null;
+    statusMessage.hidden = true;
+    paymentMessage.hidden = true;
     details.hidden = true;
     message.hidden = true;
     try {
@@ -222,21 +234,66 @@ import AdminLogin from "../components/AdminLogin.astro";
       console.error("Không tải được trang chi tiết đơn hàng", { code: lookup?.code, error });
       showMessage(error instanceof Error ? error.message : "Không tải được đơn hàng. Vui lòng thử lại.");
     } finally {
-      if (version === loadVersion) refresh.disabled = false;
+      if (version === loadVersion) setOrderSaving(false);
     }
   }
 
   setText("detail-code", lookup?.code ?? "Mã không hợp lệ");
   refresh.addEventListener("click", loadOrder);
+  statusSelect.addEventListener("change", async () => {
+    const order = currentOrder;
+    if (!order || statusSelect.disabled) return;
+    setOrderSaving(true);
+    statusMessage.hidden = false;
+    statusMessage.textContent = "Đang lưu trạng thái…";
+    try {
+      const update = await saveOrderStatus(supabase, order, statusSelect.value);
+      if (currentOrder !== order) return;
+      Object.assign(order, update);
+      renderStatus(order);
+      renderHistory(order);
+      statusMessage.textContent = "Đã cập nhật trạng thái đơn hàng.";
+    } catch (error) {
+      if (currentOrder !== order) return;
+      statusSelect.value = order.status;
+      statusMessage.textContent = error instanceof Error ? error.message : "Không lưu được trạng thái.";
+    } finally {
+      if (currentOrder === order) setOrderSaving(false);
+    }
+  });
+  paidCheckbox.addEventListener("change", async () => {
+    const order = currentOrder;
+    if (!order || paidCheckbox.disabled) return;
+    setOrderSaving(true);
+    paymentMessage.hidden = false;
+    paymentMessage.textContent = "Đang lưu thanh toán…";
+    try {
+      const update = await saveOrderPayment(supabase, order.id, paidCheckbox.checked);
+      if (currentOrder !== order) return;
+      Object.assign(order, update);
+      renderPayment(order);
+      paymentMessage.textContent = order.paid ? "Đã xác nhận thanh toán." : "Đã chuyển về chưa thanh toán.";
+    } catch (error) {
+      if (currentOrder !== order) return;
+      renderPayment(order);
+      paymentMessage.textContent = error instanceof Error ? error.message : "Không lưu được thanh toán.";
+    } finally {
+      if (currentOrder === order) setOrderSaving(false);
+    }
+  });
   supabase.auth.onAuthStateChange((event, session) => {
     if (!session) {
       loadVersion++;
+      currentOrder = null;
+      receipt.dataset.orderId = "";
+      receipt.querySelector("a")!.removeAttribute("href");
+      receipt.querySelector("img")!.removeAttribute("src");
       details.hidden = true;
       message.hidden = true;
-      refresh.disabled = false;
+      setOrderSaving(false);
     } else if (event === "SIGNED_IN") {
       // Auth callbacks run under a lock; defer calls to getUser until it is released.
-      setTimeout(loadOrder, 0);
+      setTimeout(() => { if (!refresh.disabled) void loadOrder(); }, 0);
     }
   });
   void loadOrder();
@@ -251,8 +308,7 @@ import AdminLogin from "../components/AdminLogin.astro";
   h1 { margin-bottom: .5rem; }
   .order-code-line { margin: 0; color: var(--color-text-muted); }
   .order-code-line strong { color: var(--color-secondary); margin-left: .5rem; font-family: monospace; }
-  .primary-button, .secondary-button { display: inline-flex; justify-content: center; align-items: center; gap: .4rem; border-radius: 999px; padding: .75rem 1.2rem; font: 600 .85rem var(--font-body); cursor: pointer; text-decoration: none; }
-  .primary-button { background: var(--color-primary); color: white; border: 1px solid var(--color-primary); }
+  .secondary-button { display: inline-flex; justify-content: center; align-items: center; gap: .4rem; border-radius: 999px; padding: .75rem 1.2rem; font: 600 .85rem var(--font-body); cursor: pointer; text-decoration: none; }
   .secondary-button { background: transparent; border: 1px solid #d9ddcc; color: var(--color-primary); }
   button:disabled { opacity: .6; cursor: wait; }
   a:focus-visible, button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
@@ -263,16 +319,13 @@ import AdminLogin from "../components/AdminLogin.astro";
   .status-icon { display: grid; place-items: center; width: 56px; height: 56px; flex-shrink: 0; border-radius: 50%; background: #fffdf8aa; font-size: 1.5rem; }
   .status-copy h2 { font-size: 1.5rem; margin-bottom: .35rem; padding: 0; }
   .status-copy h2::after { display: none; }
-  .status-copy p:last-child { margin: 0; font-size: .9rem; color: var(--color-text-muted); }
-  .order-progress { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); padding: 1.2rem 0 0; margin: 1.3rem 0 0; border-top: 1px solid #4e673522; gap: 1rem; }
-  .order-progress li { display: flex; align-items: center; gap: .6rem; color: var(--color-text-muted); font-size: .85rem; }
-  .order-progress li span { width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid #a5b28f; border-radius: 50%; flex-shrink: 0; }
-  .order-progress li[data-complete="true"] { color: var(--color-primary); font-weight: 600; }
-  .order-progress li[data-complete="true"] span { background: var(--color-primary); color: white; border-color: var(--color-primary); }
+  .status-editor { max-width: 320px; margin-top: 1.25rem; }
+  .status-editor label { display: block; margin-bottom: .5rem; font-size: .85rem; font-weight: 600; }
+  .status-editor p { font-size: .85rem; margin-bottom: 0; }
   .order-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1.5rem; align-items: start; }
   .order-main-column, .order-sidebar { display: grid; gap: 1.5rem; min-width: 0; }
   .detail-card { padding: 1.5rem; background: white; border: 1px solid #e8e2d7; border-radius: var(--radius-lg); }
-  .detail-card h2, .help-card h2 { font-size: 1.1rem; margin-bottom: 1.4rem; }
+  .detail-card h2 { font-size: 1.1rem; margin-bottom: 1.4rem; }
   .card-heading { display: flex; justify-content: space-between; gap: .75rem; align-items: start; }
   .small-badge { background: var(--color-bg-alt); border-radius: 999px; padding: .25rem .7rem; font-size: .75rem; white-space: nowrap; }
   .detail-items { list-style: none; padding: 0; margin: 0; }
@@ -295,24 +348,17 @@ import AdminLogin from "../components/AdminLogin.astro";
   .history-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--color-primary); }
   .order-history time { display: block; font-size: .75rem; color: var(--color-text-muted); margin-top: .2rem; }
   .payment-card { background: var(--color-bg-warm); }
+  .payment-card h3 { font-size: .95rem; margin-top: 1.25rem; }
   .payment-badge { display: inline-block; color: var(--color-accent); background: #b5431110; border-radius: 999px; padding: .35rem .7rem; font-size: .8rem; font-weight: 600; margin: 0; }
   .payment-badge[data-paid="true"] { color: var(--color-primary); background: var(--color-primary-light); }
   .payment-card p:not(.eyebrow):not(.payment-badge) { font-size: .85rem; }
-  .shipping-note { color: var(--color-text-muted); border-top: 1px solid #4e291416; padding-top: 1rem; }
-  .help-card { padding: 1.5rem; border-radius: var(--radius-lg); text-align: center; background: var(--color-bg-alt); }
-  .help-card > span { font-size: 1.5rem; }
-  .help-card h2 { margin-top: .7rem; margin-bottom: .7rem; padding: 0; }
-  .help-card h2::after { display: none; }
-  .help-card p { color: var(--color-text-muted); font-size: .85rem; }
-  .help-card .primary-button { width: 100%; }
-  .phone-link { display: block; font-size: .85rem; margin-top: .8rem; text-decoration: none; }
+  .paid-toggle { display: flex; align-items: center; gap: .5rem; margin-top: 1rem; font-size: .85rem; cursor: pointer; }
+  .paid-toggle input { accent-color: var(--color-primary); }
   @media (max-width: 760px) {
     .order-detail-page { padding: 1.5rem 1rem 3rem; }
     .order-heading { align-items: start; flex-direction: column; }
     .order-grid { grid-template-columns: 1fr; }
     .status-panel { padding: 1.3rem; }
-    .order-progress { gap: .5rem; }
-    .order-progress li { flex-direction: column; font-size: .75rem; gap: .4rem; }
     .detail-card { padding: 1.25rem; }
     .delivery-details { grid-template-columns: 1fr; }
     .item-image { width: 56px; height: 56px; }

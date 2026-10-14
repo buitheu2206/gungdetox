@@ -63,6 +63,7 @@ const { id, label, multiple = false } = Astro.props;
     zone.addEventListener("drop", (event) => {
       event.preventDefault();
       zone.classList.remove("drag-over");
+      if (input.disabled) return;
       const files = Array.from(event.dataTransfer?.files ?? []);
       if (!files.length || !validateImages(files)) return;
       const transfer = new DataTransfer();

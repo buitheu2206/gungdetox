@@ -29,7 +29,7 @@ const navItems = [
         ))}
       </nav>
 
-      <button type="button" id="lookup-trigger" class="lookup-trigger">
+      <button type="button" id="lookup-trigger" class="lookup-trigger" hidden>
         <span aria-hidden="true">🔍</span>
         <span class="lookup-trigger-label">Tra cứu đơn hàng</span>
       </button>
@@ -263,6 +263,8 @@ const navItems = [
 </style>
 
 <script>
+  import { supabase } from "../lib/supabase";
+
   const toggle = document.querySelector(".nav-toggle");
   const nav = document.getElementById("site-nav");
 
@@ -273,8 +275,10 @@ const navItems = [
 
   const lookupTrigger = document.getElementById("lookup-trigger");
   const lookupOverlay = document.getElementById("lookup-overlay") as HTMLElement;
+  let isAuth = false;
 
   function openLookup() {
+    if (!isAuth) return;
     lookupOverlay.hidden = false;
     document.body.style.overflow = "hidden";
     nav?.classList.remove("open");
@@ -284,6 +288,12 @@ const navItems = [
     lookupOverlay.hidden = true;
     document.body.style.overflow = "";
   }
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    isAuth = Boolean(session);
+    if (lookupTrigger) lookupTrigger.hidden = !isAuth;
+    if (!isAuth && !lookupOverlay.hidden) closeLookup();
+  });
 
   lookupTrigger?.addEventListener("click", openLookup);
   lookupOverlay.querySelectorAll("[data-lookup-close]").forEach((el) => {

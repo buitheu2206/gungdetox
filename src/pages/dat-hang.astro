@@ -4,6 +4,7 @@ import CustomSelect from "../components/CustomSelect.astro";
 import CustomInput from "../components/CustomInput.astro";
 import DatePicker from "../components/DatePicker.astro";
 import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
+import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
 ---
 
 <BaseLayout
@@ -213,6 +214,7 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
             <div class="bank-info" id="bank-info">
               <p class="bank-info-title">💳 Thông tin chuyển khoản</p>
               <p id="payment-instructions">Vui lòng chuyển khoản trước khi giao hàng.</p>
+              <p id="payment-order-hint">Bấm Tiếp tục để nhận mã QR và nội dung chuyển khoản theo mã đơn.</p>
               <div class="bank-info-body">
                 <img
                   class="qr-code"
@@ -221,6 +223,7 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
                   width="200"
                   height="200"
                   loading="lazy"
+                  hidden
                 />
                 <dl class="bank-details">
                   <div class="bank-details-row">
@@ -238,6 +241,10 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
                     <dt>Chủ tài khoản</dt>
                     <dd>HKD GUNG DETOX</dd>
                   </div>
+                  <div class="bank-details-row" id="transfer-content-row" hidden>
+                    <dt>Nội dung chuyển khoản</dt>
+                    <dd class="account-number"><span id="transfer-content"></span><button type="button" class="copy-btn" id="copy-transfer-content">Sao chép</button></dd>
+                  </div>
                 </dl>
               </div>
             </div>
@@ -246,16 +253,16 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
 
         <div class="nav-row">
           <button type="button" class="back" data-back="3">Quay lại</button>
-          <button type="submit" class="submit">Đặt hàng</button>
+          <button type="submit" class="submit">Tiếp tục</button>
         </div>
       </section>
     </form>
 
     <!-- Trang cảm ơn -->
     <section id="thank-you" class="thank-you-card" hidden>
-      <div class="success-icon">✓</div>
-      <h2>Đặt hàng thành công!</h2>
-      <p class="thank-you-sub">Cảm ơn bạn đã ủng hộ GỪNG DETOX 💚</p>
+      <div class="success-icon" aria-hidden="true">🏦</div>
+      <h2 id="payment-step-title">Thanh toán đơn hàng</h2>
+      <p class="thank-you-sub">Chuyển khoản theo thông tin bên dưới, chọn ảnh giao dịch rồi xác nhận.</p>
 
       <div class="order-id-box">
         <span class="order-id-label">Mã đơn của bạn</span>
@@ -267,9 +274,10 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
 
       <p class="thank-you-note">📞 Tiệm sẽ liên hệ qua Zalo/hotline để xác nhận và báo phí ship cụ thể.</p>
 
+      <PaymentReceiptUpload />
+
       <div class="thank-you-actions">
-        <a class="thank-you-btn thank-you-btn-secondary" href="/">Về trang chủ</a>
-        <a class="thank-you-btn thank-you-btn-primary" href="/san-pham">Tiếp tục mua sắm</a>
+        <button type="submit" form="receipt-form" id="receipt-submit" class="thank-you-btn thank-you-btn-primary" disabled>Xác nhận chuyển khoản</button>
       </div>
     </section>
   </main>
@@ -348,6 +356,11 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
     bankTitle.textContent = payment.title;
     paymentInstructions.textContent = payment.instructions;
     bankQr.src = payment.qrUrl;
+    bankQr.hidden = !code;
+    document.getElementById("payment-order-hint")!.hidden = !!code;
+    document.getElementById("transfer-content-row")!.hidden = !code;
+    document.getElementById("transfer-content")!.textContent = code ?? "";
+    document.getElementById("copy-transfer-content")!.dataset.copy = code ?? "";
     return payment;
   }
 
@@ -594,6 +607,30 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
     });
   });
 
+  function getCheckoutOrderData() {
+    const bottleType =
+      (form.querySelector('input[name="bottle-type"]:checked') as HTMLInputElement)?.value ?? "glass";
+    const payment = updatePaymentInstructions();
+    const orderNote = [deliveryNoteInput.value.trim() || "(không có)", payment.orderNote].filter(Boolean).join(". ");
+    return {
+      phone: (document.getElementById("phone") as HTMLInputElement).value,
+      customer_name: (document.getElementById("customer-name") as HTMLInputElement).value,
+      address: (document.getElementById("address") as HTMLInputElement).value,
+      district: districtSelect.value,
+      items: snapshotOrderItems(cart, products),
+      bottle_type: bottleType,
+      bottles_returned:
+        Number((document.getElementById("bottles-returned") as HTMLInputElement).value) || 0,
+      payment_method: payment.paymentMethod,
+      // orders chưa có cột delivery_date/delivery_time/delivery_note riêng (không có
+      // quyền chạy ALTER TABLE từ phiên này — cần Supabase Management API token hoặc
+      // mật khẩu DB), nên đang ghép tạm vào shipping_fee_note theo mẫu cố định
+      // "Giao ngày DD/MM/YYYY [lúc HH:MM]. Ghi chú của khách: ... ." để admin đọc/trích
+      // xuất lại được (xem admin/don-hang.astro). Nên tách thành cột riêng khi có quyền chạy SQL.
+      shipping_fee_note: `Giao ngày ${formatDeliveryDate(deliveryDateInput.value)}${deliveryTimeRangeText() ? ` (${deliveryTimeRangeText()})` : ""}. Ghi chú của khách: ${orderNote}. Phí ship tùy theo khoảng cách và thời tiết hôm giao, tiệm sẽ báo lại qua Zalo trước khi giao.`,
+    };
+  }
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (cart.length === 0) return;
@@ -609,49 +646,33 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
       return;
     }
 
-    const bottleType =
-      (form.querySelector('input[name="bottle-type"]:checked') as HTMLInputElement)?.value ??
-      "glass";
-    const payment = updatePaymentInstructions();
-    const orderNote = [deliveryNoteInput.value.trim() || "(không có)", payment.orderNote]
-      .filter(Boolean)
-      .join(". ");
+    const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    if (button.disabled) return;
+    button.disabled = true;
+    try {
+      const uploadToken = crypto.randomUUID();
+      const { data, error } = await supabase.rpc("create_order_with_receipt", {
+        upload_token: uploadToken, order_data: getCheckoutOrderData(),
+      }).single<{ id: string; phone: string }>();
+      if (error || !data) throw error ?? new Error("Không nhận được thông tin đơn hàng.");
 
-    const { data, error } = await supabase
-      .from("orders")
-      .insert({
-        phone: (document.getElementById("phone") as HTMLInputElement).value,
-        customer_name: (document.getElementById("customer-name") as HTMLInputElement).value,
-        address: (document.getElementById("address") as HTMLInputElement).value,
-        district: districtSelect.value,
-        items: snapshotOrderItems(cart, products),
-        bottle_type: bottleType,
-        bottles_returned:
-          Number((document.getElementById("bottles-returned") as HTMLInputElement).value) || 0,
-        payment_method: payment.paymentMethod,
-        // orders chưa có cột delivery_date/delivery_time/delivery_note riêng (không có
-        // quyền chạy ALTER TABLE từ phiên này — cần Supabase Management API token hoặc
-        // mật khẩu DB), nên đang ghép tạm vào shipping_fee_note theo mẫu cố định
-        // "Giao ngày DD/MM/YYYY [lúc HH:MM]. Ghi chú của khách: ... ." để admin đọc/trích
-        // xuất lại được (xem admin/don-hang.astro). Nên tách thành cột riêng khi có quyền chạy SQL.
-        shipping_fee_note: `Giao ngày ${formatDeliveryDate(deliveryDateInput.value)}${deliveryTimeRangeText() ? ` (${deliveryTimeRangeText()})` : ""}. Ghi chú của khách: ${orderNote}. Phí ship tùy theo khoảng cách và thời tiết hôm giao, tiệm sẽ báo lại qua Zalo trước khi giao.`,
-      })
-      .select()
-      .single();
-
-    if (error || !data) {
-      alert("Có lỗi khi đặt hàng, vui lòng thử lại: " + (error?.message ?? "unknown"));
-      return;
+      form.hidden = true;
+      stepsIndicator.hidden = true;
+      thankYou.hidden = false;
+      const code = orderCode(data.phone, data.id);
+      (document.getElementById("order-id") as HTMLElement).textContent = code;
+      (document.getElementById("copy-order-id") as HTMLElement).dataset.copy = code;
+      updatePaymentInstructions(code);
+      const receiptForm = document.getElementById("receipt-form")!;
+      receiptForm.dataset.orderId = data.id;
+      receiptForm.dataset.uploadToken = uploadToken;
+      thankYou.insertBefore(bankInfo, receiptForm);
+    } catch (error) {
+      console.error("Không tạo được đơn hàng", { error });
+      alert("Có lỗi khi đặt hàng, vui lòng thử lại: " + ((error as { message?: string })?.message ?? String(error)));
+    } finally {
+      button.disabled = false;
     }
-
-    form.hidden = true;
-    stepsIndicator.hidden = true;
-    thankYou.hidden = false;
-    const code = orderCode(data.phone, data.id);
-    (document.getElementById("order-id") as HTMLElement).textContent = code;
-    (document.getElementById("copy-order-id") as HTMLElement).dataset.copy = code;
-    updatePaymentInstructions(code);
-    thankYou.insertBefore(bankInfo, thankYou.querySelector(".thank-you-actions"));
   });
 
   // Load danh sách sản phẩm + đọc query string ?product=slug
@@ -1202,6 +1223,7 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
   }
 
   .bank-info {
+    text-align: left;
     background: #fff;
     border: 1px solid var(--color-bg-alt);
     border-radius: var(--radius-lg);
@@ -1372,6 +1394,10 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
     padding: 0.65rem 1.4rem;
     border-radius: 999px;
     font-weight: 600;
+    font-family: var(--font-body);
+    font-size: .95rem;
+    border: 0;
+    cursor: pointer;
     text-decoration: none;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
@@ -1387,13 +1413,5 @@ import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
     transform: translateY(-2px);
   }
 
-  .thank-you-btn-secondary {
-    background: #fff;
-    color: var(--color-primary);
-    border: 1.5px solid var(--color-bg-alt);
-  }
-
-  .thank-you-btn-secondary:hover {
-    transform: translateY(-2px);
-  }
+  .thank-you-btn:disabled { opacity: .6; cursor: default; transform: none; }
 </style>

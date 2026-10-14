@@ -1,0 +1,18 @@
+---
+// Private receipt viewer for admin order details.
+---
+<div class="payment-receipt" data-payment-receipt>
+  <p class="receipt-status" role="status">Chưa tải ảnh chuyển khoản.</p>
+  <a class="receipt-link" target="_blank" rel="noopener noreferrer" hidden>
+    <img alt="Ảnh giao dịch chuyển khoản của đơn hàng" loading="lazy" />
+    <span>Mở ảnh chuyển khoản</span>
+  </a>
+</div>
+
+<style>
+  .payment-receipt { margin-top: .75rem; }
+  .receipt-status { font-size: .8rem; color: var(--color-text-muted); }
+  .receipt-link { display: grid; gap: .5rem; font-size: .8rem; }
+  .receipt-link[hidden] { display: none; }
+  img { width: 100%; max-width: 240px; max-height: 280px; object-fit: contain; border-radius: var(--radius-sm); }
+</style>

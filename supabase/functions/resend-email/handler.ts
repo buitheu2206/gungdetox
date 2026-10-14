@@ -15,6 +15,7 @@ interface Order {
   address?: string;
   district?: string;
   shipping_fee_note?: string;
+  payment_receipt_submitted_at?: string | null;
 }
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
@@ -23,11 +24,15 @@ const EMAIL_TIMEOUT_MS = 15_000;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_PATTERN = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i;
 
-function parseOrder(payload: unknown): Order {
-  const event = payload as { type?: string; table?: string; schema?: string; record?: Order } | null;
+function parseOrder(payload: unknown): Order | null {
+  const event = payload as { type?: string; table?: string; schema?: string; record?: Order; old_record?: Order } | null;
   const order = event?.record;
-  if (event?.type !== "INSERT" || event.table !== "orders" || event.schema !== "public" || !order) {
-    throw new Error("Expected an INSERT webhook for public.orders.");
+  if (event?.table !== "orders" || event.schema !== "public" || !order || !["INSERT", "UPDATE"].includes(event.type ?? "")) {
+    throw new Error("Expected an orders webhook for public.orders.");
+  }
+  if (event.type === "INSERT" || !order.payment_receipt_submitted_at || event.old_record?.payment_receipt_submitted_at) return null;
+  if (typeof order.payment_receipt_submitted_at !== "string" || !Number.isFinite(Date.parse(order.payment_receipt_submitted_at))) {
+    throw new Error("Receipt confirmation must include a valid submission timestamp.");
   }
   if (typeof order.id !== "string" || !UUID_PATTERN.test(order.id)
     || typeof order.phone !== "string" || !order.phone.trim()
@@ -91,11 +96,10 @@ function buildEmail(order: Order, config: NotificationConfig) {
   return {
     from: config.from,
     to: recipients,
-    subject: `[GỪNG DETOX] Có đơn mới ${code}`,
+    subject: `[GỪNG DETOX] Đơn hàng mới ${code}`,
     html: buildEmailHtml(config.emailTemplate, code, details, order.items),
     text: [
-      `Đơn hàng mới: ${code}`,
-      "GỪNG DETOX vừa nhận được một đơn hàng mới. Vui lòng kiểm tra thông tin và liên hệ khách hàng để xác nhận.",
+      `Có đơn hàng mới: ${code}`,
       `Tên khách hàng: ${details.customerName}`,
       `SĐT khách hàng: ${details.customerPhone}`,
       `Địa chỉ giao hàng: ${details.deliveryAddress}`,
@@ -114,7 +118,7 @@ async function sendEmail(order: Order, config: NotificationConfig): Promise<stri
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
       "Content-Type": "application/json",
-      "Idempotency-Key": `order-notification/${order.id}`,
+      "Idempotency-Key": `order-receipt-notification/${order.id}`,
     },
     body: JSON.stringify(buildEmail(order, config)),
     signal: AbortSignal.timeout(EMAIL_TIMEOUT_MS),
@@ -141,13 +145,14 @@ export async function handleOrderNotification(
     console.error("Order notification configuration missing: set Resend key, sender and recipients in Supabase Secrets.");
     return new Response("Email service is not configured", { status: 503 });
   }
-  let order: Order;
+  let order: Order | null;
   try {
     order = parseOrder(await request.json());
   } catch (error) {
     console.error("Invalid order notification webhook", { error });
     return new Response("Invalid order webhook", { status: 400 });
   }
+  if (!order) return Response.json({ ignored: true });
   try {
     const emailId = await sendEmail(order, config);
     console.info("Order notification accepted by Resend", { orderId: order.id, emailId });

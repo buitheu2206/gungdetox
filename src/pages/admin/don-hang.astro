@@ -63,6 +63,8 @@ import CustomSelect from "../../components/CustomSelect.astro";
   import { initCustomSelect, syncCustomSelect } from "../../lib/initCustomSelect";
   import { ORDER_STATUS_LABELS as statusLabel, getDeliveryDetails } from "../../lib/order-details";
   import { getOrderAmount, resolveOrderItems, type OrderItem } from "../../lib/order-pricing";
+  import { saveOrderStatus } from "../../lib/order-status";
+  import { saveOrderPayment } from "../../lib/order-payment";
 
   const paymentMethodLabel: Record<string, string> = {
     bank_transfer: "Chuyển khoản",
@@ -153,22 +155,11 @@ import CustomSelect from "../../components/CustomSelect.astro";
     const newStatus = sel.value;
     const order = allOrders.find((o) => o.id === id);
     const previousStatus = order?.status ?? "processing";
-    const newHistory = [
-      ...(order?.status_history ?? []),
-      { status: newStatus, at: new Date().toISOString() },
-    ];
     sel.disabled = true;
     syncCustomSelect(sel);
     try {
-      const { error } = await supabase
-        .from("orders")
-        .update({ status: newStatus, status_history: newHistory })
-        .eq("id", id);
-      if (error) throw error;
-      if (order) {
-        order.status = newStatus;
-        order.status_history = newHistory;
-      }
+      if (!order) throw new Error("Không tìm thấy đơn hàng. Vui lòng tải lại trang.");
+      Object.assign(order, await saveOrderStatus(supabase, order, newStatus));
     } catch (error) {
       sel.value = previousStatus;
       console.error("Lỗi cập nhật trạng thái đơn hàng", { id, newStatus, error });
@@ -237,16 +228,19 @@ import CustomSelect from "../../components/CustomSelect.astro";
     document.querySelectorAll<HTMLInputElement>(".paid-checkbox").forEach((cb) => {
       cb.addEventListener("change", async () => {
         const id = cb.dataset.id!;
-        const paid = cb.checked;
-        const { error } = await supabase.from("orders").update({ paid }).eq("id", id);
-        if (error) {
-          alert("Lỗi cập nhật: " + error.message);
-          cb.checked = !paid;
-          return;
-        }
         const order = allOrders.find((o) => o.id === id);
-        if (order) order.paid = paid;
-        cb.closest("label")!.lastChild!.textContent = ` ${paid ? "Đã thanh toán" : "Chưa thanh toán"}`;
+        if (!order || cb.disabled) return;
+        const paid = cb.checked;
+        cb.disabled = true;
+        try {
+          Object.assign(order, await saveOrderPayment(supabase, id, paid));
+          cb.closest("label")!.lastChild!.textContent = ` ${paid ? "Đã thanh toán" : "Chưa thanh toán"}`;
+        } catch (error) {
+          cb.checked = order.paid;
+          alert(error instanceof Error ? error.message : "Không cập nhật được thanh toán.");
+        } finally {
+          cb.disabled = false;
+        }
       });
     });
 
@@ -325,6 +319,9 @@ import CustomSelect from "../../components/CustomSelect.astro";
 
   async function loadOrders() {
     try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError && authError.name !== "AuthSessionMissingError") throw authError;
+      if (!user) return;
       const [ordersResult, productsResult] = await Promise.all([
         supabase.from("orders").select("*").order("created_at", { ascending: false }),
         supabase.from("products").select("slug, name, type, price, price_retail"),
@@ -349,6 +346,9 @@ import CustomSelect from "../../components/CustomSelect.astro";
   }
 
   loadOrders();
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_IN") setTimeout(loadOrders, 0);
+  });
 </script>
 
 <style>

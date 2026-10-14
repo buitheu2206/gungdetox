@@ -1,0 +1,77 @@
+---
+import ImageUpload from "./ImageUpload.astro";
+---
+
+<form id="receipt-form" class="receipt-form">
+  <h3>Ảnh giao dịch chuyển khoản</h3>
+  <p>Chuyển khoản xong, gửi ảnh giao dịch để tiệm đối chiếu với đơn hàng.</p>
+  <ImageUpload id="payment-receipt" label="Chọn ảnh giao dịch" />
+  <p class="receipt-hint">JPG, PNG hoặc WebP, tối đa 5 MB. Tiệm xác nhận thanh toán sau khi kiểm tra tiền vào.</p>
+  <img id="receipt-preview" alt="Ảnh giao dịch chuyển khoản đã chọn" hidden />
+  <p id="receipt-message" role="status" aria-live="polite" hidden></p>
+</form>
+
+<script>
+  import { supabase } from "../lib/supabase";
+  import { uploadPaymentReceipt, validateReceipt } from "../lib/payment-receipt";
+
+  const form = document.getElementById("receipt-form") as HTMLFormElement;
+  const input = document.getElementById("payment-receipt") as HTMLInputElement;
+  const preview = document.getElementById("receipt-preview") as HTMLImageElement;
+  const submit = document.getElementById("receipt-submit") as HTMLButtonElement;
+  const message = document.getElementById("receipt-message")!;
+  let previewUrl: string | undefined;
+
+  function showMessage(text: string, isError = false) {
+    message.textContent = text;
+    message.dataset.error = String(isError);
+    message.hidden = false;
+  }
+
+  input.addEventListener("change", () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    preview.hidden = true;
+    submit.disabled = true;
+    message.hidden = true;
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      validateReceipt(file);
+      previewUrl = URL.createObjectURL(file);
+      preview.src = previewUrl;
+      preview.hidden = false;
+      submit.disabled = false;
+    } catch (error) {
+      input.value = "";
+      showMessage(error instanceof Error ? error.message : "Không đọc được ảnh. Vui lòng chọn lại.", true);
+    }
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (submit.disabled || !input.files?.[0]) return;
+    submit.disabled = true;
+    input.disabled = true;
+    showMessage("Đang gửi ảnh và xác nhận chuyển khoản…");
+    try {
+      await uploadPaymentReceipt(supabase, form.dataset.orderId ?? "", form.dataset.uploadToken ?? "", input.files[0]);
+      showMessage("Đã gửi xác nhận chuyển khoản. Tiệm sẽ đối chiếu tiền vào và xác nhận thanh toán.");
+      submit.textContent = "Đã gửi xác nhận";
+      document.getElementById("payment-step-title")!.textContent = "Đã gửi thông tin chuyển khoản";
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : "Chưa gửi được ảnh. Vui lòng thử lại.", true);
+      input.disabled = false;
+      submit.disabled = false;
+    }
+  });
+</script>
+
+<style>
+  .receipt-form { text-align: left; padding: 1.25rem; margin: 1.5rem 0; border: 1px solid #e8e2d7; border-radius: var(--radius-md); background: white; }
+  h3 { margin: 0 0 .75rem; font-size: 1.05rem; }
+  p { font-size: .85rem; }
+  .receipt-hint { color: var(--color-text-muted); }
+  img { max-width: 100%; max-height: 320px; object-fit: contain; margin-bottom: 1rem; border-radius: var(--radius-sm); }
+  #receipt-message { color: var(--color-primary); }
+  #receipt-message[data-error="true"] { color: var(--color-accent); }
+</style>
