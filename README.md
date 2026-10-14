@@ -57,6 +57,35 @@ trên hosting Apache/LiteSpeed có bật `mod_rewrite`; `src/middleware.ts` xử
 Nếu hosting đã có `.htaccess` riêng, gộp block rewrite của đơn hàng vào cấu hình đó trước
 khi deploy để giữ các quy tắc hiện có. Nút email mới cần deploy lại function `resend-email`.
 
+### Ảnh chuyển khoản
+
+Chạy migration `supabase/payment-receipts.sql` sau schema và sau khi tạo ba tài khoản quản trị.
+Bucket `payment-receipts` là private, nhận JPG/PNG/WebP tối đa 5 MB. Khách gửi một ảnh sau
+khi tạo đơn; mã đơn được điền vào QR và có nút sao chép nội dung chuyển khoản. Ảnh chỉ là
+bằng chứng để tiệm đối chiếu, không tự đánh dấu `paid`.
+
+Quản trị tích ô `Đã thanh toán` trong chi tiết đơn hoặc bảng đơn sau khi đối chiếu tiền nhận.
+Bỏ tích để sửa xác nhận nhầm; chỉ cập nhật `paid`, không đổi trạng thái hay lịch sử giao hàng.
+
+Nút `Tiếp tục` tạo đơn chờ thanh toán và mở bước chuyển khoản. Nút cuối `Xác nhận chuyển
+khoản` lưu ảnh rồi gọi RPC `confirm_payment_receipt`. Chạy thêm migration
+`supabase/payment-receipt-confirmation.sql` để ghi `payment_receipt_submitted_at` và chuyển
+webhook email từ tạo đơn sang lần xác nhận ảnh đầu tiên. Migration giữ endpoint/secret
+của trigger cũ, tắt trigger INSERT và tạo trigger UPDATE có điều kiện. Gửi lại xác nhận
+không kích hoạt email lần nữa; lỗi xác nhận sau khi ảnh đã lưu có thể thử lại.
+
+Checkout tạo đơn qua RPC `create_order_with_receipt`, đồng thời cấp quyền upload bằng UUID
+ngẫu nhiên do trình duyệt tạo. Quyền này lưu ở bảng `order_receipt_uploads` không cho client
+đọc trực tiếp; tách khỏi `orders` vì bảng đơn hiện có SELECT công khai. File dùng đường dẫn
+`{order_id}/{upload_token}`, không cho khách đọc, ghi đè hoặc xóa ảnh. Ba quản trị hiện tại
+xem ảnh trong trang chi tiết đơn qua signed URL có hiệu lực một giờ.
+Nếu upload lỗi, khách có thể gửi lại tại trang cảm ơn; nếu rời trang trước khi gửi, liên hệ
+tiệm kèm mã đơn. Đổi trạng thái ở cả hai màn quản trị dùng chung luồng ghi lịch sử.
+
+Kiểm tra quyền bằng `supabase/tests/payment-receipts.sql`; dữ liệu kiểm tra được rollback.
+Kiểm tra thời điểm email bằng `supabase/tests/payment-receipt-confirmation.sql`; cả dữ liệu
+và hàng đợi pg_net được rollback, không gửi email thật trong quá trình kiểm tra.
+
 ## Cài đặt & chạy local
 
 ```sh
@@ -84,6 +113,11 @@ Site host trên **Web Hosting iNET** (shared hosting, FTP), domain `gungdetox.co
 **Tự động (khuyên dùng):** push lên nhánh `main` → GitHub Actions
 (`.github/workflows/deploy.yml`) tự build + upload `dist/` qua FTP. Cần tạo 5 repo secret:
 `FTP_HOST`, `FTP_USERNAME`, `FTP_PASSWORD`, `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`.
+
+Mẫu email có workflow riêng `.github/workflows/deploy-order-email.yml`: sửa HTML hoặc mã function
+rồi push lên `main` sẽ tự tạo mẫu, chạy tests và deploy `resend-email` lên Supabase. Cấu hình thêm
+hai repo secret `SUPABASE_ACCESS_TOKEN` và `SUPABASE_PROJECT_REF` một lần; xem hướng dẫn trong
+[`supabase/functions/resend-email/README.md`](supabase/functions/resend-email/README.md#deploy-tự-động).
 
 **Thủ công:** cần file `.env.production` (không có trong repo, xin riêng chủ dự án) chứa
 `FTP_HOST`, `FTP_USER`, `FTP_PASS`, rồi chạy:

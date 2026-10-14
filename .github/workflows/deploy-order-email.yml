@@ -1,0 +1,59 @@
+# Configure SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF in repository Actions secrets.
+name: Deploy order email
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/resend-email/**"
+      - "supabase/config.toml"
+      - "scripts/build-order-email-function.mjs"
+      - "tests/order-notification.test.mjs"
+      - ".github/workflows/deploy-order-email.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-order-email-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-email:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest code
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build and test email template
+        run: |
+          node scripts/build-order-email-function.mjs
+          node --experimental-strip-types --test tests/order-notification.test.mjs
+
+      - name: Check Supabase deployment configuration
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          if [[ -z "$SUPABASE_ACCESS_TOKEN" || ! "$SUPABASE_PROJECT_REF" =~ ^[a-z]{20}$ ]]; then
+            echo "::error::Set SUPABASE_ACCESS_TOKEN and a valid SUPABASE_PROJECT_REF in repository Actions secrets."
+            exit 1
+          fi
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy order email function
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: supabase functions deploy resend-email --project-ref "$SUPABASE_PROJECT_REF" --use-api
