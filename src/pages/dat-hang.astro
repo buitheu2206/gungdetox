@@ -285,20 +285,11 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
 </BaseLayout>
 
 <script>
+  import { getAstroScopeHtml } from "../lib/astro-scope";
   import { supabase } from "../lib/supabase";
-  import { orderCode } from "../lib/templates";
+  import { orderCode, type ProductRow } from "../lib/templates";
   import { getPaymentInstructions } from "../lib/payment";
   import { getProductUnitPrice as unitPrice, snapshotOrderItems, getOrderAmount } from "../lib/order-pricing";
-
-  interface ProductRow {
-    slug: string;
-    type: "single" | "combo" | "set";
-    name: string;
-    price?: number | null;
-    price_retail?: number | null;
-    bottle_options?: string[] | null;
-    image_url?: string | null;
-  }
 
   interface CartItem {
     slug: string;
@@ -386,8 +377,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
   // tạo bằng innerHTML từ script phải tự gắn thêm attribute này thì CSS mới nhận diện
   // được — nếu không, mọi class ở đây (kể cả kích thước ảnh thumbnail) sẽ bị bỏ qua
   // hoàn toàn và phá vỡ layout (cùng lỗi đã gặp và fix ở trang chi tiết blog).
-  const cidAttrName = Array.from(cartList.attributes).find((a) => a.name.startsWith("data-astro-cid-"))?.name;
-  const cid = cidAttrName ? ` ${cidAttrName}=""` : "";
+  const cid = getAstroScopeHtml(cartList);
 
   function renderCart() {
     cartEmptyHint.hidden = cart.length > 0;

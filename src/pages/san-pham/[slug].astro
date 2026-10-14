@@ -151,6 +151,7 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
 </BaseLayout>
 
 <script>
+  import { initDetailGallery } from "../../lib/detail-gallery";
   import { supabase } from "../../lib/supabase";
 
   const bottleLabel: Record<string, string> = { glass: "Thủy tinh", plastic: "Nhựa" };
@@ -158,47 +159,7 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
   const slug = page?.dataset.slug;
   if (!slug) throw new Error("missing slug");
 
-  // Chuyển ảnh khi bấm thumbnail — gắn trên .gallery (luôn tồn tại) thay vì
-  // #gallery-thumbs, vì dải thumbnail có thể chưa tồn tại lúc build (sản phẩm
-  // lúc đó chỉ có 1 ảnh) và được script bên dưới tự tạo ra sau khi fetch lại.
-  document.querySelector(".gallery")?.addEventListener("click", (e) => {
-    const btn = (e.target as HTMLElement).closest(".thumb") as HTMLButtonElement | null;
-    if (!btn) return;
-    const mainImg = document.getElementById("gallery-main-img") as HTMLImageElement;
-    mainImg.src = btn.dataset.src!;
-    document.querySelectorAll(".thumb").forEach((t) => t.classList.remove("active"));
-    btn.classList.add("active");
-  });
-
-  function renderThumbs(images: string[]) {
-    const gallery = document.querySelector(".gallery");
-    if (!gallery) return;
-    let thumbs = document.getElementById("gallery-thumbs");
-    if (images.length <= 1) {
-      thumbs?.remove();
-      return;
-    }
-    // Astro chỉ áp style scoped (data-astro-cid-*) cho phần tử render lúc build;
-    // phần tử tạo bằng JS phải tự gắn thêm attribute này thì CSS bên dưới mới
-    // nhận diện được — nếu không, ảnh thumbnail sẽ không bị giới hạn 64x64 và
-    // phá vỡ luôn layout 2 cột (đã gặp lỗi này khi test).
-    const cidAttr = Array.from(gallery.attributes).find((a) => a.name.startsWith("data-astro-cid-"));
-    const cid = cidAttr ? ` ${cidAttr.name}=""` : "";
-
-    if (!thumbs) {
-      thumbs = document.createElement("div");
-      thumbs.id = "gallery-thumbs";
-      thumbs.className = "gallery-thumbs";
-      gallery.appendChild(thumbs);
-    }
-    if (cidAttr) thumbs.setAttribute(cidAttr.name, "");
-    thumbs.innerHTML = images
-      .map(
-        (src, i) =>
-          `<button class="thumb${i === 0 ? " active" : ""}" data-src="${src}"${cid}><img src="${src}" alt=""${cid} /></button>`
-      )
-      .join("");
-  }
+  const renderThumbs = initDetailGallery(document.querySelector(".gallery"), "gallery-main-img");
 
   // Fetch lại đúng sản phẩm này để cập nhật nếu admin đã sửa sau lần build gần nhất
   supabase

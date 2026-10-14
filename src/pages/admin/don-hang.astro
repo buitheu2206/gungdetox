@@ -58,6 +58,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
 </BaseLayout>
 
 <script>
+  import { getAstroScopeHtml } from "../../lib/astro-scope";
   import { supabase } from "../../lib/supabase";
   import { orderCode, type ProductRow } from "../../lib/templates";
   import { initCustomSelect, syncCustomSelect } from "../../lib/initCustomSelect";
@@ -80,8 +81,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
   // màu xen kẽ...) sẽ bị bỏ qua hoàn toàn nếu không tự gắn thêm (cùng lỗi đã gặp ở
   // dat-hang.astro và trang chi tiết sản phẩm/blog).
   const orderTable = document.getElementById("orders-table")!;
-  const cidAttrName = Array.from(orderTable.attributes).find((a) => a.name.startsWith("data-astro-cid-"))?.name;
-  const cid = cidAttrName ? ` ${cidAttrName}=""` : "";
+  const cid = getAstroScopeHtml(orderTable);
 
   let allOrders: any[] = [];
   let allProducts: ProductRow[] = [];

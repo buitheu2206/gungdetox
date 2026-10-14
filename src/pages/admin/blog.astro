@@ -65,6 +65,8 @@ import CustomInput from "../../components/CustomInput.astro";
 
 <script>
   import { deleteContentWithImages } from "../../lib/delete-content";
+  import { initGalleryPreview } from "../../lib/gallery-preview";
+  import { uploadContentImages } from "../../lib/content-images";
   import { initMainImagePreview } from "../../lib/image-preview";
   import { supabase } from "../../lib/supabase";
   import { renderPostBodyHtml } from "../../lib/templates";
@@ -101,72 +103,12 @@ import CustomInput from "../../components/CustomInput.astro";
 
   let posts: any[] = [];
   let currentImageUrl: string | null = null;
-  let currentGalleryImages: string[] = [];
-  // File vừa chọn nhưng chưa lưu — giữ riêng để xem trước ngay, không phải đợi bấm Lưu mới biết đã chọn đúng ảnh chưa.
-  let pendingGalleryFiles: File[] = [];
-
-  // Astro chỉ áp CSS scoped (data-astro-cid-*) cho phần tử render lúc build; phần tử
-  // tạo bằng innerHTML ở JS phải tự gắn thêm attribute này thì style mới nhận diện
-  // được — nếu không, ảnh preview sẽ hiện full-size thay vì bị giới hạn kích thước nhỏ.
-  const cidAttr = Array.from(mainImagePreview.attributes).find((a) => a.name.startsWith("data-astro-cid-"));
-  const cid = cidAttr ? ` ${cidAttr.name}=""` : "";
+  const gallery = initGalleryPreview(galleryInput, galleryPreview);
 
   const renderMainImagePreview = initMainImagePreview(mainImageInput, mainImagePreview, currentImageEl, {
     getUrl: () => currentImageUrl,
     clearUrl: () => { currentImageUrl = null; },
   });
-
-  // Đồng bộ lại input.files từ mảng pendingGalleryFiles sau khi xoá bớt 1 ảnh —
-  // FileList vốn chỉ đọc, phải dùng DataTransfer để dựng lại danh sách file mới.
-  function syncGalleryInputFiles() {
-    const dt = new DataTransfer();
-    pendingGalleryFiles.forEach((f) => dt.items.add(f));
-    galleryInput.files = dt.files;
-  }
-
-  galleryInput.addEventListener("change", () => {
-    pendingGalleryFiles.push(...Array.from(galleryInput.files ?? []));
-    syncGalleryInputFiles();
-    renderGalleryPreview();
-  });
-
-  function renderGalleryPreview() {
-    const savedHtml = currentGalleryImages
-      .map(
-        (url, i) => `
-        <div class="gallery-thumb-wrap"${cid}>
-          <img src="${url}"${cid} />
-          <button type="button" class="remove-gallery-img" data-index="${i}"${cid}>×</button>
-        </div>
-      `
-      )
-      .join("");
-    const pendingHtml = pendingGalleryFiles
-      .map(
-        (file, i) => `
-        <div class="gallery-thumb-wrap pending"${cid}>
-          <img src="${URL.createObjectURL(file)}"${cid} />
-          <span class="pending-label" title="${file.name}"${cid}>${file.name}</span>
-          <button type="button" class="remove-pending-img" data-index="${i}"${cid}>×</button>
-        </div>
-      `
-      )
-      .join("");
-    galleryPreview.innerHTML = savedHtml + pendingHtml;
-    galleryPreview.querySelectorAll<HTMLButtonElement>(".remove-pending-img").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        pendingGalleryFiles.splice(Number(btn.dataset.index), 1);
-        syncGalleryInputFiles();
-        renderGalleryPreview();
-      });
-    });
-    galleryPreview.querySelectorAll<HTMLButtonElement>(".remove-gallery-img").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        currentGalleryImages.splice(Number(btn.dataset.index), 1);
-        renderGalleryPreview();
-      });
-    });
-  }
 
   function resetForm() {
     form.reset();
@@ -175,9 +117,7 @@ import CustomInput from "../../components/CustomInput.astro";
     currentImageUrl = null;
     currentImageEl.textContent = "";
     renderMainImagePreview();
-    currentGalleryImages = [];
-    pendingGalleryFiles = [];
-    renderGalleryPreview();
+    gallery.setImages();
     cancelBtn.hidden = true;
   }
 
@@ -194,9 +134,7 @@ import CustomInput from "../../components/CustomInput.astro";
     currentImageUrl = p.image_url ?? null;
     currentImageEl.textContent = currentImageUrl ? `Ảnh hiện tại: ${currentImageUrl}` : "Chưa có ảnh";
     renderMainImagePreview();
-    currentGalleryImages = [...(p.gallery_images ?? [])];
-    pendingGalleryFiles = [];
-    renderGalleryPreview();
+    gallery.setImages(p.gallery_images ?? []);
     cancelBtn.hidden = false;
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -266,28 +204,17 @@ import CustomInput from "../../components/CustomInput.astro";
       return;
     }
 
-    let imageUrl = currentImageUrl;
-    const fileInput = document.getElementById("f-image") as HTMLInputElement;
-    const file = fileInput.files?.[0];
-    if (file) {
-      const path = `${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from("post-images").upload(path, file);
-      if (uploadError) {
-        alert("Lỗi tải ảnh: " + uploadError.message);
-        return;
-      }
-      imageUrl = supabase.storage.from("post-images").getPublicUrl(path).data.publicUrl;
-    }
-
-    const newGalleryFiles = Array.from(galleryInput.files ?? []);
-    for (const file of newGalleryFiles) {
-      const path = `${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from("post-images").upload(path, file);
-      if (uploadError) {
-        alert("Lỗi tải ảnh phụ: " + uploadError.message);
-        return;
-      }
-      currentGalleryImages.push(supabase.storage.from("post-images").getPublicUrl(path).data.publicUrl);
+    let imageUrl: string | null;
+    try {
+      imageUrl = await uploadContentImages(supabase, "posts", {
+        currentUrl: currentImageUrl,
+        mainFile: mainImageInput.files?.[0],
+        galleryFiles: Array.from(galleryInput.files ?? []),
+        galleryUrls: gallery.getUrls(),
+      });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : String(error));
+      return;
     }
 
     // Dọn khoảng trắng/dấu phẩy thừa ở các field hay bị dính khi copy-paste tay
@@ -301,7 +228,7 @@ import CustomInput from "../../components/CustomInput.astro";
       read_time: field("f-read-time").value.trim() || null,
       body: quill.root.innerHTML,
       image_url: imageUrl,
-      gallery_images: currentGalleryImages.length ? currentGalleryImages : null,
+      gallery_images: gallery.getUrls().length ? gallery.getUrls() : null,
     };
 
     const editId = editIdInput.value;

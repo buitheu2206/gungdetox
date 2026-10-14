@@ -258,6 +258,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 </BaseLayout>
 
 <script>
+  import { getAstroScopeHtml } from "../lib/astro-scope";
   import { supabase } from "../lib/supabase";
   import {
     productCardHtml,
@@ -308,8 +309,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   // div "combo-subgroup"/"grid" tạo bằng innerHTML ở JS phải tự gắn thêm attribute
   // này thì .grid{display:grid} mới nhận diện được — nếu không, card sẽ xếp chồng
   // dọc từng cái một thay vì chia lưới nhiều cột (đã gặp đúng lỗi này ở nơi khác).
-  const cidAttr = Array.from(singleGrid.attributes).find((a) => a.name.startsWith("data-astro-cid-"));
-  const cid = cidAttr ? ` ${cidAttr.name}=""` : "";
+  const cid = getAstroScopeHtml(singleGrid);
 
   let allProducts: ProductRow[] = [];
 

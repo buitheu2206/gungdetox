@@ -1,10 +1,6 @@
 // Delete admin content first, then remove its uploaded thumbnail and gallery images.
 import type { SupabaseClient } from "@supabase/supabase-js";
-
-const imageBuckets = {
-  products: "product-images",
-  posts: "post-images",
-} as const;
+import { CONTENT_IMAGE_BUCKETS } from "./content-images.ts";
 
 function getImagePaths(publicUrl: string, imageUrls: (string | null)[]): string[] {
   const bucketUrl = new URL(publicUrl);
@@ -20,7 +16,7 @@ function getImagePaths(publicUrl: string, imageUrls: (string | null)[]): string[
 
 export async function deleteContentWithImages(
   client: SupabaseClient,
-  table: keyof typeof imageBuckets,
+  table: keyof typeof CONTENT_IMAGE_BUCKETS,
   id: string,
 ): Promise<string | null> {
   if (!id) throw new Error("Thiếu ID nội dung cần xoá. Hãy tải lại danh sách.");
@@ -34,7 +30,7 @@ export async function deleteContentWithImages(
     .single();
   if (error) throw new Error(`Không thể xoá ${table} (${id}): ${error.message}`);
 
-  const bucket = imageBuckets[table];
+  const bucket = CONTENT_IMAGE_BUCKETS[table];
   let paths: string[] = [];
   try {
     const storage = client.storage.from(bucket);

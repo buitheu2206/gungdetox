@@ -109,6 +109,9 @@ import ImageUpload from "../../components/ImageUpload.astro";
 
 <script>
   import { deleteContentWithImages } from "../../lib/delete-content";
+  import { initGalleryPreview } from "../../lib/gallery-preview";
+  import { uploadContentImages } from "../../lib/content-images";
+  import { getAstroScopeHtml } from "../../lib/astro-scope";
   import { initMainImagePreview } from "../../lib/image-preview";
   import { supabase } from "../../lib/supabase";
 
@@ -136,83 +139,26 @@ import ImageUpload from "../../components/ImageUpload.astro";
 
   let products: any[] = [];
   let currentImageUrl: string | null = null;
-  let currentGalleryImages: string[] = [];
-  // File vừa chọn nhưng chưa lưu — giữ riêng để xem trước ngay, không phải đợi bấm Lưu mới biết đã chọn đúng ảnh chưa.
-  let pendingGalleryFiles: File[] = [];
+  const gallery = initGalleryPreview(galleryInput, galleryPreview);
 
   // Astro chỉ áp CSS scoped (data-astro-cid-*) cho phần tử render lúc build; phần tử
   // tạo bằng innerHTML ở JS phải tự gắn thêm attribute này thì style mới nhận diện
   // được — nếu không, ảnh preview sẽ hiện full-size thay vì bị giới hạn kích thước nhỏ
   // (đã gặp đúng lỗi này ở gallery ảnh trang chi tiết sản phẩm/blog).
-  const cidAttr = Array.from(mainImagePreview.attributes).find((a) => a.name.startsWith("data-astro-cid-"));
-  const cid = cidAttr ? ` ${cidAttr.name}=""` : "";
+  const cid = getAstroScopeHtml(mainImagePreview);
 
   const renderMainImagePreview = initMainImagePreview(mainImageInput, mainImagePreview, currentImageEl, {
     getUrl: () => currentImageUrl,
     clearUrl: () => { currentImageUrl = null; },
   });
 
-  // Đồng bộ lại input.files từ mảng pendingGalleryFiles sau khi xoá bớt 1 ảnh —
-  // FileList vốn chỉ đọc, phải dùng DataTransfer để dựng lại danh sách file mới.
-  function syncGalleryInputFiles() {
-    const dt = new DataTransfer();
-    pendingGalleryFiles.forEach((f) => dt.items.add(f));
-    galleryInput.files = dt.files;
-  }
-
-  galleryInput.addEventListener("change", () => {
-    pendingGalleryFiles.push(...Array.from(galleryInput.files ?? []));
-    syncGalleryInputFiles();
-    renderGalleryPreview();
-  });
-
-  function renderGalleryPreview() {
-    const savedHtml = currentGalleryImages
-      .map(
-        (url, i) => `
-        <div class="gallery-thumb-wrap"${cid}>
-          <img src="${url}"${cid} />
-          <button type="button" class="remove-gallery-img" data-index="${i}"${cid}>×</button>
-        </div>
-      `
-      )
-      .join("");
-    const pendingHtml = pendingGalleryFiles
-      .map(
-        (file, i) => `
-        <div class="gallery-thumb-wrap pending"${cid}>
-          <img src="${URL.createObjectURL(file)}"${cid} />
-          <span class="pending-label" title="${file.name}"${cid}>${file.name}</span>
-          <button type="button" class="remove-pending-img" data-index="${i}"${cid}>×</button>
-        </div>
-      `
-      )
-      .join("");
-    galleryPreview.innerHTML = savedHtml + pendingHtml;
-    galleryPreview.querySelectorAll<HTMLButtonElement>(".remove-gallery-img").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        currentGalleryImages.splice(Number(btn.dataset.index), 1);
-        renderGalleryPreview();
-      });
-    });
-    galleryPreview.querySelectorAll<HTMLButtonElement>(".remove-pending-img").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        pendingGalleryFiles.splice(Number(btn.dataset.index), 1);
-        syncGalleryInputFiles();
-        renderGalleryPreview();
-      });
-    });
-  }
-
   function resetForm() {
     form.reset();
     editIdInput.value = "";
     currentImageUrl = null;
     currentImageEl.textContent = "";
-    currentGalleryImages = [];
-    pendingGalleryFiles = [];
+    gallery.setImages();
     renderMainImagePreview();
-    renderGalleryPreview();
     cancelBtn.hidden = true;
   }
 
@@ -243,9 +189,7 @@ import ImageUpload from "../../components/ImageUpload.astro";
     currentImageUrl = p.image_url ?? null;
     currentImageEl.textContent = currentImageUrl ? `Ảnh hiện tại: ${currentImageUrl}` : "Chưa có ảnh";
     renderMainImagePreview();
-    currentGalleryImages = [...(p.gallery_images ?? [])];
-    pendingGalleryFiles = [];
-    renderGalleryPreview();
+    gallery.setImages(p.gallery_images ?? []);
     cancelBtn.hidden = false;
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -335,33 +279,17 @@ import ImageUpload from "../../components/ImageUpload.astro";
       (document.getElementById("f-bottle-plastic") as HTMLInputElement).checked ? "plastic" : null,
     ].filter(Boolean);
 
-    let imageUrl = currentImageUrl;
-    const file = mainImageInput.files?.[0];
-    if (file) {
-      const path = `${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from("product-images")
-        .upload(path, file);
-      if (uploadError) {
-        alert("Lỗi tải ảnh: " + uploadError.message);
-        return;
-      }
-      imageUrl = supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl;
-    }
-
-    const newGalleryFiles = Array.from(galleryInput.files ?? []);
-    for (const file of newGalleryFiles) {
-      const path = `${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from("product-images")
-        .upload(path, file);
-      if (uploadError) {
-        alert("Lỗi tải ảnh phụ: " + uploadError.message);
-        return;
-      }
-      currentGalleryImages.push(
-        supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl
-      );
+    let imageUrl: string | null;
+    try {
+      imageUrl = await uploadContentImages(supabase, "products", {
+        currentUrl: currentImageUrl,
+        mainFile: mainImageInput.files?.[0],
+        galleryFiles: Array.from(galleryInput.files ?? []),
+        galleryUrls: gallery.getUrls(),
+      });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : String(error));
+      return;
     }
 
     const payload = {
@@ -381,7 +309,7 @@ import ImageUpload from "../../components/ImageUpload.astro";
       color_theme: (document.getElementById("f-color") as HTMLSelectElement).value || null,
       badge: (document.getElementById("f-badge") as HTMLSelectElement).value || null,
       image_url: imageUrl,
-      gallery_images: currentGalleryImages.length ? currentGalleryImages : null,
+      gallery_images: gallery.getUrls().length ? gallery.getUrls() : null,
       in_stock: (document.getElementById("f-in-stock") as HTMLInputElement).checked,
     };
 

@@ -1,11 +1,13 @@
 // Shared thumbnail preview and removal for product and blog forms.
+import { getAstroScope } from "./astro-scope.ts";
+
 export function initMainImagePreview(
   input: HTMLInputElement,
   preview: HTMLElement,
   currentImage: HTMLElement,
   state: { getUrl: () => string | null; clearUrl: () => void },
 ) {
-  const scope = Array.from(preview.attributes).find((attribute) => attribute.name.startsWith("data-astro-cid-"));
+  const scope = getAstroScope(preview);
   const removeMainImage = preview.querySelector<HTMLButtonElement>("#remove-main-image")!;
   let mainPreviewUrl: string | null = null;
 
@@ -19,7 +21,7 @@ export function initMainImagePreview(
       const image = document.createElement("img");
       image.src = url;
       image.alt = "Xem trước ảnh đại diện";
-      if (scope) image.setAttribute(scope.name, "");
+      if (scope) image.setAttribute(scope, "");
       preview.prepend(image);
     }
     preview.hidden = !url;
