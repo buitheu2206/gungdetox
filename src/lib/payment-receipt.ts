@@ -32,7 +32,7 @@ export async function uploadPaymentReceipt(client: SupabaseClient, orderId: stri
       order_id: orderId, upload_token: uploadToken,
     });
     if (confirmError || !confirmed) {
-      throw new Error("Ảnh đã lưu nhưng chưa gửi được xác nhận. Vui lòng bấm Xác nhận chuyển khoản để thử lại.", { cause: confirmError });
+      throw new Error("Ảnh đã lưu nhưng chưa gửi được xác nhận. Vui lòng bấm Xác nhận đặt hàng để thử lại.", { cause: confirmError });
     }
   } catch (error) {
     console.error("Không gửi được ảnh chuyển khoản", { orderId, error });

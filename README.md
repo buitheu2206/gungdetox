@@ -67,12 +67,17 @@ bằng chứng để tiệm đối chiếu, không tự đánh dấu `paid`.
 Quản trị tích ô `Đã thanh toán` trong chi tiết đơn hoặc bảng đơn sau khi đối chiếu tiền nhận.
 Bỏ tích để sửa xác nhận nhầm; chỉ cập nhật `paid`, không đổi trạng thái hay lịch sử giao hàng.
 
-Nút `Tiếp tục` tạo đơn chờ thanh toán và mở bước chuyển khoản. Nút cuối `Xác nhận chuyển
-khoản` lưu ảnh rồi gọi RPC `confirm_payment_receipt`. Chạy thêm migration
+Nút `Tiếp tục` tạo đơn chờ thanh toán và mở bước chuyển khoản. Nút cuối `Xác nhận đặt
+hàng` lưu ảnh rồi gọi RPC `confirm_payment_receipt`. Chạy thêm migration
 `supabase/payment-receipt-confirmation.sql` để ghi `payment_receipt_submitted_at` và chuyển
 webhook email từ tạo đơn sang lần xác nhận ảnh đầu tiên. Migration giữ endpoint/secret
 của trigger cũ, tắt trigger INSERT và tạo trigger UPDATE có điều kiện. Gửi lại xác nhận
 không kích hoạt email lần nữa; lỗi xác nhận sau khi ảnh đã lưu có thể thử lại.
+
+Màn thanh toán có nút `Quay lại` về bước xác nhận để xem lại thông tin. Sau khi tạo đơn,
+các trường và lựa chọn thanh toán chỉ để xem; bấm `Tiếp tục` dùng lại cùng mã đơn và quyền
+upload, không tạo hoặc cập nhật đơn. QR, nội dung chuyển tiền và ảnh đã chọn được giữ nguyên
+khi quay lại thanh toán. Nút quay lại chỉ bị khoá khi đang gửi ảnh và xác nhận.
 
 Checkout tạo đơn qua RPC `create_order_with_receipt`, đồng thời cấp quyền upload bằng UUID
 ngẫu nhiên do trình duyệt tạo. Quyền này lưu ở bảng `order_receipt_uploads` không cho client

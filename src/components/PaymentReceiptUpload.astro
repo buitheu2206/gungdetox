@@ -19,6 +19,7 @@ import ImageUpload from "./ImageUpload.astro";
   const input = document.getElementById("payment-receipt") as HTMLInputElement;
   const preview = document.getElementById("receipt-preview") as HTMLImageElement;
   const submit = document.getElementById("receipt-submit") as HTMLButtonElement;
+  const back = document.getElementById("payment-back") as HTMLButtonElement;
   const message = document.getElementById("receipt-message")!;
   let previewUrl: string | undefined;
 
@@ -52,6 +53,7 @@ import ImageUpload from "./ImageUpload.astro";
     if (submit.disabled || !input.files?.[0]) return;
     submit.disabled = true;
     input.disabled = true;
+    back.disabled = true;
     showMessage("Đang gửi ảnh và xác nhận chuyển khoản…");
     try {
       await uploadPaymentReceipt(supabase, form.dataset.orderId ?? "", form.dataset.uploadToken ?? "", input.files[0]);
@@ -62,6 +64,8 @@ import ImageUpload from "./ImageUpload.astro";
       showMessage(error instanceof Error ? error.message : "Chưa gửi được ảnh. Vui lòng thử lại.", true);
       input.disabled = false;
       submit.disabled = false;
+    } finally {
+      back.disabled = false;
     }
   });
 </script>

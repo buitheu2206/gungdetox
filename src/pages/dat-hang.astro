@@ -277,7 +277,8 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
       <PaymentReceiptUpload />
 
       <div class="thank-you-actions">
-        <button type="submit" form="receipt-form" id="receipt-submit" class="thank-you-btn thank-you-btn-primary" disabled>Xác nhận chuyển khoản</button>
+        <button type="button" id="payment-back" class="thank-you-btn back">Quay lại</button>
+        <button type="submit" form="receipt-form" id="receipt-submit" class="thank-you-btn thank-you-btn-primary" disabled>Xác nhận đặt hàng</button>
       </div>
     </section>
   </main>
@@ -341,6 +342,9 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
   const thankYou = document.getElementById("thank-you") as HTMLElement;
   const stepsIndicator = document.getElementById("steps-indicator")!;
   const bankInfo = document.getElementById("bank-info") as HTMLElement;
+  const bankInfoParent = bankInfo.parentElement!;
+  const paymentBack = document.getElementById("payment-back") as HTMLButtonElement;
+  let checkoutOrder: { id: string; phone: string; uploadToken: string } | null = null;
   const bankTitle = bankInfo.querySelector(".bank-info-title") as HTMLElement;
   const bankQr = bankInfo.querySelector(".qr-code") as HTMLImageElement;
   const paymentInstructions = document.getElementById("payment-instructions") as HTMLElement;
@@ -631,6 +635,45 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     };
   }
 
+  async function prepareCheckoutOrder() {
+    // A saved order is read-only when revisiting confirmation; reuse its ID and upload token.
+    if (checkoutOrder) return checkoutOrder;
+    const uploadToken = crypto.randomUUID();
+    const { data, error } = await supabase.rpc("create_order_with_receipt", {
+      upload_token: uploadToken, order_data: getCheckoutOrderData(),
+    }).single<{ id: string; phone: string }>();
+    if (error || !data) throw error ?? new Error("Không nhận được thông tin đơn hàng.");
+    checkoutOrder = { ...data, uploadToken };
+    form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLButtonElement>(
+      "input, select, textarea, button:not(.next):not(.back):not(.submit):not(.copy-btn)"
+    ).forEach((control) => { control.disabled = true; });
+    return checkoutOrder;
+  }
+
+  function showPaymentOrder(order: NonNullable<typeof checkoutOrder>) {
+    form.hidden = true;
+    stepsIndicator.hidden = true;
+    thankYou.hidden = false;
+    const code = orderCode(order.phone, order.id);
+    document.getElementById("order-id")!.textContent = code;
+    document.getElementById("copy-order-id")!.dataset.copy = code;
+    updatePaymentInstructions(code);
+    const receiptForm = document.getElementById("receipt-form")!;
+    receiptForm.dataset.orderId = order.id;
+    receiptForm.dataset.uploadToken = order.uploadToken;
+    thankYou.insertBefore(bankInfo, receiptForm);
+  }
+
+  paymentBack.addEventListener("click", () => {
+    if (paymentBack.disabled) return;
+    thankYou.hidden = true;
+    form.hidden = false;
+    stepsIndicator.hidden = false;
+    bankInfoParent.append(bankInfo);
+    goToStep(4);
+    form.querySelector<HTMLButtonElement>('button[type="submit"]')!.focus();
+  });
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (cart.length === 0) return;
@@ -650,23 +693,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     if (button.disabled) return;
     button.disabled = true;
     try {
-      const uploadToken = crypto.randomUUID();
-      const { data, error } = await supabase.rpc("create_order_with_receipt", {
-        upload_token: uploadToken, order_data: getCheckoutOrderData(),
-      }).single<{ id: string; phone: string }>();
-      if (error || !data) throw error ?? new Error("Không nhận được thông tin đơn hàng.");
-
-      form.hidden = true;
-      stepsIndicator.hidden = true;
-      thankYou.hidden = false;
-      const code = orderCode(data.phone, data.id);
-      (document.getElementById("order-id") as HTMLElement).textContent = code;
-      (document.getElementById("copy-order-id") as HTMLElement).dataset.copy = code;
-      updatePaymentInstructions(code);
-      const receiptForm = document.getElementById("receipt-form")!;
-      receiptForm.dataset.orderId = data.id;
-      receiptForm.dataset.uploadToken = uploadToken;
-      thankYou.insertBefore(bankInfo, receiptForm);
+      showPaymentOrder(await prepareCheckoutOrder());
     } catch (error) {
       console.error("Không tạo được đơn hàng", { error });
       alert("Có lỗi khi đặt hàng, vui lòng thử lại: " + ((error as { message?: string })?.message ?? String(error)));
