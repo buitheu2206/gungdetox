@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ShareButton from "../../components/ShareButton.astro";
+import { loadAllRows } from "../../lib/load-rows";
 import { supabase } from "../../lib/supabase";
 import { blogCardHtml, tagLabel, renderPostBodyHtml, type PostRow } from "../../lib/templates";
 
@@ -8,8 +9,7 @@ import { blogCardHtml, tagLabel, renderPostBodyHtml, type PostRow } from "../../
 // cho URL đẹp/SEO, script phía client fetch lại đúng slug để cập nhật nội dung
 // nếu admin sửa bài sau lần build gần nhất (không cần rebuild chỉ vì sửa chữ).
 export async function getStaticPaths() {
-  const { data } = await supabase.from("posts").select("*");
-  const allPosts = data ?? [];
+  const allPosts = await loadAllRows((from, to) => supabase.from("posts").select("*").order("id").range(from, to));
   return allPosts.map((p) => ({ params: { slug: p.slug }, props: { post: p, allPosts } }));
 }
 

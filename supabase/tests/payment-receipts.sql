@@ -1,5 +1,6 @@
 -- Exercises real RPC and Storage policies; fixtures and webhook queues are rolled back.
 begin;
+insert into public.products(slug, type, name, price_retail) values ('audit-receipt-fixture', 'single', 'Receipt test fixture', 42000);
 select set_config('gungdetox.receipt_admins', (
   select jsonb_agg(id)::text from auth.users
   where email in ('buitheu698@gmail.com', 'chubaohong2206@gmail.com', 'hoabachhop79@gmail.com')
@@ -11,7 +12,7 @@ declare
   token uuid := gen_random_uuid();
 begin
   select * into created_order from public.create_order_with_receipt(
-    '{"phone":"0900000000","customer_name":"Receipt policy test","address":"Test address","district":"Test district","items":[{"productSlug":"test","quantity":1}],"bottle_type":"glass","payment_method":"bank_transfer","bottles_returned":0,"paid":true,"status":"delivered"}', token
+    '{"phone":"0900000000","customer_name":"Receipt policy test","address":"Test address","district":"Test district","items":[{"productSlug":"audit-receipt-fixture","quantity":1}],"bottle_type":"glass","payment_method":"bank_transfer","bottles_returned":0,"paid":true,"status":"delivered"}', token
   );
   if created_order.paid or created_order.status <> 'processing' then
     raise exception 'Checkout must not accept payment or status changes from the client.';

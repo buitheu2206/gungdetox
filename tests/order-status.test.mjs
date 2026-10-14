@@ -7,6 +7,7 @@ function statusClient(result = { data: { id: "order-id" }, error: null }) {
   const query = {
     update(value) { calls.push(["update", value]); return query; },
     eq(...args) { calls.push(["eq", ...args]); return query; },
+    is(...args) { calls.push(["is", ...args]); return query; },
     select(...args) { calls.push(["select", ...args]); return query; },
     async single() { return result; },
   };
@@ -49,4 +50,30 @@ test("should report denied or missing orders instead of claiming the status was 
     assert.equal(order.status, "processing");
     assert.equal(order.status_history.length, 0);
   }
+});
+
+test("should reject a stale editor without overwriting the other admin's history", async () => {
+  const persisted = { id: "order-id", status: "processing", status_history: [] };
+  function client() {
+    let update;
+    const filters = [];
+    const query = {
+      update(value) { update = value; return query; },
+      eq(key, value) { filters.push([key, value]); return query; },
+      is(key, value) { filters.push([key, value]); return query; },
+      select() { return query; },
+      async single() {
+        const matches = filters.every(([key, value]) => (key === "status_history" ? JSON.stringify(persisted[key]) : persisted[key]) === value);
+        if (!matches) return { data: null, error: new Error("No matching row") };
+        Object.assign(persisted, update);
+        return { data: { id: persisted.id }, error: null };
+      },
+    };
+    return { from: () => query };
+  }
+  const snapshot = structuredClone(persisted);
+  await saveOrderStatus(client(), snapshot, "delivering");
+  await assert.rejects(saveOrderStatus(client(), snapshot, "cancelled"), /tải lại trang/);
+  assert.equal(persisted.status, "delivering");
+  assert.deepEqual(persisted.status_history.map((event) => event.status), ["delivering"]);
 });

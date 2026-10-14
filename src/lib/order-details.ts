@@ -18,6 +18,10 @@ export interface OrderRow {
   bottle_type: string;
   bottles_returned: number | null;
   shipping_fee_note: string | null;
+  delivery_date?: string | null;
+  delivery_time?: string | null;
+  delivery_note?: string | null;
+  is_deposit?: boolean | null;
   payment_method: string;
   paid: boolean;
   status: string;
@@ -38,13 +42,4 @@ export function getOrderCodeBounds(value: string) {
   };
 }
 
-export function getDeliveryDetails(note: string | null | undefined) {
-  const full = note?.match(/Giao ngày (.+?)\. Ghi chú của khách:/)?.[1];
-  const customerNote = note?.match(/Ghi chú của khách: (.*?)\. Phí ship/s)?.[1];
-  return {
-    date: full?.match(/^(.+?)\s*\(/)?.[1] ?? full ?? "—",
-    time: full?.match(/\((.*)\)$/)?.[1] ?? "—",
-    schedule: full ?? "Chưa có lịch giao",
-    note: customerNote === "(không có)" ? "—" : customerNote ?? "—",
-  };
-}
+export { getDeliveryDetails, getOrderDelivery } from "../../supabase/functions/_shared/order-delivery.ts";

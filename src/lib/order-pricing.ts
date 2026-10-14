@@ -26,7 +26,8 @@ export function snapshotOrderItems(cart: { slug: string; quantity: number }[], p
 }
 
 // Current prices are a display fallback for legacy orders, never a database backfill.
-export function resolveOrderItems(items: OrderItem[], products: PricedProduct[]): OrderItem[] {
+export function resolveOrderItems(items: unknown, products: PricedProduct[]): OrderItem[] {
+  if (!isOrderItems(items)) return [];
   return items.map((item) => {
     if (item.unitPrice != null) return item;
     const product = products.find((product) => product.slug === item.productSlug);
@@ -43,4 +44,11 @@ export function getOrderAmount(items: OrderItem[]): number | null {
     total += item.unitPrice * item.quantity;
   }
   return Number.isFinite(total) ? total : null;
+}
+
+// Validate legacy JSON before any list/detail renderer dereferences its members.
+export function isOrderItems(value: unknown): value is OrderItem[] {
+  return Array.isArray(value) && value.length > 0 && value.every((item) =>
+    item && typeof item.productSlug === "string" && item.productSlug.trim().length > 0
+    && Number.isSafeInteger(item.quantity) && item.quantity > 0);
 }

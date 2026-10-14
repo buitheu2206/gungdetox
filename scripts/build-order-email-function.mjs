@@ -11,9 +11,10 @@ export const EMAIL_TEMPLATE = \`${escapedTemplate}\`;
 `;
   await writeFile(new URL("email-template.ts", functionDirectory), templateModule);
   if (process.argv.includes("--dashboard")) {
+    const shared = await readFile(new URL("../_shared/order-delivery.ts", functionDirectory), "utf8");
     const handler = await readFile(new URL("handler.ts", functionDirectory), "utf8");
     const entry = await readFile(new URL("index.ts", functionDirectory), "utf8");
-    process.stdout.write(handler + "\n" + entry.replace('import { handleOrderNotification } from "./handler.ts";\n', ""));
+    process.stdout.write(shared + "\n" + handler.replace('import { getOrderDelivery, type DeliveryFields } from "../_shared/order-delivery.ts";\n', "") + "\n" + entry.replace('import { handleOrderNotification } from "./handler.ts";\n', ""));
   } else {
     console.info("Updated resend-email/email-template.ts from email-template.html.");
   }

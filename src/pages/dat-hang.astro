@@ -9,7 +9,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
 
 <BaseLayout
   title="Đặt hàng — GỪNG DETOX"
-  description="Đặt hàng đồ uống/combo GỪNG DETOX và tra cứu trạng thái đơn bằng số điện thoại."
+  description="Đặt hàng đồ uống/combo GỪNG DETOX và tra cứu trạng thái đơn bằng mã đơn và số điện thoại."
 >
   <main class="order-page">
     <div class="ginger-shot-schedule-note">
@@ -285,6 +285,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
 </BaseLayout>
 
 <script>
+  import { escapeHtml as esc, safeMediaUrl } from "../lib/output";
   import { getAstroScopeHtml } from "../lib/astro-scope";
   import { supabase } from "../lib/supabase";
   import { orderCode, type ProductRow } from "../lib/templates";
@@ -296,7 +297,6 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     quantity: number;
   }
 
-  const bottleLabel: Record<string, string> = { glass: "Thủy tinh", plastic: "Nhựa" };
   function formatDeliveryDate(dateStr: string): string {
     if (!dateStr) return "";
     const [y, m, d] = dateStr.split("-");
@@ -390,13 +390,13 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
         const price = unitPrice(p);
         const priceLabel = price != null ? money(price * item.quantity) : "Đang cập nhật giá";
         const thumb = p.image_url
-          ? `<img class="cart-item-thumb" src="${p.image_url}" alt=""${cid} loading="lazy" />`
+          ? `<img class="cart-item-thumb" src="${esc(safeMediaUrl(p.image_url))}" alt=""${cid} loading="lazy" />`
           : `<div class="cart-item-thumb cart-item-thumb-placeholder"${cid}>🫚</div>`;
         return `
           <div class="cart-item" data-index="${index}"${cid}>
             ${thumb}
             <div class="cart-item-info"${cid}>
-              <span class="cart-item-name"${cid}>${p.name}</span>
+              <span class="cart-item-name"${cid}>${esc(p.name)}</span>
               <span class="cart-item-price"${cid}>${priceLabel}</span>
             </div>
             <div class="qty-stepper"${cid}>
@@ -477,16 +477,16 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     const itemLines = cart
       .map((item) => {
         const p = findProduct(item.slug);
-        return p ? `<p><strong>${p.name}</strong> × ${item.quantity}</p>` : "";
+        return p ? `<p><strong>${esc(p.name)}</strong> × ${item.quantity}</p>` : "";
       })
       .join("");
     orderSummary.innerHTML = `
       ${itemLines}
-      <p>Ngày giao: ${formatDeliveryDate(deliveryDateInput.value)}${deliveryTimeRangeText() ? ` (${deliveryTimeRangeText()})` : ""}</p>
-      ${deliveryNoteInput.value ? `<p>Ghi chú: ${deliveryNoteInput.value}</p>` : ""}
+      <p>Ngày giao: ${formatDeliveryDate(deliveryDateInput.value)}${deliveryTimeRangeText() ? ` (${esc(deliveryTimeRangeText())})` : ""}</p>
+      ${deliveryNoteInput.value ? `<p>Ghi chú: ${esc(deliveryNoteInput.value)}</p>` : ""}
       <p>Tạm tính: ${money(cartTotal())} (chưa gồm phí ship)</p>
-      <p>Giao tới: ${(document.getElementById("address") as HTMLInputElement).value},
-      ${districtSelect.value}</p>
+      <p>Giao tới: ${esc((document.getElementById("address") as HTMLInputElement).value)},
+      ${esc(districtSelect.value)}</p>
     `;
   }
 
@@ -616,12 +616,12 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
       bottles_returned:
         Number((document.getElementById("bottles-returned") as HTMLInputElement).value) || 0,
       payment_method: payment.paymentMethod,
-      // orders chưa có cột delivery_date/delivery_time/delivery_note riêng (không có
-      // quyền chạy ALTER TABLE từ phiên này — cần Supabase Management API token hoặc
-      // mật khẩu DB), nên đang ghép tạm vào shipping_fee_note theo mẫu cố định
-      // "Giao ngày DD/MM/YYYY [lúc HH:MM]. Ghi chú của khách: ... ." để admin đọc/trích
-      // xuất lại được (xem admin/don-hang.astro). Nên tách thành cột riêng khi có quyền chạy SQL.
-      shipping_fee_note: `Giao ngày ${formatDeliveryDate(deliveryDateInput.value)}${deliveryTimeRangeText() ? ` (${deliveryTimeRangeText()})` : ""}. Ghi chú của khách: ${orderNote}. Phí ship tùy theo khoảng cách và thời tiết hôm giao, tiệm sẽ báo lại qua Zalo trước khi giao.`,
+      delivery_date: deliveryDateInput.value,
+      delivery_time: deliveryTimeRangeText(),
+      delivery_note: deliveryNoteInput.value.trim(),
+      is_deposit: Boolean(payment.orderNote),
+      // Keep a readable note for older clients while new clients use structured fields.
+      shipping_fee_note: `Giao ngày ${formatDeliveryDate(deliveryDateInput.value)}${deliveryTimeRangeText() ? ` (${esc(deliveryTimeRangeText())})` : ""}. Ghi chú của khách: ${orderNote}. Phí ship tùy theo khoảng cách và thời tiết hôm giao, tiệm sẽ báo lại qua Zalo trước khi giao.`,
     };
   }
 
@@ -693,11 +693,17 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
   });
 
   // Load danh sách sản phẩm + đọc query string ?product=slug
-  const { data: allProducts } = await supabase
+  const { data: allProducts, error: productsError } = await supabase
     .from("products")
     .select("slug, type, name, price, price_retail, bottle_options, image_url")
     .order("sort_order");
 
+  if (productsError) {
+    console.error("Không tải được danh mục checkout", { error: productsError });
+    cartEmptyHint.textContent = "Không tải được sản phẩm. Vui lòng tải lại trang để thử lại.";
+    addToCartBtn.disabled = true;
+    throw new Error("Không tải được sản phẩm checkout.", { cause: productsError });
+  }
   products = allProducts ?? [];
 
   const typeGroupLabel: Record<ProductRow["type"], string> = {
@@ -706,7 +712,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     set: "5 Set Detox",
   };
   const optionHtml = (p: ProductRow) =>
-    `<option value="${p.slug}">${p.name} — ${money(unitPrice(p))}</option>`;
+    `<option value="${esc(p.slug)}">${esc(p.name)} — ${money(unitPrice(p))}</option>`;
 
   productSelect.innerHTML = (["single", "combo", "set"] as const)
     .map((type) => {

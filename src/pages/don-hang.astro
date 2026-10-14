@@ -63,9 +63,10 @@ import { ORDER_STATUS_LABELS } from "../lib/order-details";
 </BaseLayout>
 
 <script>
+  import { hasAdminAccess } from "../lib/admin-access";
   import { supabase } from "../lib/supabase";
   import { orderCode, type ProductRow } from "../lib/templates";
-  import { ORDER_STATUS_LABELS, getDeliveryDetails, getOrderCodeBounds, type OrderRow } from "../lib/order-details";
+  import { ORDER_STATUS_LABELS, getOrderDelivery, getOrderCodeBounds, type OrderRow } from "../lib/order-details";
   import { getPaymentInstructions, DEPOSIT_LABEL } from "../lib/payment";
   import { renderPaymentReceipt } from "../lib/render-payment-receipt";
   import { saveOrderStatus } from "../lib/order-status";
@@ -162,7 +163,7 @@ import { ORDER_STATUS_LABELS } from "../lib/order-details";
   }
 
   function renderOrder(order: OrderRow, products: ProductRow[]) {
-    const delivery = getDeliveryDetails(order.shipping_fee_note);
+    const delivery = getOrderDelivery(order);
     setText("detail-customer", order.customer_name);
     setText("call-customer", order.phone);
     setText("detail-address", [order.address, order.district].filter(Boolean).join(", "));
@@ -171,7 +172,7 @@ import { ORDER_STATUS_LABELS } from "../lib/order-details";
     setText("detail-note", delivery.note);
     setText("detail-bottle", ({ glass: "Thủy tinh", plastic: "Nhựa" } as Record<string, string>)[order.bottle_type] ?? order.bottle_type);
     setText("detail-returned", `${order.bottles_returned ?? 0} chai`);
-    const isDeposit = order.shipping_fee_note?.includes(getPaymentInstructions(true).orderNote) ?? false;
+    const isDeposit = order.is_deposit ?? (order.shipping_fee_note?.includes(getPaymentInstructions(true).orderNote) ?? false);
     setText("payment-title", isDeposit ? DEPOSIT_LABEL : order.payment_method === "bank_transfer" ? "Chuyển khoản" : "Tiền mặt (COD)");
     renderPayment(order);
     const call = document.getElementById("call-customer") as HTMLAnchorElement;
@@ -189,7 +190,7 @@ import { ORDER_STATUS_LABELS } from "../lib/order-details";
   async function fetchOrder() {
     if (!lookup) throw new Error("Mã đơn không hợp lệ. Vui lòng mở đơn từ danh sách quản lý.");
     const { data, error } = await supabase.from("orders")
-      .select("id, phone, customer_name, address, district, items, bottle_type, bottles_returned, shipping_fee_note, payment_method, paid, status, status_history, created_at")
+      .select("id, phone, customer_name, address, district, items, bottle_type, bottles_returned, shipping_fee_note, payment_method, paid, status, status_history, created_at, delivery_date, delivery_time, delivery_note, is_deposit")
       .like("phone", `%${lookup.phoneSuffix}`)
       .gte("id", lookup.minId).lte("id", lookup.maxId).limit(2);
     if (error) throw new Error("Không tải được đơn hàng. Vui lòng thử lại.", { cause: error });
@@ -214,7 +215,7 @@ import { ORDER_STATUS_LABELS } from "../lib/order-details";
     message.hidden = true;
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (!user) {
+      if (!user || !await hasAdminAccess(supabase)) {
         if (authError && authError.name !== "AuthSessionMissingError") console.error("Không xác minh được đăng nhập quản trị", { error: authError });
         return;
       }

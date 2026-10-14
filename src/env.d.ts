@@ -8,3 +8,11 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+interface Window {
+  Quill: new (selector: string, options: unknown) => {
+    root: HTMLElement;
+    getText(): string;
+    setText(value: string): void;
+  };
+}

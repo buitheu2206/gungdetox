@@ -53,16 +53,24 @@ import CustomSelect from "../../components/CustomSelect.astro";
       <template id="order-status-template">
         <CustomSelect id="order-status" />
       </template>
+      <nav aria-label="Phân trang đơn hàng">
+        <button type="button" id="orders-previous" disabled>Trang trước</button>
+        <span id="orders-page-label" role="status"></span>
+        <button type="button" id="orders-next" disabled>Trang sau</button>
+      </nav>
     </AdminLogin>
   </main>
 </BaseLayout>
 
 <script>
+  import { hasAdminAccess } from "../../lib/admin-access";
+  import { escapeHtml as esc, csvCell } from "../../lib/output";
   import { getAstroScopeHtml } from "../../lib/astro-scope";
+  import { loadAllRows, countOrdersByCustomer } from "../../lib/load-rows";
   import { supabase } from "../../lib/supabase";
   import { orderCode, type ProductRow } from "../../lib/templates";
   import { initCustomSelect, syncCustomSelect } from "../../lib/initCustomSelect";
-  import { ORDER_STATUS_LABELS as statusLabel, getDeliveryDetails } from "../../lib/order-details";
+  import { ORDER_STATUS_LABELS as statusLabel, getOrderDelivery, type OrderRow } from "../../lib/order-details";
   import { getOrderAmount, resolveOrderItems, type OrderItem } from "../../lib/order-pricing";
   import { saveOrderStatus } from "../../lib/order-status";
   import { saveOrderPayment } from "../../lib/order-payment";
@@ -83,11 +91,15 @@ import CustomSelect from "../../components/CustomSelect.astro";
   const orderTable = document.getElementById("orders-table")!;
   const cid = getAstroScopeHtml(orderTable);
 
-  let allOrders: any[] = [];
+  let allOrders: OrderRow[] = [];
+  let customerCounts = new Map<string, number>();
+  const DISPLAY_PAGE_SIZE = 50;
+  let currentPage = 0;
   let allProducts: ProductRow[] = [];
   let activeStatus = "all";
 
   function itemsSummary(items: OrderItem[]) {
+    if (!items.length) return "Dữ liệu sản phẩm không hợp lệ — cần kiểm tra đơn";
     return items.map((item) => allProducts.find((product) => product.slug === item.productSlug)?.name ?? item.productSlug).join("\n");
   }
 
@@ -108,29 +120,8 @@ import CustomSelect from "../../components/CustomSelect.astro";
     return moneyLabel(getOrderAmount(items));
   }
 
-  // orders chưa có cột delivery_date/delivery_note riêng (không có quyền chạy ALTER
-  // TABLE từ đây — cần Supabase Management API token hoặc mật khẩu DB mà phiên này
-  // không có sẵn), nên đang trích tạm từ shipping_fee_note — dat-hang.astro luôn ghi
-  // đúng theo mẫu "Giao ngày DD/MM/YYYY [(HH:MM-HH:MM)]. Ghi chú của khách: ... . Phí ship..."
-  // lúc đặt hàng. Đơn cũ hơn (đặt trước khi có tính năng này) sẽ không khớp mẫu, trả về "—".
-  function extractDeliveryDate(note: string | null | undefined): string {
-    return getDeliveryDetails(note).date;
-  }
-
-  function extractDeliveryTimeRange(note: string | null | undefined): string {
-    return getDeliveryDetails(note).time;
-  }
-
-  function extractDeliveryNote(note: string | null | undefined): string {
-    return getDeliveryDetails(note).note;
-  }
-
   // Khách "quen" = đã có từ 2 đơn trở lên tính đến thời điểm đơn này (kể cả đơn này) — dựa theo
   // toàn bộ đơn trong hệ thống (allOrders), không phải chỉ danh sách đang hiển thị sau khi lọc.
-  function orderCountByPhoneUpTo(phone: string, createdAt: string): number {
-    return allOrders.filter((o) => o.phone === phone && o.created_at <= createdAt).length;
-  }
-
   function initOrderStatusSelect(sel: HTMLSelectElement): HTMLSelectElement {
     const root = statusTemplate.content.firstElementChild!.cloneNode(true) as HTMLElement;
     const customSelect = root.querySelector("select")!;
@@ -170,42 +161,42 @@ import CustomSelect from "../../components/CustomSelect.astro";
     }
   }
 
-  function render(orders: any[]) {
+  function render(orders: OrderRow[]) {
     if (orders.length === 0) {
       tbody.innerHTML = `<tr${cid}><td colspan="16"${cid}>Không có đơn nào khớp bộ lọc.</td></tr>`;
       return;
     }
     tbody.innerHTML = orders
       .map((o) => {
-        const orderCountSoFar = orderCountByPhoneUpTo(o.phone, o.created_at);
+        const orderCountSoFar = customerCounts.get(o.id) ?? 0;
         const customerBadge = `<span class="badge ${orderCountSoFar > 1 ? "badge-returning" : "badge-new"}"${cid}>${orderCountSoFar}</span>`;
-        const deliveryDate = extractDeliveryDate(o.shipping_fee_note);
-        const deliveryTimeRange = extractDeliveryTimeRange(o.shipping_fee_note);
-        const deliveryNote = extractDeliveryNote(o.shipping_fee_note);
+        const deliveryDate = getOrderDelivery(o).date;
+        const deliveryTimeRange = getOrderDelivery(o).time;
+        const deliveryNote = getOrderDelivery(o).note;
         return `
-      <tr data-id="${o.id}"${cid}>
+      <tr data-id="${esc(o.id)}"${cid}>
         <td class="code"${cid}><a href="/don-hang/${encodeURIComponent(orderCode(o.phone, o.id))}"${cid}>${orderCode(o.phone, o.id)}</a></td>
         <td${cid}>${new Date(o.created_at).toLocaleDateString("vi-VN")}<br${cid} />${new Date(o.created_at).toLocaleTimeString("vi-VN")}</td>
-        <td class="customer-cell"${cid}>${o.customer_name} ${customerBadge}</td>
-        <td${cid}>${o.phone}</td>
-        <td class="address-cell"${cid}>${o.address}, ${o.district}</td>
-        <td${cid}>${deliveryDate !== "—" ? `<span class="badge badge-delivery"${cid}>${deliveryDate}</span>` : "—"}</td>
-        <td${cid}>${deliveryTimeRange}</td>
-        <td class="delivery-note-cell"${cid}>${deliveryNote}</td>
+        <td class="customer-cell"${cid}>${esc(o.customer_name)} ${customerBadge}</td>
+        <td${cid}>${esc(o.phone)}</td>
+        <td class="address-cell"${cid}>${esc(o.address)}, ${esc(o.district)}</td>
+        <td${cid}>${deliveryDate !== "—" ? `<span class="badge badge-delivery"${cid}>${esc(deliveryDate)}</span>` : "—"}</td>
+        <td${cid}>${esc(deliveryTimeRange)}</td>
+        <td class="delivery-note-cell"${cid}>${esc(deliveryNote)}</td>
         <td class="order-items-cell order-products-cell"${cid}></td>
         <td class="order-items-cell order-prices-cell"${cid}></td>
         <td class="order-items-cell order-quantities-cell"${cid}></td>
         <td${cid}>${amountSummary(o.items)}</td>
-        <td${cid}>${o.bottles_returned ?? 0}</td>
-        <td${cid}>${paymentMethodLabel[o.payment_method] ?? o.payment_method ?? "COD"}</td>
+        <td${cid}>${esc(o.bottles_returned ?? 0)}</td>
+        <td${cid}>${esc(paymentMethodLabel[o.payment_method] ?? o.payment_method ?? "COD")}</td>
         <td${cid}>
           <label class="paid-toggle"${cid}>
-            <input type="checkbox" class="paid-checkbox" data-id="${o.id}" ${o.paid ? "checked" : ""}${cid} />
+            <input type="checkbox" class="paid-checkbox" data-id="${esc(o.id)}" ${o.paid ? "checked" : ""}${cid} />
             ${o.paid ? "Đã thanh toán" : "Chưa thanh toán"}
           </label>
         </td>
         <td${cid}>
-          <select class="status-select" data-id="${o.id}"${cid}>
+          <select class="status-select" data-id="${esc(o.id)}"${cid}>
             ${Object.entries(statusLabel)
               .map(
                 ([value, label]) =>
@@ -250,12 +241,23 @@ import CustomSelect from "../../components/CustomSelect.astro";
     });
   }
 
+  const previousPage = document.getElementById("orders-previous") as HTMLButtonElement;
+  const nextPage = document.getElementById("orders-next") as HTMLButtonElement;
+  const pageLabel = document.getElementById("orders-page-label")!;
+  previousPage.addEventListener("click", () => { currentPage--; applyFilters(); });
+  nextPage.addEventListener("click", () => { currentPage++; applyFilters(); });
+
   function applyFilters() {
     const filtered = allOrders.filter((o) => {
       if (activeStatus !== "all" && o.status !== activeStatus) return false;
       return true;
     });
-    render(filtered);
+    const pages = Math.max(1, Math.ceil(filtered.length / DISPLAY_PAGE_SIZE));
+    currentPage = Math.min(currentPage, pages - 1);
+    render(filtered.slice(currentPage * DISPLAY_PAGE_SIZE, (currentPage + 1) * DISPLAY_PAGE_SIZE));
+    pageLabel.textContent = `Trang ${currentPage + 1}/${pages} · ${filtered.length} đơn`;
+    previousPage.disabled = currentPage === 0;
+    nextPage.disabled = currentPage === pages - 1;
   }
 
   statusChips.forEach((chip) => {
@@ -263,6 +265,7 @@ import CustomSelect from "../../components/CustomSelect.astro";
       statusChips.forEach((c) => c.classList.remove("active"));
       chip.classList.add("active");
       activeStatus = chip.dataset.status ?? "all";
+      currentPage = 0;
       applyFilters();
     });
   });
@@ -276,16 +279,16 @@ import CustomSelect from "../../components/CustomSelect.astro";
     "Thanh toán", "Trạng thái",
   ];
 
-  function orderToCsvRow(o: any): string[] {
+  function orderToCsvRow(o: OrderRow): string[] {
     return [
       orderCode(o.phone, o.id),
       new Date(o.created_at).toLocaleString("vi-VN"),
       o.customer_name,
       o.phone,
-      `${o.address}, ${o.district}`,
-      extractDeliveryDate(o.shipping_fee_note),
-      extractDeliveryTimeRange(o.shipping_fee_note),
-      extractDeliveryNote(o.shipping_fee_note),
+      `${esc(o.address)}, ${esc(o.district)}`,
+      getOrderDelivery(o).date,
+      getOrderDelivery(o).time,
+      getOrderDelivery(o).note,
       itemsSummary(o.items),
       unitPricesSummary(o.items),
       quantitiesSummary(o.items),
@@ -299,16 +302,12 @@ import CustomSelect from "../../components/CustomSelect.astro";
 
   // Bọc trong dấu "" và nhân đôi dấu " bên trong — quy tắc escape chuẩn của CSV,
   // bắt buộc vì địa chỉ/ghi chú khách nhập tự do có thể chứa dấu phẩy hoặc xuống dòng.
-  function csvCell(value: string): string {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-
   exportCsvBtn.addEventListener("click", () => {
     const rows = [csvHeader, ...allOrders.map(orderToCsvRow)];
     const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
-    // Thêm BOM (﻿) để Excel nhận đúng UTF-8, không thì chữ có dấu tiếng Việt
+    // Thêm BOM (\uFEFF) để Excel nhận đúng UTF-8, không thì chữ có dấu tiếng Việt
     // sẽ hiện sai (vd. "Đơn" thành ký tự lạ) khi mở file trực tiếp bằng Excel.
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
 
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -321,16 +320,17 @@ import CustomSelect from "../../components/CustomSelect.astro";
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError && authError.name !== "AuthSessionMissingError") throw authError;
-      if (!user) return;
+      if (!user || !await hasAdminAccess(supabase)) return;
+      const loadedBefore = new Date().toISOString();
       const [ordersResult, productsResult] = await Promise.all([
-        supabase.from("orders").select("*").order("created_at", { ascending: false }),
+        loadAllRows((from, to) => supabase.from("orders").select("*").lte("created_at", loadedBefore).order("created_at", { ascending: false }).order("id").range(from, to)),
         supabase.from("products").select("slug, name, type, price, price_retail"),
       ]);
-      if (ordersResult.error) throw ordersResult.error;
       allProducts = productsResult.data ?? [];
-      allOrders = (ordersResult.data ?? []).map((order) => ({
+      allOrders = ordersResult.map((order) => ({
         ...order, items: resolveOrderItems(order.items, allProducts),
       }));
+      customerCounts = countOrdersByCustomer(allOrders);
       applyFilters();
       if (productsResult.error) {
         console.error("Không tải được tên và giá sản phẩm cho bảng đơn hàng", { error: productsResult.error });

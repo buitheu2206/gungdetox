@@ -20,6 +20,7 @@
 </div>
 
 <script>
+  import { hasAdminAccess } from "../lib/admin-access";
   import { supabase } from "../lib/supabase";
 
   const loginForm = document.getElementById("admin-login-form") as HTMLFormElement;
@@ -49,7 +50,7 @@
     } else {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
-      if (user) showLoggedIn();
+      if (user && await hasAdminAccess(supabase)) showLoggedIn();
       else showLoggedOut();
     }
   } catch (error) {
@@ -66,18 +67,32 @@
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      errorEl.textContent = "Sai email hoặc mật khẩu.";
+    const button = loginForm.querySelector("button")!;
+    if (button.disabled) return;
+    button.disabled = true;
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw new Error("Sai email hoặc mật khẩu.");
+      if (!await hasAdminAccess(supabase)) throw new Error("Tài khoản không có quyền quản trị.");
+      showLoggedIn();
+    } catch (error) {
+      showLoggedOut();
+      errorEl.textContent = error instanceof Error ? error.message : "Không đăng nhập được. Vui lòng thử lại.";
       errorEl.hidden = false;
-      return;
+    } finally {
+      button.disabled = false;
     }
-    showLoggedIn();
   });
 
   logoutBtn?.addEventListener("click", async () => {
-    await supabase.auth.signOut();
-    showLoggedOut();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      showLoggedOut();
+    } catch (error) {
+      console.error("Không đăng xuất được quản trị", { error });
+      alert("Không đăng xuất được. Vui lòng thử lại.");
+    }
   });
 </script>
 

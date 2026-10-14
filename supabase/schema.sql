@@ -1,3 +1,4 @@
+-- Bootstrap is closed by default. Follow supabase/README.md and apply harden-orders.sql before use.
 -- GỪNG DETOX — khởi tạo database Supabase
 -- Theo tiem-gung-website-plan.md mục 8.3, 8.4, 8.5, 11.1
 -- Chạy 1 lần trong Supabase Dashboard → SQL Editor → New query → dán toàn bộ file này → Run
@@ -75,24 +76,24 @@ alter table posts enable row level security;
 alter table orders enable row level security;
 
 -- products: ai cũng xem được (để hiện trang /san-pham),
--- chỉ chủ tiệm đã đăng nhập mới thêm/sửa/xoá được (qua /admin/san-pham)
+-- Bootstrap đóng quyền ghi; harden-orders.sql cấp lại quyền cho admin đã xác nhận.
 create policy "Ai cũng xem được sản phẩm" on products for select using (true);
-create policy "Admin thêm sản phẩm" on products for insert to authenticated with check (true);
-create policy "Admin sửa sản phẩm" on products for update to authenticated using (true);
-create policy "Admin xoá sản phẩm" on products for delete to authenticated using (true);
+create policy "Admin thêm sản phẩm" on products for insert to authenticated with check (false);
+create policy "Admin sửa sản phẩm" on products for update to authenticated using (false);
+create policy "Admin xoá sản phẩm" on products for delete to authenticated using (false);
 
 -- posts: tương tự sản phẩm
 create policy "Ai cũng xem được bài viết" on posts for select using (true);
-create policy "Admin thêm bài viết" on posts for insert to authenticated with check (true);
-create policy "Admin sửa bài viết" on posts for update to authenticated using (true);
-create policy "Admin xoá bài viết" on posts for delete to authenticated using (true);
+create policy "Admin thêm bài viết" on posts for insert to authenticated with check (false);
+create policy "Admin sửa bài viết" on posts for update to authenticated using (false);
+create policy "Admin xoá bài viết" on posts for delete to authenticated using (false);
 
--- orders: ai cũng đặt được (không cần đăng nhập) và tra cứu được (lọc theo đúng SĐT ở phía web),
--- chỉ chủ tiệm đã đăng nhập mới sửa trạng thái/xoá được (qua /admin/don-hang)
-create policy "Ai cũng đặt được đơn" on orders for insert with check (true);
-create policy "Ai cũng tra cứu được đơn" on orders for select using (true);
-create policy "Admin cập nhật đơn hàng" on orders for update to authenticated using (true);
-create policy "Admin xoá đơn hàng" on orders for delete to authenticated using (true);
+-- orders: đóng truy cập trực tiếp khi bootstrap. RPC tạo/tra cứu và quyền admin
+-- được cấu hình trong các migration tiếp theo (xem supabase/README.md).
+create policy "Ai cũng đặt được đơn" on orders for insert with check (false);
+create policy "Ai cũng tra cứu được đơn" on orders for select using (false);
+create policy "Admin cập nhật đơn hàng" on orders for update to authenticated using (false);
+create policy "Admin xoá đơn hàng" on orders for delete to authenticated using (false);
 
 -- ============================================================
 -- KHO LƯU ẢNH (Storage buckets) cho trang admin upload ảnh
@@ -102,11 +103,11 @@ insert into storage.buckets (id, name, public) values ('product-images', 'produc
 insert into storage.buckets (id, name, public) values ('post-images', 'post-images', true);
 
 create policy "Ai cũng xem được ảnh sản phẩm" on storage.objects for select using (bucket_id = 'product-images');
-create policy "Admin tải ảnh sản phẩm" on storage.objects for insert to authenticated with check (bucket_id = 'product-images');
-create policy "Admin sửa ảnh sản phẩm" on storage.objects for update to authenticated using (bucket_id = 'product-images');
-create policy "Admin xoá ảnh sản phẩm" on storage.objects for delete to authenticated using (bucket_id = 'product-images');
+create policy "Admin tải ảnh sản phẩm" on storage.objects for insert to authenticated with check (false);
+create policy "Admin sửa ảnh sản phẩm" on storage.objects for update to authenticated using (false);
+create policy "Admin xoá ảnh sản phẩm" on storage.objects for delete to authenticated using (false);
 
 create policy "Ai cũng xem được ảnh blog" on storage.objects for select using (bucket_id = 'post-images');
-create policy "Admin tải ảnh blog" on storage.objects for insert to authenticated with check (bucket_id = 'post-images');
-create policy "Admin sửa ảnh blog" on storage.objects for update to authenticated using (bucket_id = 'post-images');
-create policy "Admin xoá ảnh blog" on storage.objects for delete to authenticated using (bucket_id = 'post-images');
+create policy "Admin tải ảnh blog" on storage.objects for insert to authenticated with check (false);
+create policy "Admin sửa ảnh blog" on storage.objects for update to authenticated using (false);
+create policy "Admin xoá ảnh blog" on storage.objects for delete to authenticated using (false);

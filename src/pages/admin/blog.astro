@@ -64,12 +64,14 @@ import CustomInput from "../../components/CustomInput.astro";
 <script is:inline src="https://cdn.quilljs.com/2.0.3/quill.js"></script>
 
 <script>
+  import { initContentForm } from "../../lib/content-form";
+  import { escapeHtml as esc } from "../../lib/output";
   import { deleteContentWithImages } from "../../lib/delete-content";
   import { initGalleryPreview } from "../../lib/gallery-preview";
   import { uploadContentImages } from "../../lib/content-images";
   import { initMainImagePreview } from "../../lib/image-preview";
   import { supabase } from "../../lib/supabase";
-  import { renderPostBodyHtml } from "../../lib/templates";
+  import { renderPostBodyHtml, type PostRow } from "../../lib/templates";
 
   const form = document.getElementById("post-form") as HTMLFormElement;
   const editIdInput = document.getElementById("edit-id") as HTMLInputElement;
@@ -86,7 +88,7 @@ import CustomInput from "../../components/CustomInput.astro";
   // Quill (rich-text editor) nạp qua <script src="cdn.quilljs.com"> ở global
   // window.Quill — xem hướng dẫn thêm 1 dòng trống giữa đoạn không còn áp dụng
   // nữa vì giờ lưu HTML thật, enter 1 lần cũng tự xuống dòng/đoạn đúng ý.
-  const quill = new (window as any).Quill("#f-body-editor", {
+  const quill = new window.Quill("#f-body-editor", {
     theme: "snow",
     modules: {
       toolbar: [
@@ -101,8 +103,10 @@ import CustomInput from "../../components/CustomInput.astro";
     },
   });
 
-  let posts: any[] = [];
+  type AdminPost = PostRow & { id: string };
+  let posts: AdminPost[] = [];
   let currentImageUrl: string | null = null;
+  const uploadedFiles = new Map<File, string>();
   const gallery = initGalleryPreview(galleryInput, galleryPreview);
 
   const renderMainImagePreview = initMainImagePreview(mainImageInput, mainImagePreview, currentImageEl, {
@@ -111,6 +115,7 @@ import CustomInput from "../../components/CustomInput.astro";
   });
 
   function resetForm() {
+    uploadedFiles.clear();
     form.reset();
     editIdInput.value = "";
     quill.setText("");
@@ -121,7 +126,9 @@ import CustomInput from "../../components/CustomInput.astro";
     cancelBtn.hidden = true;
   }
 
-  function fillForm(p: any) {
+  function fillForm(p: AdminPost) {
+    if (submission.isSaving()) return;
+    uploadedFiles.clear();
     form.reset();
     editIdInput.value = p.id;
     field("f-slug").value = p.slug;
@@ -144,12 +151,12 @@ import CustomInput from "../../components/CustomInput.astro";
       .map(
         (p) => `
       <tr>
-        <td>${p.title}</td>
-        <td>${p.tag ?? ""}</td>
-        <td>${new Date(p.published_at).toLocaleDateString("vi-VN")}</td>
+        <td>${esc(p.title)}</td>
+        <td>${esc(p.tag ?? "")}</td>
+        <td>${new Date(p.published_at ?? "").toLocaleDateString("vi-VN")}</td>
         <td>
-          <button class="edit-btn" data-id="${p.id}">Sửa</button>
-          <button class="delete-btn" data-id="${p.id}">Xoá</button>
+          <button class="edit-btn" data-id="${esc(p.id)}">Sửa</button>
+          <button class="delete-btn" data-id="${esc(p.id)}">Xoá</button>
         </td>
       </tr>
     `
@@ -164,7 +171,7 @@ import CustomInput from "../../components/CustomInput.astro";
     });
     document.querySelectorAll<HTMLButtonElement>(".delete-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        if (btn.disabled || !confirm("Xoá bài viết này và toàn bộ ảnh đã tải lên của bài viết?")) return;
+        if (submission.isSaving() || btn.disabled || !confirm("Xoá bài viết này và toàn bộ ảnh đã tải lên của bài viết?")) return;
         btn.disabled = true;
         try {
           const warning = await deleteContentWithImages(supabase, "posts", btn.dataset.id ?? "");
@@ -187,7 +194,7 @@ import CustomInput from "../../components/CustomInput.astro";
       .select("*")
       .order("published_at", { ascending: false });
     if (error) {
-      tbody.innerHTML = `<tr><td colspan="4">Lỗi: ${error.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4">Lỗi: ${esc(error.message)}</td></tr>`;
       return;
     }
     posts = data ?? [];
@@ -196,26 +203,19 @@ import CustomInput from "../../components/CustomInput.astro";
 
   cancelBtn.addEventListener("click", resetForm);
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
+  const submission = initContentForm(form, async () => {
     if (!quill.getText().trim()) {
       alert("Vui lòng nhập nội dung bài viết");
       return;
     }
 
-    let imageUrl: string | null;
-    try {
-      imageUrl = await uploadContentImages(supabase, "posts", {
-        currentUrl: currentImageUrl,
-        mainFile: mainImageInput.files?.[0],
-        galleryFiles: Array.from(galleryInput.files ?? []),
-        galleryUrls: gallery.getUrls(),
-      });
-    } catch (error) {
-      alert(error instanceof Error ? error.message : String(error));
-      return;
-    }
+    const images = await uploadContentImages(supabase, "posts", {
+      currentUrl: currentImageUrl,
+      mainFile: mainImageInput.files?.[0],
+      galleryFiles: Array.from(galleryInput.files ?? []),
+      galleryUrls: gallery.getUrls(),
+      uploadedFiles,
+    });
 
     // Dọn khoảng trắng/dấu phẩy thừa ở các field hay bị dính khi copy-paste tay
     // (vd. gõ "detox, " rồi quên xoá dấu phẩy) — tránh tag hiển thị lỗi ngoài trang.
@@ -226,9 +226,9 @@ import CustomInput from "../../components/CustomInput.astro";
       title: field("f-title").value.trim(),
       tag: cleanTag || null,
       read_time: field("f-read-time").value.trim() || null,
-      body: quill.root.innerHTML,
-      image_url: imageUrl,
-      gallery_images: gallery.getUrls().length ? gallery.getUrls() : null,
+      body: renderPostBodyHtml(quill.root.innerHTML),
+      image_url: images.imageUrl,
+      gallery_images: images.galleryUrls.length ? images.galleryUrls : null,
     };
 
     const editId = editIdInput.value;

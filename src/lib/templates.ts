@@ -1,6 +1,8 @@
+import { escapeHtml as esc, safeMediaUrl, sanitizePostHtml } from "./output.ts";
+
 // Hàm tạo HTML cho các loại thẻ, dùng khi render dữ liệu fetch động từ Supabase
 // phía trình duyệt (Astro component .astro không gọi được từ client-side JS).
-// Markup/class phải khớp với CSS global trong src/components/*.astro tương ứng.
+// Markup/class phải khớp với CSS global trong src/styles/cards.css.
 
 // Mã đơn hiển thị cho khách/admin — không phải khoá chính thật (vẫn là uuid `orders.id`),
 // chỉ để dễ đọc/dễ nói qua điện thoại: 6 số cuối SĐT + 6 ký tự đầu của id.
@@ -62,10 +64,6 @@ function money(n?: number | null) {
   return n != null ? `${n.toLocaleString("vi-VN")}đ` : "Đang cập nhật giá";
 }
 
-function esc(s: string) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
 // Tách nội dung bài viết thành từng đoạn <p>. Bài viết thêm bằng tay qua trang
 // admin đôi khi được dán nguyên caption Facebook — loại này chỉ có 1 dấu xuống
 // dòng giữa các câu, không có dòng trống giữa các đoạn như văn bản thường, nên
@@ -92,7 +90,7 @@ export function renderPostBodyHtml(body?: string | null): string {
   const text = (body ?? "").trim();
   if (!text) return "";
   const isRichHtml = /<[a-z][\s\S]*>/i.test(text);
-  if (isRichHtml) return text;
+  if (isRichHtml) return sanitizePostHtml(text);
   return splitIntoParagraphs(text)
     .map((p) => `<p>${esc(p)}</p>`)
     .join("");
@@ -115,18 +113,18 @@ const SITE_ORIGIN = "https://gungdetox.com";
 // phẩm (/san-pham/<slug>), không phải trang /san-pham chung.
 function shareButtonHtml(path: string, title: string, extraClass = ""): string {
   const url = `${SITE_ORIGIN}${path}`;
-  return `<button type="button" class="share-fb-btn${extraClass ? ` ${extraClass}` : ""}" data-share-trigger data-share-url="${url}" data-share-title="${esc(title)}" title="Chia sẻ" aria-label="Chia sẻ">${shareIconSvg}</button>`;
+  return `<button type="button" class="share-fb-btn${extraClass ? ` ${extraClass}` : ""}" data-share-trigger data-share-url="${esc(url)}" data-share-title="${esc(title)}" title="Chia sẻ" aria-label="Chia sẻ">${shareIconSvg}</button>`;
 }
 
 export function productCardHtml(p: ProductRow): string {
   const badge = p.badge
-    ? `<span class="badge badge-${p.badge}">${badgeLabel[p.badge] ?? p.badge}</span>`
+    ? `<span class="badge badge-${esc(p.badge)}">${esc(badgeLabel[p.badge] ?? p.badge)}</span>`
     : "";
   return `
     <article class="product-card${p.in_stock === false ? " out-of-stock" : ""}">
       <a class="media" href="/san-pham/${encodeURIComponent(p.slug)}">
-        ${p.image_url ? `<img src="${p.image_url}" alt="${esc(p.name)}" loading="lazy" />` : `<div class="media-placeholder"></div>`}
-        ${p.video_url ? `<video src="${p.video_url}" muted loop playsinline class="hover-video"></video>` : ""}
+        ${p.image_url ? `<img src="${esc(safeMediaUrl(p.image_url))}" alt="${esc(p.name)}" loading="lazy" />` : `<div class="media-placeholder"></div>`}
+        ${p.video_url ? `<video src="${esc(safeMediaUrl(p.video_url))}" muted loop playsinline class="hover-video"></video>` : ""}
         ${badge}
       </a>
       <div class="body">
@@ -149,13 +147,13 @@ export function productCardHtml(p: ProductRow): string {
 export function comboCardHtml(p: ProductRow): string {
   return `
     <article class="combo-card">
-      ${p.image_url ? `<div class="media"><img src="${p.image_url}" alt="${esc(p.name)}" loading="lazy" /></div>` : ""}
-      ${p.badge ? `<span class="badge">${badgeLabel[p.badge] ?? p.badge}</span>` : ""}
+      ${p.image_url ? `<div class="media"><img src="${esc(safeMediaUrl(p.image_url))}" alt="${esc(p.name)}" loading="lazy" /></div>` : ""}
+      ${p.badge ? `<span class="badge">${esc(badgeLabel[p.badge] ?? p.badge)}</span>` : ""}
       <h3><a href="/san-pham/${encodeURIComponent(p.slug)}">${esc(p.name)}</a></h3>
       <p class="price">${money(p.price)}</p>
       ${
         p.servings
-          ? `<p class="meta">${p.servings} lần uống${p.delivery_schedule ? ` · giao ${esc(p.delivery_schedule)}` : ""}</p>`
+          ? `<p class="meta">${esc(p.servings)} lần uống${p.delivery_schedule ? ` · giao ${esc(p.delivery_schedule)}` : ""}</p>`
           : ""
       }
       <p class="note">Giá chưa gồm phí ship</p>
@@ -180,12 +178,12 @@ export function comboVariantGroupCardHtml(name: string, variants: ProductRow[], 
   }));
   const first = variants[0];
   const badge = first.badge
-    ? `<span class="badge">${badgeLabel[first.badge] ?? first.badge}</span>`
+    ? `<span class="badge">${esc(badgeLabel[first.badge] ?? first.badge)}</span>`
     : "";
   return `
     <article class="combo-card variant-group" data-variants='${esc(JSON.stringify(data))}'>
       <div class="media">
-        ${first.image_url ? `<img src="${first.image_url}" alt="${esc(name)}" loading="lazy" class="variant-image" />` : `<div class="media-placeholder"></div>`}
+        ${first.image_url ? `<img src="${esc(safeMediaUrl(first.image_url))}" alt="${esc(name)}" loading="lazy" class="variant-image" />` : `<div class="media-placeholder"></div>`}
       </div>
       ${badge}
       <h3><a href="/san-pham/${encodeURIComponent(first.slug)}" class="variant-link">${esc(name)}</a></h3>
@@ -195,7 +193,7 @@ export function comboVariantGroupCardHtml(name: string, variants: ProductRow[], 
         ${variants
           .map(
             (p, i) =>
-              `<label><input type="radio" name="variant-${esc(first.slug)}" value="${i}" ${i === 0 ? "checked" : ""}/> ${labels?.[i] ? esc(labels[i]) : p.servings ? `${p.servings} chai` : esc(p.name)}</label>`
+              `<label><input type="radio" name="variant-${esc(first.slug)}" value="${i}" ${i === 0 ? "checked" : ""}/> ${labels?.[i] ? esc(labels[i]) : p.servings ? `${esc(p.servings)} chai` : esc(p.name)}</label>`
           )
           .join("")}
       </fieldset>
@@ -210,12 +208,12 @@ export function comboVariantGroupCardHtml(name: string, variants: ProductRow[], 
 
 export function setDetoxCardHtml(p: ProductRow, setNumber: number): string {
   return `
-    <article class="set-card theme-${p.color_theme ?? "green"}">
+    <article class="set-card theme-${esc(p.color_theme ?? "green")}">
       <a class="media" href="/san-pham/${encodeURIComponent(p.slug)}">
-        ${p.image_url ? `<img src="${p.image_url}" alt="${esc(p.name)}" loading="lazy" />` : `<div class="media-placeholder"></div>`}
+        ${p.image_url ? `<img src="${esc(safeMediaUrl(p.image_url))}" alt="${esc(p.name)}" loading="lazy" />` : `<div class="media-placeholder"></div>`}
       </a>
       <span class="set-number">SET ${setNumber}</span>
-      ${p.badge ? `<span class="badge">${p.badge === "best-seller" ? "Best Seller" : p.badge}</span>` : ""}
+      ${p.badge ? `<span class="badge">${esc(p.badge === "best-seller" ? "Best Seller" : p.badge)}</span>` : ""}
       <h3><a href="/san-pham/${encodeURIComponent(p.slug)}">${esc(p.name)}</a></h3>
       <p class="goal">${esc(p.set_goal ?? "")}</p>
       <p class="price">${money(p.price)}<span> / set (7 chai)</span></p>
@@ -236,8 +234,8 @@ export function blogCardHtml(post: PostRow): string {
     <article class="blog-card">
       <a class="blog-media-link" href="${href}">
         <div class="blog-media">
-          ${post.image_url ? `<img src="${post.image_url}" alt="${esc(post.title)}" loading="lazy" />` : `<div class="blog-media-placeholder"></div>`}
-          ${post.video_url ? `<video src="${post.video_url}" muted loop playsinline class="blog-hover-video"></video>` : ""}
+          ${post.image_url ? `<img src="${esc(safeMediaUrl(post.image_url))}" alt="${esc(post.title)}" loading="lazy" />` : `<div class="blog-media-placeholder"></div>`}
+          ${post.video_url ? `<video src="${esc(safeMediaUrl(post.video_url))}" muted loop playsinline class="blog-hover-video"></video>` : ""}
         </div>
       </a>
       <div class="blog-body">

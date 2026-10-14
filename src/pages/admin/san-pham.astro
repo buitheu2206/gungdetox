@@ -108,6 +108,10 @@ import ImageUpload from "../../components/ImageUpload.astro";
 </BaseLayout>
 
 <script>
+  import { initContentForm } from "../../lib/content-form";
+  import type { ProductRow } from "../../lib/templates";
+  type AdminProduct = ProductRow & { id: string };
+  import { escapeHtml as esc, safeMediaUrl } from "../../lib/output";
   import { deleteContentWithImages } from "../../lib/delete-content";
   import { initGalleryPreview } from "../../lib/gallery-preview";
   import { uploadContentImages } from "../../lib/content-images";
@@ -137,8 +141,9 @@ import ImageUpload from "../../components/ImageUpload.astro";
   const mainImagePreview = document.getElementById("main-image-preview") as HTMLDivElement;
   const galleryInput = document.getElementById("f-gallery") as HTMLInputElement;
 
-  let products: any[] = [];
+  let products: AdminProduct[] = [];
   let currentImageUrl: string | null = null;
+  const uploadedFiles = new Map<File, string>();
   const gallery = initGalleryPreview(galleryInput, galleryPreview);
 
   // Astro chỉ áp CSS scoped (data-astro-cid-*) cho phần tử render lúc build; phần tử
@@ -153,6 +158,7 @@ import ImageUpload from "../../components/ImageUpload.astro";
   });
 
   function resetForm() {
+    uploadedFiles.clear();
     form.reset();
     editIdInput.value = "";
     currentImageUrl = null;
@@ -162,17 +168,19 @@ import ImageUpload from "../../components/ImageUpload.astro";
     cancelBtn.hidden = true;
   }
 
-  function fillForm(p: any) {
+  function fillForm(p: AdminProduct) {
+    if (submission.isSaving()) return;
+    uploadedFiles.clear();
     form.reset();
     editIdInput.value = p.id;
     field("f-slug").value = p.slug;
     setSelect("f-type", p.type);
     field("f-name").value = p.name;
     field("f-category").value = p.category ?? "";
-    field("f-price-retail").value = p.price_retail ?? "";
-    field("f-price").value = p.price ?? "";
+    field("f-price-retail").value = String(p.price_retail ?? "");
+    field("f-price").value = String(p.price ?? "");
     field("f-volume").value = p.volume ?? "";
-    field("f-servings").value = p.servings ?? "";
+    field("f-servings").value = String(p.servings ?? "");
     field("f-delivery").value = p.delivery_schedule ?? "";
     field("f-goal").value = p.set_goal ?? "";
     setSelect("f-color", p.color_theme ?? "");
@@ -202,17 +210,17 @@ import ImageUpload from "../../components/ImageUpload.astro";
   const typeGroupOrder = ["single", "combo", "set"];
 
   function renderTable() {
-    const rowHtml = (p: any) => {
+    const rowHtml = (p: AdminProduct) => {
       const price = p.price ?? p.price_retail;
       return `
-      <tr data-id="${p.id}"${cid}>
-        <td${cid}>${p.image_url ? `<img class="row-thumb" src="${p.image_url}" alt=""${cid} />` : `<span class="row-thumb row-thumb-empty"${cid}>🫚</span>`}</td>
-        <td${cid}>${p.name}</td>
-        <td${cid}><span class="type-pill type-pill-${p.type}"${cid}>${p.type}</span></td>
+      <tr data-id="${esc(p.id)}"${cid}>
+        <td${cid}>${p.image_url ? `<img class="row-thumb" src="${esc(safeMediaUrl(p.image_url))}" alt=""${cid} />` : `<span class="row-thumb row-thumb-empty"${cid}>🫚</span>`}</td>
+        <td${cid}>${esc(p.name)}</td>
+        <td${cid}><span class="type-pill type-pill-${esc(p.type)}"${cid}>${esc(p.type)}</span></td>
         <td class="${price ? "" : "price-pending"}"${cid}>${price ? `${price.toLocaleString("vi-VN")}đ` : "Đang cập nhật"}</td>
         <td class="actions-cell"${cid}>
-          <button class="edit-btn" data-id="${p.id}"${cid}>Sửa</button>
-          <button class="delete-btn" data-id="${p.id}"${cid}>Xoá</button>
+          <button class="edit-btn" data-id="${esc(p.id)}"${cid}>Sửa</button>
+          <button class="delete-btn" data-id="${esc(p.id)}"${cid}>Xoá</button>
         </td>
       </tr>
     `;
@@ -228,7 +236,7 @@ import ImageUpload from "../../components/ImageUpload.astro";
         const items = products.filter((p) => p.type === type);
         if (items.length === 0) return "";
         return `
-          <tr class="group-row"${cid}><td colspan="5"${cid}>${typeGroupLabel[type] ?? type} (${items.length})</td></tr>
+          <tr class="group-row"${cid}><td colspan="5"${cid}>${esc(typeGroupLabel[type] ?? type)} (${items.length})</td></tr>
           ${items.map(rowHtml).join("")}
         `;
       })
@@ -242,7 +250,7 @@ import ImageUpload from "../../components/ImageUpload.astro";
     });
     document.querySelectorAll<HTMLButtonElement>(".delete-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        if (btn.disabled || !confirm("Xoá sản phẩm này và toàn bộ ảnh đã tải lên của sản phẩm?")) return;
+        if (submission.isSaving() || btn.disabled || !confirm("Xoá sản phẩm này và toàn bộ ảnh đã tải lên của sản phẩm?")) return;
         btn.disabled = true;
         try {
           const warning = await deleteContentWithImages(supabase, "products", btn.dataset.id ?? "");
@@ -262,7 +270,7 @@ import ImageUpload from "../../components/ImageUpload.astro";
   async function loadProducts() {
     const { data, error } = await supabase.from("products").select("*").order("sort_order");
     if (error) {
-      tbody.innerHTML = `<tr><td colspan="5">Lỗi: ${error.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5">Lỗi: ${esc(error.message)}</td></tr>`;
       return;
     }
     products = data ?? [];
@@ -271,26 +279,19 @@ import ImageUpload from "../../components/ImageUpload.astro";
 
   cancelBtn.addEventListener("click", resetForm);
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
+  const submission = initContentForm(form, async () => {
     const bottleOptions = [
       (document.getElementById("f-bottle-glass") as HTMLInputElement).checked ? "glass" : null,
       (document.getElementById("f-bottle-plastic") as HTMLInputElement).checked ? "plastic" : null,
     ].filter(Boolean);
 
-    let imageUrl: string | null;
-    try {
-      imageUrl = await uploadContentImages(supabase, "products", {
-        currentUrl: currentImageUrl,
-        mainFile: mainImageInput.files?.[0],
-        galleryFiles: Array.from(galleryInput.files ?? []),
-        galleryUrls: gallery.getUrls(),
-      });
-    } catch (error) {
-      alert(error instanceof Error ? error.message : String(error));
-      return;
-    }
+    const images = await uploadContentImages(supabase, "products", {
+      currentUrl: currentImageUrl,
+      mainFile: mainImageInput.files?.[0],
+      galleryFiles: Array.from(galleryInput.files ?? []),
+      galleryUrls: gallery.getUrls(),
+      uploadedFiles,
+    });
 
     const payload = {
       slug: field("f-slug").value,
@@ -308,8 +309,8 @@ import ImageUpload from "../../components/ImageUpload.astro";
       set_goal: field("f-goal").value || null,
       color_theme: (document.getElementById("f-color") as HTMLSelectElement).value || null,
       badge: (document.getElementById("f-badge") as HTMLSelectElement).value || null,
-      image_url: imageUrl,
-      gallery_images: gallery.getUrls().length ? gallery.getUrls() : null,
+      image_url: images.imageUrl,
+      gallery_images: images.galleryUrls.length ? images.galleryUrls : null,
       in_stock: (document.getElementById("f-in-stock") as HTMLInputElement).checked,
     };
 

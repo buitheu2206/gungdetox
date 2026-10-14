@@ -1,5 +1,5 @@
 ---
-// Tra cứu đơn hàng + số chai đã trả bằng SĐT — mục 6.3 (section 5), 8.5
+// Tra cứu một đơn bằng mã đơn và SĐT — mục 6.3 (section 5), 8.5
 ---
 
 <section class="order-lookup" id="order-lookup">
@@ -7,11 +7,13 @@
     <span class="order-lookup-icon">🔍</span>
     <div>
       <h3>Tra cứu đơn hàng</h3>
-      <p class="hint">Nhập số điện thoại đã dùng khi đặt hàng</p>
+      <p class="hint">Nhập mã đơn và số điện thoại đã dùng khi đặt hàng</p>
     </div>
   </div>
 
   <form id="lookup-form">
+    <input type="text" name="code" placeholder="Mã đơn (VD: 123456-ABCDEF)" aria-label="Mã đơn"
+      pattern="[0-9]{6}-[A-Fa-f0-9]{6}" maxlength="13" required />
     <input
       type="tel"
       name="phone"
@@ -28,85 +30,40 @@
 
 <script>
   import { supabase } from "../lib/supabase";
-  import { orderCode } from "../lib/templates";
-  import { ORDER_STATUS_LABELS as statusLabel } from "../lib/order-details";
-
-  // Thứ tự nhóm hiển thị — đơn đang chờ xử lý/giao lên trước để khách thấy ngay việc cần quan tâm.
-  const statusOrder = ["processing", "delivering", "delivered", "cancelled"];
-
-  function itemsSummary(items: any[]) {
-    return (items ?? []).map((i) => `${i.productSlug} × ${i.quantity}`).join(", ");
-  }
+  import { lookupCustomerOrder } from "../lib/order-lookup";
+  import { ORDER_STATUS_LABELS } from "../lib/order-details";
+  import { isOrderItems } from "../lib/order-pricing";
+  import { escapeHtml } from "../lib/output";
 
   const form = document.getElementById("lookup-form") as HTMLFormElement;
-  const resultBox = document.getElementById("lookup-result") as HTMLDivElement;
-
-  // Bubble lỗi validate mặc định của trình duyệt hiện theo ngôn ngữ trình duyệt/hệ điều
-  // hành (vd "Please fill out this field"), không theo lang="vi" của trang — tự set message
-  // tiếng Việt qua setCustomValidity() để luôn hiện đúng tiếng Việt bất kể máy khách cài đặt gì.
-  const phoneInput = form?.querySelector<HTMLInputElement>('input[name="phone"]');
-  phoneInput?.addEventListener("invalid", () => {
-    phoneInput.setCustomValidity(
-      phoneInput.validity.valueMissing
-        ? "Vui lòng nhập số điện thoại"
-        : phoneInput.title || "Số điện thoại không hợp lệ"
-    );
-  });
-  phoneInput?.addEventListener("input", () => phoneInput.setCustomValidity(""));
-
-  form?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const phone = (new FormData(form).get("phone") as string)?.trim();
-    if (!phone) return;
-
-    resultBox.hidden = false;
-    resultBox.textContent = "Đang tra cứu...";
-
-    const { data: orders, error } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("phone", phone)
-      .order("created_at", { ascending: false });
-
-    if (error || !orders || orders.length === 0) {
-      resultBox.innerHTML = `<p class="not-found">Không tìm thấy đơn hàng nào với số điện thoại này.</p>`;
-      return;
+  const result = document.getElementById("lookup-result")!;
+  const button = form.querySelector("button")!;
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (button.disabled) return;
+    button.disabled = true;
+    result.hidden = false;
+    result.textContent = "Đang tra cứu…";
+    try {
+      const fields = new FormData(form);
+      const order = await lookupCustomerOrder(supabase, String(fields.get("code") ?? ""), String(fields.get("phone") ?? ""));
+      if (!order) {
+        result.textContent = "Không tìm thấy đơn khớp mã đơn và số điện thoại này.";
+        return;
+      }
+      const items = isOrderItems(order.items)
+        ? order.items.map((item) => `${item.productSlug} × ${item.quantity}`).join(", ")
+        : "Thông tin sản phẩm chưa hợp lệ. Vui lòng liên hệ tiệm.";
+      result.innerHTML = `<p><strong>${escapeHtml(order.code)}</strong></p>
+        <p>${escapeHtml(ORDER_STATUS_LABELS[order.status] ?? order.status)}</p>
+        <p>${escapeHtml(items)}</p>
+        <p>${order.paid ? "Đã thanh toán" : "Chưa thanh toán"} · ${escapeHtml(order.bottles_returned ?? 0)} chai đã trả</p>`;
+    } catch (error) {
+      console.error("Không tra cứu được đơn hàng", { error });
+      result.textContent = error instanceof Error ? error.message : "Không tra cứu được. Vui lòng thử lại.";
+    } finally {
+      button.disabled = false;
     }
-
-    const totalBottlesReturned = orders.reduce((sum, o) => sum + (o.bottles_returned ?? 0), 0);
-
-    const groups = statusOrder
-      .map((status) => ({ status, orders: orders.filter((o) => o.status === status) }))
-      .filter((g) => g.orders.length > 0);
-
-    resultBox.innerHTML = `
-      <p class="summary">
-        <strong>${orders.length}</strong> đơn đã đặt · <strong>${totalBottlesReturned}</strong> chai đã trả
-      </p>
-      ${groups
-        .map(
-          (g) => `
-        <div class="status-group">
-          <p class="status-group-title status-${g.status}">${statusLabel[g.status] ?? g.status} (${g.orders.length})</p>
-          <ul class="order-list">
-            ${g.orders
-              .map(
-                (o) => `
-              <li>
-                <span class="order-code">${orderCode(o.phone, o.id)}</span>
-                <span class="order-date">${new Date(o.created_at).toLocaleDateString("vi-VN")}</span>
-                <span class="order-items">${itemsSummary(o.items)}</span>
-                <span class="paid-badge ${o.paid ? "paid-yes" : "paid-no"}">${o.paid ? "💳 Đã thanh toán" : "⏳ Chưa thanh toán"}</span>
-              </li>
-            `
-              )
-              .join("")}
-          </ul>
-        </div>
-      `
-        )
-        .join("")}
-    `;
   });
 </script>
 
@@ -150,6 +107,7 @@
   }
 
   #lookup-form {
+    flex-wrap: wrap;
     display: flex;
     gap: 0.6rem;
   }

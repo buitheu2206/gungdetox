@@ -57,7 +57,7 @@ files.forEach((f, i) => {
       { stdio: "pipe" }
     );
     ok++;
-  } catch (e) {
+  } catch {
     fail++;
     failed.push(rel);
   }

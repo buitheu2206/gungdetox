@@ -1,3 +1,4 @@
+if (!process.env.VERIFY_ADMIN_PASSWORD) throw new Error("Set VERIFY_ADMIN_PASSWORD for the test admin account before running this script.");
 import { chromium } from "playwright";
 
 const browser = await chromium.launch();
@@ -39,7 +40,7 @@ console.log("Order placed OK");
 // Check admin
 await page.goto("http://localhost:4322/admin/don-hang", { waitUntil: "networkidle" });
 await page.fill('#admin-login-form input[name="email"]', "buitheu698@gmail.com");
-await page.fill('#admin-login-form input[name="password"]', "Buitheu698@");
+await page.fill('#admin-login-form input[name="password"]', process.env.VERIFY_ADMIN_PASSWORD);
 await page.click('#admin-login-form button[type="submit"]');
 await page.waitForSelector("#orders-table", { state: "visible", timeout: 10000 });
 await page.waitForTimeout(1000);

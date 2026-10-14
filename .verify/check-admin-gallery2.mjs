@@ -1,3 +1,4 @@
+if (!process.env.VERIFY_ADMIN_PASSWORD) throw new Error("Set VERIFY_ADMIN_PASSWORD for the test admin account before running this script.");
 import { chromium } from "playwright";
 import path from "path";
 import { createClient } from "@supabase/supabase-js";
@@ -13,7 +14,7 @@ await page.goto("http://localhost:4322/admin/san-pham", { waitUntil: "domcontent
 const alreadyIn = await page.waitForSelector("#admin-content:not([hidden])", { timeout: 3000 }).then(() => true).catch(() => false);
 if (!alreadyIn) {
   await page.fill('#admin-login-form input[name="email"]', "buitheu698@gmail.com");
-  await page.fill('#admin-login-form input[name="password"]', "Buitheu698@");
+  await page.fill('#admin-login-form input[name="password"]', process.env.VERIFY_ADMIN_PASSWORD);
   await page.click('#admin-login-form button[type="submit"]');
   await page.waitForSelector("#admin-content:not([hidden])", { timeout: 10000 });
 }

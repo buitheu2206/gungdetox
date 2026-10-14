@@ -13,7 +13,7 @@ src/pages/
 ├── index.astro              Trang chủ
 ├── san-pham.astro           Danh sách sản phẩm (lẻ / combo / 5 Set Detox)
 ├── san-pham/[slug].astro    Chi tiết 1 sản phẩm
-├── dat-hang.astro           Đặt hàng (4 bước) + tra cứu đơn theo SĐT
+├── dat-hang.astro           Đặt hàng (4 bước) + tra cứu bằng mã đơn và SĐT
 ├── don-hang.astro           Chi tiết /don-hang/{order_code}, yêu cầu đăng nhập quản trị
 ├── blog.astro, blog/[slug].astro
 ├── khoa-hoc.astro           Nhượng quyền / chuyển giao công thức
@@ -27,9 +27,8 @@ src/pages/
 
 Dữ liệu động (danh sách sản phẩm/bài blog hiện trên card) được dựng bằng các hàm HTML string
 trong `src/lib/templates.ts` thay vì import thẳng component `.astro` — vì component `.astro`
-không gọi được từ script client-side. Các file `src/components/ProductCard.astro`,
-`ComboCard.astro`, `SetDetoxCard.astro` chỉ giữ lại để tham chiếu cấu trúc props/markup,
-không trang nào import trực tiếp; CSS thật nằm ở `src/styles/cards.css`.
+không gọi được từ script client-side. CSS dùng chung nằm ở `src/styles/cards.css`.
+Các component card tham chiếu không còn được giữ thành bản sao trong source.
 
 ## Supabase
 
@@ -42,15 +41,16 @@ Bảng quản trị và CSV ưu tiên giá này để tính thành tiền, chưa
 thiếu giá dùng giá sản phẩm hiện tại để hiển thị, không ghi ngược vào DB; giá này có
 thể khác giá lúc đặt. Sản phẩm đã xoá hoặc chưa có giá vẫn hiển thị “—”. Tên sản phẩm
 được lấy từ bảng `products`; nếu không tìm thấy thì giữ mã sản phẩm. Giá được chụp
-từ checkout phía trình duyệt; tiệm vẫn cần xác nhận trước khi thu tiền.
+từ bảng sản phẩm trong RPC; tiệm vẫn cần xác nhận trước khi thu tiền.
 
-RLS: ai cũng đọc được `products`/`posts`/`orders` (để trang public hiện được), chỉ tài khoản
-`authenticated` mới ghi/sửa/xoá.
+RLS: public chỉ đọc sản phẩm/bài viết; mọi thao tác quản trị yêu cầu UUID có trong
+`admin_users`. Khách tạo đơn qua `create_order_with_receipt` và tra cứu bằng **mã đơn + SĐT**
+qua `lookup_order`; không được đọc bảng `orders` trực tiếp. Trang chi tiết đơn và ảnh
+chuyển khoản chỉ dành cho admin. Giá đơn mới được chụp từ DB ở RPC.
 
-Trang chi tiết đơn xác minh phiên đăng nhập trước khi truy vấn và không đưa dữ liệu khách vào
-HTML build hoặc sitemap. Đây là kiểm soát giao diện; policy SELECT công khai của `orders`
-hiện vẫn cho phép đọc qua API. Cần thiết kế lại API tra cứu khách trước khi siết policy này
-để tránh làm hỏng tra cứu theo SĐT và bước đặt hàng đang dùng `.insert().select()`.
+Thứ tự bootstrap, migration và test quyền nằm ở [supabase/README.md](supabase/README.md).
+Deploy client mới sau `harden-orders.sql`. Đơn mới lưu ngày/giờ/ghi chú vào các cột riêng;
+đơn cũ vẫn đọc được qua parser legacy.
 
 URL `/don-hang/{order_code}` được rewrite về `don-hang/index.html` bởi `public/.htaccess`
 trên hosting Apache/LiteSpeed có bật `mod_rewrite`; `src/middleware.ts` xử lý tương tự khi dev.
@@ -145,3 +145,14 @@ Kiểm tra lại sau khi deploy: `/`, `/dat-hang/`, `/san-pham/`.
 
 `tiem-gung-website-plan.md` — toàn bộ yêu cầu/kế hoạch gốc, nguồn tham chiếu cho mọi quyết
 định thiết kế/kỹ thuật trong code (comment trong code hay trỏ về mục số trong file này).
+
+## Kiểm tra trước deploy
+
+`npm run check` chạy ESLint, Astro typecheck và unit test; `npm run build` kiểm tra build tĩnh.
+CI website chạy các bước này trước upload. Deno entrypoint được kiểm tra trong môi trường
+Supabase; Astro typecheck chỉ kiểm tra mã dùng chung và handler, không giả lập Deno runtime.
+
+Kiểm tra gallery trong trình duyệt local: chạy dev server, rồi gọi
+`(await import('/tests/gallery.browser.mjs')).runGalleryTests()` trong console.
+Fixture không gọi Supabase. Các script `.verify` là kiểm tra thủ công lịch sử, có script ghi dữ liệu;
+không chạy chúng hàng loạt hoặc dùng tài khoản production để kiểm thử.

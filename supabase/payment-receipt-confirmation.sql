@@ -31,7 +31,11 @@ begin
   select pg_get_triggerdef(oid) into trigger_definition from pg_trigger
   where tgname = 'notify_new_order_email' and tgrelid = 'public.orders'::regclass;
   if trigger_definition is null then
-    raise exception 'Thiếu webhook email hiện tại. Cấu hình notify_new_order_email trước khi đổi thời điểm gửi.';
+    if exists (select 1 from public.orders) then
+      raise exception 'Thiếu webhook email hiện tại. Cấu hình notify_new_order_email trước khi đổi thời điểm gửi.';
+    end if;
+    raise notice 'DB mới: cấu hình webhook notify_order_receipt_email sau bootstrap theo supabase/README.md.';
+    return;
   end if;
   trigger_definition := replace(trigger_definition,
     'CREATE TRIGGER notify_new_order_email AFTER INSERT',

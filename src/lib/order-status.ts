@@ -10,11 +10,16 @@ export async function saveOrderStatus(client: SupabaseClient, order: Pick<OrderR
     status_history: [...(order.status_history ?? []), { status, at: new Date().toISOString() }],
   };
   try {
-    const { data, error } = await client.from("orders").update(update).eq("id", order.id).select("id").single();
+    let query = client.from("orders").update(update).eq("id", order.id).eq("status", order.status);
+    // Compare both fields so an intervening edit cannot overwrite its history, even after a status reversal.
+    query = order.status_history == null
+      ? query.is("status_history", null)
+      : query.eq("status_history", JSON.stringify(order.status_history));
+    const { data, error } = await query.select("id").single();
     if (error || !data) throw error ?? new Error("Không tìm thấy đơn hàng hoặc không có quyền cập nhật.");
     return update;
   } catch (error) {
     console.error("Không cập nhật được trạng thái đơn hàng", { id: order.id, status, error });
-    throw new Error("Không cập nhật được trạng thái đơn hàng. Vui lòng thử lại.", { cause: error });
+    throw new Error("Không cập nhật được trạng thái đơn hàng. Dữ liệu có thể đã đổi; tải lại trang trước khi thử lại.", { cause: error });
   }
 }

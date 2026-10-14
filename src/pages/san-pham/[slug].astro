@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ShareButton from "../../components/ShareButton.astro";
+import { loadAllRows } from "../../lib/load-rows";
 import { supabase } from "../../lib/supabase";
 import { productCardHtml, comboCardHtml, setDetoxCardHtml, type ProductRow } from "../../lib/templates";
 
@@ -11,8 +12,7 @@ import { productCardHtml, comboCardHtml, setDetoxCardHtml, type ProductRow } fro
 // Script phía client bên dưới sẽ tự fetch lại đúng slug này để cập nhật nếu admin
 // đã sửa nội dung sau lần build. Metadata chia sẻ vẫn cần rebuild để cập nhật.
 export async function getStaticPaths() {
-  const { data } = await supabase.from("products").select("*");
-  const allProducts = data ?? [];
+  const allProducts = await loadAllRows((from, to) => supabase.from("products").select("*").order("id").range(from, to));
   return allProducts.map((p) => ({ params: { slug: p.slug }, props: { product: p, allProducts } }));
 }
 
@@ -111,10 +111,10 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
               {product.delivery_schedule ? ` · giao ${product.delivery_schedule}` : ""}
             </p>
           )}
-          {product.bottle_options?.length > 0 && (
+          {(product.bottle_options?.length ?? 0) > 0 && (
             <p>
               <strong>Loại chai:</strong>{" "}
-              {product.bottle_options.map((o: string) => bottleLabel[o] ?? o).join(", ")}
+              {(product.bottle_options ?? []).map((o: string) => bottleLabel[o] ?? o).join(", ")}
             </p>
           )}
         </div>
@@ -154,7 +154,6 @@ const images = [product.image_url, ...(product.gallery_images ?? [])].filter(Boo
   import { initDetailGallery } from "../../lib/detail-gallery";
   import { supabase } from "../../lib/supabase";
 
-  const bottleLabel: Record<string, string> = { glass: "Thủy tinh", plastic: "Nhựa" };
   const page = document.querySelector(".detail-page") as HTMLElement;
   const slug = page?.dataset.slug;
   if (!slug) throw new Error("missing slug");

@@ -1,5 +1,6 @@
 -- No real email is sent: pg_net's queue and all test data are rolled back.
 begin;
+insert into public.products(slug, type, name, price_retail) values ('audit-receipt-fixture', 'single', 'Receipt test fixture', 42000);
 select set_config('gungdetox.queued_emails', (select count(*)::text from net.http_request_queue), true);
 set local role anon;
 do $$
@@ -8,7 +9,7 @@ declare
   token uuid := gen_random_uuid();
 begin
   select * into customer_order from public.create_order_with_receipt(
-    '{"phone":"0900000000","customer_name":"Confirmation policy test","address":"Test address","district":"Test district","items":[{"productSlug":"test","quantity":1}],"bottle_type":"glass","payment_method":"bank_transfer","bottles_returned":0}', token
+    '{"phone":"0900000000","customer_name":"Confirmation policy test","address":"Test address","district":"Test district","items":[{"productSlug":"audit-receipt-fixture","quantity":1}],"bottle_type":"glass","payment_method":"bank_transfer","bottles_returned":0}', token
   );
   perform set_config('gungdetox.confirm_order', customer_order.id::text, true);
   perform set_config('gungdetox.confirm_token', token::text, true);

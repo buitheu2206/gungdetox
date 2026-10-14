@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "supabase/functions/resend-email/**"
+      - "supabase/functions/_shared/**"
       - "supabase/config.toml"
       - "scripts/build-order-email-function.mjs"
       - "tests/order-notification.test.mjs"

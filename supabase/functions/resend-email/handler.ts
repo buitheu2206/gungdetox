@@ -1,3 +1,4 @@
+import { getOrderDelivery, type DeliveryFields } from "../_shared/order-delivery.ts";
 // Server-only notification handler; recipients always come from configuration.
 interface NotificationConfig {
   webhookSecret: string;
@@ -7,7 +8,7 @@ interface NotificationConfig {
   emailTemplate: string;
 }
 
-interface Order {
+interface Order extends DeliveryFields {
   id: string;
   phone: string;
   customer_name: string;
@@ -42,7 +43,7 @@ function parseOrder(payload: unknown): Order | null {
       || !item.productSlug.trim() || !Number.isInteger(item.quantity) || item.quantity <= 0)) {
     throw new Error("Order must include a valid ID, customer, phone and product quantities.");
   }
-  for (const field of [order.address, order.district, order.shipping_fee_note]) {
+  for (const field of [order.address, order.district, order.shipping_fee_note, order.delivery_date, order.delivery_time, order.delivery_note]) {
     if (field != null && typeof field !== "string") throw new Error("Order delivery details must be text.");
   }
   return order;
@@ -85,8 +86,7 @@ function buildEmail(order: Order, config: NotificationConfig) {
     throw new Error("Set ORDER_NOTIFICATION_TO to valid comma-separated email addresses.");
   }
   const code = `${order.phone.replace(/\D/g, "").slice(-6)}-${order.id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
-  // Checkout currently stores the selected delivery date and time in this note.
-  const deliveryTime = order.shipping_fee_note?.match(/Giao ngày (.+?)\. Ghi chú của khách:/)?.[1] ?? "Chưa có thông tin";
+  const deliveryTime = getOrderDelivery(order).schedule;
   const details = {
     customerName: order.customer_name,
     customerPhone: order.phone,

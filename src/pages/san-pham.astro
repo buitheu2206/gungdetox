@@ -258,6 +258,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 </BaseLayout>
 
 <script>
+  import { escapeHtml as esc } from "../lib/output";
   import { getAstroScopeHtml } from "../lib/astro-scope";
   import { supabase } from "../lib/supabase";
   import {
@@ -317,7 +318,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     const singles = products.filter((p) => p.type === "single");
     const sets = products
       .filter((p) => p.type === "set")
-      .sort((a, b) => (a.category === b.category ? 0 : 0));
+      ;
     const combos = products.filter((p) => p.type === "combo");
 
     singleGrid.innerHTML = singles.length
@@ -433,7 +434,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     .order("sort_order", { ascending: true });
 
   if (error) {
-    singleGrid.innerHTML = `<p class="error">Không tải được sản phẩm: ${error.message}</p>`;
+    singleGrid.innerHTML = `<p class="error">Không tải được sản phẩm: ${esc(error.message)}</p>`;
   } else {
     allProducts = data ?? [];
     render(allProducts);
