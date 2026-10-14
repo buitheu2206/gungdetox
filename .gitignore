@@ -31,3 +31,6 @@ DEPLOY.md
 
 # local verification screenshots (not part of the site)
 .verify/*.png
+
+# Local audit reports
+/reports/
