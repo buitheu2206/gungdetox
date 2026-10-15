@@ -1,0 +1,174 @@
+---
+import CustomSelect from "../../CustomSelect.astro";
+---
+
+<div class="table-wrap">
+  <table id="orders-table">
+    <thead>
+      <tr>
+        <th>Mã đơn</th>
+        <th>Ngày đặt</th>
+        <th>Khách</th>
+        <th>SĐT</th>
+        <th>Địa chỉ</th>
+        <th>Ngày giao</th>
+        <th>Khung giờ</th>
+        <th>Ghi chú giao hàng</th>
+        <th>Sản phẩm</th>
+        <th>Đơn giá</th>
+        <th class="order-quantities-cell">Số lượng</th>
+        <th>Thành tiền</th>
+        <th>Chai trả</th>
+        <th>Hình thức TT</th>
+        <th>Thanh toán</th>
+        <th>Trạng thái</th>
+      </tr>
+    </thead>
+    <tbody id="orders-body">
+      <tr><td colspan="16">Đang tải...</td></tr>
+    </tbody>
+  </table>
+</div>
+<template id="order-status-template">
+  <CustomSelect id="order-status" />
+</template>
+<nav class="pagination" aria-label="Phân trang đơn hàng">
+  <button type="button" id="orders-previous" class="page-btn" disabled>‹ Trang trước</button>
+  <span id="orders-page-label" class="page-label" role="status"></span>
+  <button type="button" id="orders-next" class="page-btn" disabled>Trang sau ›</button>
+</nav>
+
+<style>
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .page-btn {
+    border: 1px solid var(--color-bg-alt);
+    background: #fff;
+    color: var(--color-secondary);
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .page-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-primary) 8%, #fff);
+    border-color: var(--color-primary);
+  }
+
+  .page-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .page-label {
+    font-size: 0.85rem;
+    color: var(--color-secondary);
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    border: 1px solid #c9bfa8;
+  }
+
+  th,
+  td {
+    padding: 0.55rem 0.6rem;
+    text-align: left;
+    white-space: nowrap;
+    vertical-align: middle;
+    border: 1px solid #c9bfa8;
+  }
+
+  th {
+    background: var(--color-bg-alt);
+  }
+
+  td {
+    background: #fff;
+  }
+
+  tbody tr:nth-child(even) td {
+    background: #faf6ec;
+  }
+
+  tbody tr:hover td {
+    background: color-mix(in srgb, var(--color-primary) 8%, #fff);
+  }
+
+  .paid-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .order-items-cell {
+    white-space: pre;
+  }
+
+  .order-quantities-cell {
+    text-align: center;
+  }
+
+  .code {
+    font-family: monospace;
+    font-weight: 600;
+    color: var(--color-secondary);
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .badge-new {
+    background: color-mix(in srgb, var(--color-primary) 16%, #fff);
+    color: var(--color-primary);
+  }
+
+  .customer-cell .badge {
+    margin-left: 0.4rem;
+    vertical-align: middle;
+  }
+
+  .badge-returning {
+    background: color-mix(in srgb, var(--color-accent) 16%, #fff);
+    color: var(--color-accent);
+  }
+
+  .badge-delivery {
+    background: color-mix(in srgb, #2563eb 16%, #fff);
+    color: #2563eb;
+    white-space: nowrap;
+  }
+
+  .delivery-note-cell {
+    white-space: normal;
+    max-width: 220px;
+    min-width: 160px;
+  }
+
+  .address-cell {
+    white-space: normal;
+    max-width: 220px;
+    min-width: 160px;
+  }</style>

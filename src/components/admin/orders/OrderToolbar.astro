@@ -1,0 +1,59 @@
+---
+// Status filters and CSV export controls for the admin order list.
+---
+
+<div class="toolbar-row">
+  <div class="status-filter" id="status-filter">
+    <button data-status="all" class="chip active">Tất cả</button>
+    <button data-status="processing" class="chip">Đang xử lý</button>
+    <button data-status="delivering" class="chip">Đang giao</button>
+    <button data-status="delivered" class="chip">Đã giao</button>
+    <button data-status="cancelled" class="chip">Đã huỷ</button>
+  </div>
+
+  <button type="button" id="export-csv-btn" class="export-btn">Xuất file CSV</button>
+</div>
+
+<style>
+  .toolbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .status-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .export-btn {
+    background: var(--color-secondary);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .chip {
+    border: 1px solid var(--color-bg-alt);
+    background: #fff;
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+
+  .chip.active {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+  }
+
+</style>
