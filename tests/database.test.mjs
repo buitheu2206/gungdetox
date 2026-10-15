@@ -30,11 +30,21 @@ test("should bootstrap a fresh database and enforce admin, lookup and order-writ
     for (const file of ["schema.sql", "secure-storage-policies.sql", "payment-receipts.sql", "payment-receipt-confirmation.sql", "harden-orders.sql"]) {
       await database.exec(await readSql(file));
     }
-    await database.exec(await readSql("tests/harden-orders.sql"));
-    // The SQL test must clean up its fixtures and the migration must be safe to reapply.
-    assert.equal((await database.query("select count(*)::int as count from public.orders")).rows[0].count, 0);
+    // harden-orders.sql must be safe to reapply on its own, before any later migration
+    // also touches create_order_with_receipt.
     await database.exec(await readSql("harden-orders.sql"));
     assert.equal((await database.query("select count(*)::int as count from public.admin_users")).rows[0].count, 3);
+    // One-time schema change, like payment-receipt-confirmation.sql before it — not meant
+    // to be rerun, so applied once here, after harden-orders.sql's own reapply check.
+    await database.exec(await readSql("defer-order-until-payment.sql"));
+    await database.exec(await readSql("tests/harden-orders.sql"));
+    // The SQL test must clean up its fixtures.
+    assert.equal((await database.query("select count(*)::int as count from public.orders")).rows[0].count, 0);
+    // lookup_order's contract changes here (array return, either credential alone works),
+    // so this runs after tests/harden-orders.sql, which still exercises the prior contract.
+    await database.exec(await readSql("flexible-order-lookup.sql"));
+    await database.exec(await readSql("tests/flexible-order-lookup.sql"));
+    assert.equal((await database.query("select count(*)::int as count from public.orders")).rows[0].count, 0);
   } finally {
     await database.close();
   }
@@ -56,8 +66,9 @@ test("should preserve receipt permissions and convert the legacy webhook to one 
     `);
     await database.exec(await readSql("payment-receipt-confirmation.sql"));
     await database.exec(await readSql("harden-orders.sql"));
-    await database.exec(await readSql("tests/payment-receipts.sql"));
-    await database.exec(await readSql("tests/payment-receipt-confirmation.sql"));
+    await database.exec(await readSql("defer-order-until-payment.sql"));
+    await database.exec(await readSql("tests/defer-order-until-payment.sql"));
+    await database.exec(await readSql("flexible-order-lookup.sql"));
     assert.equal((await database.query("select count(*)::int as count from net.http_request_queue")).rows[0].count, 0);
   } finally {
     await database.close();

@@ -1,4 +1,4 @@
-// Receipt uploads are evidence for manual review; they never mark an order as paid.
+// Receipt uploads precede order creation: the order only exists once its receipt is in storage.
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const RECEIPT_BUCKET = "payment-receipts";
@@ -13,26 +13,26 @@ export function validateReceipt(file: Pick<File, "size" | "type">) {
   if (file.size > MAX_RECEIPT_SIZE) throw new Error("Ảnh vượt quá 5 MB. Vui lòng chọn ảnh nhỏ hơn.");
 }
 
-export function getReceiptPath(orderId: string, uploadToken: string) {
-  if (!UUID_PATTERN.test(orderId) || !UUID_PATTERN.test(uploadToken)) {
+export function getReceiptPath(orderId: string) {
+  if (!UUID_PATTERN.test(orderId)) {
     throw new Error("Thông tin gửi ảnh không hợp lệ. Vui lòng liên hệ tiệm kèm mã đơn.");
   }
-  return `${orderId}/${uploadToken}`;
+  return `${orderId}/receipt`;
 }
 
-export async function uploadPaymentReceipt(client: SupabaseClient, orderId: string, uploadToken: string, file: File) {
+export async function uploadPaymentReceipt(client: SupabaseClient, orderId: string, orderData: unknown, file: File) {
   validateReceipt(file);
-  const path = getReceiptPath(orderId, uploadToken);
+  const path = getReceiptPath(orderId);
   try {
     const { error } = await client.storage.from(RECEIPT_BUCKET).upload(path, file, {
       contentType: file.type, upsert: false,
     });
-    if (error) await verifyReceiptUpload(client, orderId, uploadToken, error);
-    const { data: confirmed, error: confirmError } = await client.rpc("confirm_payment_receipt", {
-      order_id: orderId, upload_token: uploadToken,
-    });
-    if (confirmError || !confirmed) {
-      throw new Error("Ảnh đã lưu nhưng chưa gửi được xác nhận. Vui lòng bấm Xác nhận đặt hàng để thử lại.", { cause: confirmError });
+    if (error) await verifyReceiptUpload(client, orderId, error);
+    const { data: order, error: createError } = await client.rpc("create_order_with_receipt", {
+      order_data: orderData, order_id: orderId,
+    }).single<{ id: string }>();
+    if (createError || !order) {
+      throw new Error("Ảnh đã lưu nhưng chưa ghi nhận được đơn hàng. Vui lòng bấm Xác nhận đặt hàng để thử lại.", { cause: createError });
     }
   } catch (error) {
     console.error("Không gửi được ảnh chuyển khoản", { orderId, error });
@@ -40,13 +40,11 @@ export async function uploadPaymentReceipt(client: SupabaseClient, orderId: stri
   }
 }
 
-async function verifyReceiptUpload(client: SupabaseClient, orderId: string, uploadToken: string, uploadError: unknown) {
+async function verifyReceiptUpload(client: SupabaseClient, orderId: string, uploadError: unknown) {
   // A retry can encounter an existing file when only the confirmation request failed.
-  const { data: uploaded, error } = await client.rpc("has_payment_receipt", {
-    order_id: orderId, upload_token: uploadToken,
-  });
+  const { data: uploaded, error } = await client.rpc("has_payment_receipt", { order_id: orderId });
   if (!error && uploaded === true) return;
-  throw new Error("Chưa gửi được ảnh. Đơn đã được tạo; vui lòng thử gửi lại hoặc liên hệ tiệm kèm mã đơn.", { cause: error ?? uploadError });
+  throw new Error("Chưa gửi được ảnh. Vui lòng thử gửi lại hoặc liên hệ tiệm kèm mã đơn.", { cause: error ?? uploadError });
 }
 
 export async function getPaymentReceiptUrl(client: SupabaseClient, orderId: string) {

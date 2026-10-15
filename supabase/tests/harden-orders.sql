@@ -21,7 +21,7 @@ do $$ declare summary jsonb; begin
     or public.lookup_order(null, '0901234567') is not null then raise exception 'FAIL: lookup accepted mismatched credentials'; end if;
 end $$;
 
-do $$ declare invalid_items jsonb; created public.orders; begin
+do $$ declare invalid_items jsonb; created public.orders; new_order_id uuid := gen_random_uuid(); begin
   foreach invalid_items in array array['[null]'::jsonb, '[{"productSlug":"audit-test-product","quantity":0}]'::jsonb,
     '[{"productSlug":"missing","quantity":1}]'::jsonb] loop
     begin
@@ -30,9 +30,10 @@ do $$ declare invalid_items jsonb; created public.orders; begin
       raise exception using errcode = 'ZX001', message = 'FAIL: invalid items accepted';
     exception when sqlstate 'ZX001' then raise; when others then null; end;
   end loop;
+  insert into storage.objects (bucket_id, name) values ('payment-receipts', new_order_id::text || '/receipt');
   select * into created from public.create_order_with_receipt(jsonb_build_object('phone','0901234567','customer_name','Test','address','Test',
     'district','Test','items','[{"productSlug":"audit-test-product","quantity":2,"unitPrice":1}]'::jsonb,
-    'bottle_type','glass','payment_method','bank_transfer','delivery_date','2026-10-20','delivery_note','Gọi trước. Phí ship tôi trả'), gen_random_uuid());
+    'bottle_type','glass','payment_method','bank_transfer','delivery_date','2026-10-20','delivery_note','Gọi trước. Phí ship tôi trả'), new_order_id);
   if created.items->0->>'unitPrice' <> '42000' or created.delivery_note <> 'Gọi trước. Phí ship tôi trả' then
     raise exception 'FAIL: price snapshot or structured delivery was lost';
   end if;

@@ -12,14 +12,15 @@ Run these files in order in the SQL Editor, with transaction rollback on any err
 3. `payment-receipts.sql` — private receipt bucket and order creation capability.
 4. `payment-receipt-confirmation.sql` — receipt confirmation. An empty new database may skip converting the old email trigger.
 5. `harden-orders.sql` — admin allowlist, protected order table, customer lookup RPC and structured delivery fields.
+6. `defer-order-until-payment.sql` — orders are only created once their payment receipt already exists in storage; the id becomes client-chosen.
 
-Then configure the receipt email webhook and deploy `resend-email` following `functions/resend-email/README.md`. For a fresh database, configure `notify_order_receipt_email` for UPDATE on `orders`, with the condition `OLD.payment_receipt_submitted_at IS NULL AND NEW.payment_receipt_submitted_at IS NOT NULL`. Do not configure an INSERT webhook. Keep the webhook secret and API keys in Supabase secrets/Dashboard, outside SQL committed to Git.
+Then configure the receipt email webhook and deploy `resend-email` following `functions/resend-email/README.md`. For a fresh database, configure `notify_new_order_email` for INSERT on `orders`, no condition needed — every inserted order already has a confirmed receipt by the time it's written. Keep the webhook secret and API keys in Supabase secrets/Dashboard, outside SQL committed to Git.
 
 ## Existing project
 
-Apply only `harden-orders.sql` in one transaction after the previously deployed receipt migrations. It preserves existing rows, adds nullable delivery fields and retains the existing receipt RPC signature. Its price snapshots come from the product table, not prices supplied by a browser. Legacy rows retain their original prices and readable delivery notes.
+Apply `harden-orders.sql` then `defer-order-until-payment.sql` in one transaction each, after the previously deployed receipt migrations. `harden-orders.sql` preserves existing rows and adds nullable delivery fields. `defer-order-until-payment.sql` changes `create_order_with_receipt`'s second parameter from a bare upload token to the order's own id, requires a receipt to already be in storage, and drops `order_receipt_uploads` along with the functions that existed only to guard it — old clients still mid-checkout on the previous RPC signature will fail to create an order until they reload. Price snapshots come from the product table, not prices supplied by a browser; legacy rows retain their original prices and readable delivery notes.
 
-Deploy the frontend and email function after the migration. Old clients can still create orders through the existing RPC, but phone-only lookup stops working as soon as permissions are restricted. New clients use `lookup_order(code, phone)`; the response excludes contact details, database UUIDs and receipt capabilities. Admin access is determined by `admin_users`, not by the presence of an Auth session.
+Deploy the frontend and email function after both migrations. Old clients can still create orders through the existing RPC, but phone-only lookup stops working as soon as permissions are restricted. New clients use `lookup_order(code, phone)`; the response excludes contact details, database UUIDs and receipt capabilities. Admin access is determined by `admin_users`, not by the presence of an Auth session.
 
 Keep `admin_users` and the UUID allowlists in Storage policies synchronized when changing admins. Do not enable writes to `admin_users` from browser roles. Disable open Auth signup in Dashboard if accounts are provisioned only by the shop.
 

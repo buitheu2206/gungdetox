@@ -78,19 +78,46 @@ test("should preserve delivery notes containing the legacy delimiter and prefer 
   });
 });
 
-test("should require both lookup credentials and send only the exact RPC arguments", async () => {
+test("should require at least one valid credential and send only the normalized RPC arguments", async () => {
   const calls = [];
-  const client = { rpc: async (...args) => { calls.push(args); return { data: { code: "234567-ABCDEF" }, error: null }; } };
-  for (const [code, phone] of [["", "0901234567"], ["234567-ABCDEF", ""], ["%", "0901234567"]]) {
-    await assert.rejects(lookupCustomerOrder(client, code, phone), /Nhập đúng/);
+  const client = { rpc: async (...args) => { calls.push(args); return { data: [], error: null }; } };
+  for (const [code, phone] of [["", ""], ["%", ""], ["", "090123456"], ["234567abcde", "0901234567"]]) {
+    await assert.rejects(lookupCustomerOrder(client, code, phone), /Nhập/);
   }
   assert.equal(calls.length, 0);
-  assert.deepEqual(await lookupCustomerOrder(client, "234567-abcdef", "0901234567"), { code: "234567-ABCDEF" });
-  assert.deepEqual(calls, [["lookup_order", { order_code: "234567-ABCDEF", customer_phone: "0901234567" }]]);
+
+  await lookupCustomerOrder(client, "", "0901234567");
+  assert.deepEqual(calls.at(-1), ["lookup_order", { order_code: null, customer_phone: "0901234567" }]);
+
+  await lookupCustomerOrder(client, "234567-abcdef", "");
+  assert.deepEqual(calls.at(-1), ["lookup_order", { order_code: "234567-ABCDEF", customer_phone: null }]);
+
+  await lookupCustomerOrder(client, "234567-abcdef", "0901234567");
+  assert.deepEqual(calls.at(-1), ["lookup_order", { order_code: "234567-ABCDEF", customer_phone: "0901234567" }]);
+});
+
+test("should tolerate missing separators, stray spaces and dashes when typing the code or phone", async () => {
+  const calls = [];
+  const client = { rpc: async (...args) => { calls.push(args); return { data: [], error: null }; } };
+  for (const [code, phone] of [
+    ["234567abcdef", "0901234567"],
+    ["234567 abcdef", "0901 234 567"],
+    [" 234567-ABCDEF ", "0901-234-567"],
+  ]) {
+    calls.length = 0;
+    await lookupCustomerOrder(client, code, phone);
+    assert.deepEqual(calls, [["lookup_order", { order_code: "234567-ABCDEF", customer_phone: "0901234567" }]]);
+  }
+});
+
+test("should return every matching order, newest first, as a list", async () => {
+  const orders = [{ code: "234567-AAAAAA" }, { code: "234567-BBBBBB" }];
+  const client = { rpc: async () => ({ data: orders, error: null }) };
+  assert.deepEqual(await lookupCustomerOrder(client, "", "0901234567"), orders);
 });
 
 test("should distinguish no matching order from lookup service errors", async () => {
-  assert.equal(await lookupCustomerOrder({ rpc: async () => ({ data: null, error: null }) }, "234567-ABCDEF", "0901234567"), null);
+  assert.deepEqual(await lookupCustomerOrder({ rpc: async () => ({ data: null, error: null }) }, "234567-ABCDEF", "0901234567"), []);
   await assert.rejects(lookupCustomerOrder({ rpc: async () => ({ data: null, error: { message: "offline" } }) }, "234567-ABCDEF", "0901234567"), /Không tra cứu được/);
 });
 

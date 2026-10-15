@@ -22,7 +22,7 @@ test("should link both HTML and text notifications to the specific order detail 
   try {
     const response = await handleOrderNotification(new Request("https://example.com/resend-email", {
       method: "POST", headers: { "x-order-webhook-secret": "test-secret" },
-      body: JSON.stringify({ type: "UPDATE", schema: "public", table: "orders", old_record: { payment_receipt_submitted_at: null }, record: {
+      body: JSON.stringify({ type: "INSERT", schema: "public", table: "orders", record: {
         id: "abcdef12-1234-1234-1234-123456789012", phone: "0900123456", customer_name: "Khách thử nghiệm",
         payment_receipt_submitted_at: "2026-10-13T09:00:00Z",
         items: [{ productSlug: "ginger-shot", quantity: 2, unitPrice: 40000 }], address: "Địa chỉ thử nghiệm", district: "Quận 3",
@@ -53,15 +53,14 @@ function notificationRequest(event, secret = config.webhookSecret) {
   });
 }
 
-test("should not send email when creating an order, updating status, or repeating receipt confirmation", async () => {
+test("should not send email for an order without a receipt timestamp, or for a status update", async () => {
   const originalFetch = globalThis.fetch;
   let sends = 0;
   globalThis.fetch = async () => { sends++; return Response.json({ id: "unexpected" }); };
   try {
     for (const event of [
-      { type: "INSERT", record: submittedOrder },
-      { type: "UPDATE", record: { ...submittedOrder, payment_receipt_submitted_at: null } },
-      { type: "UPDATE", record: submittedOrder, old_record: submittedOrder },
+      { type: "INSERT", record: { ...submittedOrder, payment_receipt_submitted_at: null } },
+      { type: "UPDATE", record: { ...submittedOrder, status: "delivering" }, old_record: submittedOrder },
     ]) {
       const response = await handleOrderNotification(notificationRequest({ ...event, schema: "public", table: "orders" }), config);
       assert.equal(response.status, 200);
@@ -76,7 +75,7 @@ test("should reject an unauthorized or malformed confirmation before contacting 
   let sends = 0;
   globalThis.fetch = async () => { sends++; return Response.json({ id: "unexpected" }); };
   try {
-    const event = { type: "UPDATE", schema: "public", table: "orders", record: submittedOrder };
+    const event = { type: "INSERT", schema: "public", table: "orders", record: submittedOrder };
     assert.equal((await handleOrderNotification(notificationRequest(event, "wrong-secret"), config)).status, 401);
     const invalid = { ...event, record: { ...submittedOrder, payment_receipt_submitted_at: "invalid date" } };
     assert.equal((await handleOrderNotification(notificationRequest(invalid), config)).status, 400);
@@ -92,7 +91,7 @@ test("should use the receipt event as its idempotency key and report delivery se
     return Response.json({ message: "Temporarily unavailable" }, { status: 503 });
   };
   try {
-    const event = { type: "UPDATE", schema: "public", table: "orders", record: submittedOrder };
+    const event = { type: "INSERT", schema: "public", table: "orders", record: submittedOrder };
     const response = await handleOrderNotification(notificationRequest(event), config);
     assert.equal(response.status, 502);
     assert.equal(key, `order-receipt-notification/${submittedOrder.id}`);

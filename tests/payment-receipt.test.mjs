@@ -3,10 +3,10 @@ import { test } from "node:test";
 import { getReceiptPath, getPaymentReceiptUrl, uploadPaymentReceipt, validateReceipt, MAX_RECEIPT_SIZE } from "../src/lib/payment-receipt.ts";
 
 const orderId = "00000000-0000-4000-8000-000000000001";
-const token = "00000000-0000-4000-8000-000000000002";
+const orderData = { phone: "0900000000", customer_name: "Khách thử nghiệm" };
 const file = new File(["receipt"], "transfer.png", { type: "image/png" });
 
-function receiptClient({ uploadError = null, uploaded = false, statusError = null, confirmationError = null, files = [], listError = null, signedError = null } = {}) {
+function receiptClient({ uploadError = null, uploaded = false, createError = null, created = { id: orderId }, files = [], listError = null, signedError = null } = {}) {
   const calls = [];
   const bucket = {
     async upload(...args) { calls.push(["upload", ...args]); return { error: uploadError }; },
@@ -16,11 +16,10 @@ function receiptClient({ uploadError = null, uploaded = false, statusError = nul
   return {
     calls,
     storage: { from(name) { assert.equal(name, "payment-receipts"); return bucket; } },
-    async rpc(name, args) {
+    rpc(name, args) {
       calls.push([name, args]);
-      return name === "confirm_payment_receipt"
-        ? { data: confirmationError ? null : "2026-10-13T09:00:00Z", error: confirmationError }
-        : { data: uploaded, error: statusError };
+      if (name === "has_payment_receipt") return Promise.resolve({ data: uploaded, error: null });
+      return { single: () => Promise.resolve(createError ? { data: null, error: createError } : { data: created, error: null }) };
     },
   };
 }
@@ -38,51 +37,47 @@ test("should reject empty, oversized and unsupported receipt files", () => {
   ]) assert.throws(() => validateReceipt(invalid));
 });
 
-test("should bind the receipt path to the created order and secret upload capability", () => {
-  assert.equal(getReceiptPath(orderId, token), `${orderId}/${token}`);
-  assert.throws(() => getReceiptPath("123456-ABCDEF", token));
-  assert.throws(() => getReceiptPath(orderId, "../other-order"));
+test("should bind the receipt path to a fixed name under the order id", () => {
+  assert.equal(getReceiptPath(orderId), `${orderId}/receipt`);
+  assert.throws(() => getReceiptPath("123456-ABCDEF"));
 });
 
-test("should upload privately without overwriting a receipt or marking the order paid", async () => {
+test("should upload the receipt then create the order from it", async () => {
   const client = receiptClient();
-  await uploadPaymentReceipt(client, orderId, token, file);
-  assert.deepEqual(client.calls, [
-    ["upload", `${orderId}/${token}`, file, { contentType: "image/png", upsert: false }],
-    ["confirm_payment_receipt", { order_id: orderId, upload_token: token }],
-  ]);
+  await uploadPaymentReceipt(client, orderId, orderData, file);
+  assert.deepEqual(client.calls[0], ["upload", `${orderId}/receipt`, file, { contentType: "image/png", upsert: false }]);
+  assert.equal(client.calls[1][0], "create_order_with_receipt");
+  assert.deepEqual(client.calls[1][1], { order_data: orderData, order_id: orderId });
 });
 
 test("should reject invalid files before contacting storage", async () => {
   const client = receiptClient();
-  await assert.rejects(uploadPaymentReceipt(client, orderId, token, new File(["svg"], "receipt.svg", { type: "image/svg+xml" })));
+  await assert.rejects(uploadPaymentReceipt(client, orderId, orderData, new File(["svg"], "receipt.svg", { type: "image/svg+xml" })));
   assert.equal(client.calls.length, 0);
 });
 
-test("should recognize an upload that succeeded before the response was lost", async () => {
+test("should recognize an upload that succeeded before the response was lost, then create the order", async () => {
   const client = receiptClient({ uploadError: new Error("timeout"), uploaded: true });
-  await uploadPaymentReceipt(client, orderId, token, file);
-  assert.deepEqual(client.calls[1], ["has_payment_receipt", { order_id: orderId, upload_token: token }]);
-  assert.equal(client.calls[2][0], "confirm_payment_receipt");
+  await uploadPaymentReceipt(client, orderId, orderData, file);
+  assert.deepEqual(client.calls[1], ["has_payment_receipt", { order_id: orderId }]);
+  assert.equal(client.calls[2][0], "create_order_with_receipt");
 });
 
 test("should preserve upload failures so the customer can retry", async () => {
   const client = receiptClient({ uploadError: new Error("bucket unavailable") });
-  await assert.rejects(uploadPaymentReceipt(client, orderId, token, file), /Đơn đã được tạo/);
-  assert.equal(client.calls.some(([name]) => name === "confirm_payment_receipt"), false);
-});
-
-test("should allow confirmation retry after an image was saved without a confirmation", async () => {
-  await assert.rejects(uploadPaymentReceipt(receiptClient({ confirmationError: new Error("request failed") }), orderId, token, file), /Ảnh đã lưu/);
-  const retry = receiptClient({ uploadError: new Error("already exists"), uploaded: true });
-  await uploadPaymentReceipt(retry, orderId, token, file);
-  assert.equal(retry.calls.at(-1)[0], "confirm_payment_receipt");
+  await assert.rejects(uploadPaymentReceipt(client, orderId, orderData, file), /Chưa gửi được ảnh/);
+  assert.equal(client.calls.some(([name]) => name === "create_order_with_receipt"), false);
 });
 
 test("should report a failed status check instead of assuming the receipt was uploaded", async () => {
-  const statusError = new Error("status unavailable");
-  const client = receiptClient({ uploadError: new Error("timeout"), statusError, uploaded: true });
-  await assert.rejects(uploadPaymentReceipt(client, orderId, token, file), (error) => error.cause === statusError);
+  const client = receiptClient({ uploadError: new Error("timeout"), uploaded: false });
+  await assert.rejects(uploadPaymentReceipt(client, orderId, orderData, file));
+  assert.equal(client.calls.some(([name]) => name === "create_order_with_receipt"), false);
+});
+
+test("should surface order creation failures distinctly from upload failures", async () => {
+  const client = receiptClient({ createError: new Error("db unavailable") });
+  await assert.rejects(uploadPaymentReceipt(client, orderId, orderData, file), /Ảnh đã lưu/);
 });
 
 test("should distinguish orders without receipts from inaccessible storage", async () => {
@@ -91,11 +86,11 @@ test("should distinguish orders without receipts from inaccessible storage", asy
 });
 
 test("should create an expiring URL for the receipt belonging to the requested order", async () => {
-  const client = receiptClient({ files: [{ name: token }] });
+  const client = receiptClient({ files: [{ name: "receipt" }] });
   assert.equal(await getPaymentReceiptUrl(client, orderId), "https://example.com/private-receipt");
-  assert.deepEqual(client.calls[1], ["sign", `${orderId}/${token}`, 3600]);
+  assert.deepEqual(client.calls[1], ["sign", `${orderId}/receipt`, 3600]);
 });
 
 test("should report errors when a private receipt cannot be signed", async () => {
-  await assert.rejects(getPaymentReceiptUrl(receiptClient({ files: [{ name: token }], signedError: new Error("access denied") }), orderId), /Không tải được ảnh/);
+  await assert.rejects(getPaymentReceiptUrl(receiptClient({ files: [{ name: "receipt" }], signedError: new Error("access denied") }), orderId), /Không tải được ảnh/);
 });

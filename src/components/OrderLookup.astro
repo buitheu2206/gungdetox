@@ -7,20 +7,17 @@
     <span class="order-lookup-icon">🔍</span>
     <div>
       <h3>Tra cứu đơn hàng</h3>
-      <p class="hint">Nhập mã đơn và số điện thoại đã dùng khi đặt hàng</p>
+      <p class="hint">Nhập mã đơn hoặc số điện thoại đã dùng khi đặt hàng (chỉ cần 1 trong 2 — gõ liền hay có dấu gạch/khoảng trắng đều được)</p>
     </div>
   </div>
 
   <form id="lookup-form">
-    <input type="text" name="code" placeholder="Mã đơn (VD: 123456-ABCDEF)" aria-label="Mã đơn"
-      pattern="[0-9]{6}-[A-Fa-f0-9]{6}" maxlength="13" required />
+    <input type="text" name="code" placeholder="Mã đơn (VD: 123456-ABCDEF)" aria-label="Mã đơn" />
     <input
       type="tel"
       name="phone"
       placeholder="Số điện thoại"
-      pattern="0[0-9]{9}"
       title="Số điện thoại Việt Nam hợp lệ (10 số, bắt đầu bằng 0)"
-      required
     />
     <button type="submit">Tra cứu</button>
   </form>
@@ -38,26 +35,50 @@
   const form = document.getElementById("lookup-form") as HTMLFormElement;
   const result = document.getElementById("lookup-result")!;
   const button = form.querySelector("button")!;
+  function orderRowHtml(order: { code: string; status: string; paid: boolean; items: unknown; bottles_returned: number | null; created_at: string }) {
+    const items = isOrderItems(order.items)
+      ? order.items.map((item) => `${item.productSlug} × ${item.quantity}`).join(", ")
+      : "Thông tin sản phẩm chưa hợp lệ. Vui lòng liên hệ tiệm.";
+    const date = new Date(order.created_at).toLocaleDateString("vi-VN");
+    return `<li>
+      <span class="order-code">${escapeHtml(order.code)}</span>
+      <span class="order-date">${escapeHtml(date)}</span>
+      <span class="order-items">${escapeHtml(items)}</span>
+      <span class="paid-badge ${order.paid ? "paid-yes" : "paid-no"}">${order.paid ? "Đã thanh toán" : "Chưa thanh toán"}</span>
+    </li>`;
+  }
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (button.disabled) return;
-    button.disabled = true;
+    const fields = new FormData(form);
+    const code = String(fields.get("code") ?? "").trim();
+    const phone = String(fields.get("phone") ?? "").trim();
     result.hidden = false;
+    if (!code && !phone) {
+      result.textContent = "Nhập mã đơn hoặc số điện thoại đã dùng khi đặt hàng.";
+      return;
+    }
+    button.disabled = true;
     result.textContent = "Đang tra cứu…";
     try {
-      const fields = new FormData(form);
-      const order = await lookupCustomerOrder(supabase, String(fields.get("code") ?? ""), String(fields.get("phone") ?? ""));
-      if (!order) {
-        result.textContent = "Không tìm thấy đơn khớp mã đơn và số điện thoại này.";
+      const orders = await lookupCustomerOrder(supabase, code, phone);
+      if (orders.length === 0) {
+        result.textContent = "Không tìm thấy đơn nào khớp.";
         return;
       }
-      const items = isOrderItems(order.items)
-        ? order.items.map((item) => `${item.productSlug} × ${item.quantity}`).join(", ")
-        : "Thông tin sản phẩm chưa hợp lệ. Vui lòng liên hệ tiệm.";
-      result.innerHTML = `<p><strong>${escapeHtml(order.code)}</strong></p>
-        <p>${escapeHtml(ORDER_STATUS_LABELS[order.status] ?? order.status)}</p>
-        <p>${escapeHtml(items)}</p>
-        <p>${order.paid ? "Đã thanh toán" : "Chưa thanh toán"} · ${escapeHtml(order.bottles_returned ?? 0)} chai đã trả</p>`;
+      const groups = new Map<string, typeof orders>();
+      for (const order of orders) {
+        const group = groups.get(order.status) ?? [];
+        group.push(order);
+        groups.set(order.status, group);
+      }
+      result.innerHTML = [...groups].map(([status, group]) => `
+        <div class="status-group">
+          <p class="status-group-title status-${escapeHtml(status)}">${escapeHtml(ORDER_STATUS_LABELS[status] ?? status)}</p>
+          <ul class="order-list">${group.map(orderRowHtml).join("")}</ul>
+        </div>
+      `).join("");
     } catch (error) {
       console.error("Không tra cứu được đơn hàng", { error });
       result.textContent = error instanceof Error ? error.message : "Không tra cứu được. Vui lòng thử lại.";

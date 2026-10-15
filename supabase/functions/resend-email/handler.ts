@@ -31,7 +31,7 @@ function parseOrder(payload: unknown): Order | null {
   if (event?.table !== "orders" || event.schema !== "public" || !order || !["INSERT", "UPDATE"].includes(event.type ?? "")) {
     throw new Error("Expected an orders webhook for public.orders.");
   }
-  if (event.type === "INSERT" || !order.payment_receipt_submitted_at || event.old_record?.payment_receipt_submitted_at) return null;
+  if (event.type !== "INSERT" || !order.payment_receipt_submitted_at) return null;
   if (typeof order.payment_receipt_submitted_at !== "string" || !Number.isFinite(Date.parse(order.payment_receipt_submitted_at))) {
     throw new Error("Receipt confirmation must include a valid submission timestamp.");
   }

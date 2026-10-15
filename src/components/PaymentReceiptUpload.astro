@@ -57,7 +57,8 @@ import ImageUpload from "./ImageUpload.astro";
     back.disabled = true;
     showMessage("Đang gửi ảnh và xác nhận chuyển khoản…");
     try {
-      await uploadPaymentReceipt(supabase, form.dataset.orderId ?? "", form.dataset.uploadToken ?? "", input.files[0]);
+      const orderData = JSON.parse(form.dataset.orderData ?? "null");
+      await uploadPaymentReceipt(supabase, form.dataset.orderId ?? "", orderData, input.files[0]);
       showMessage("Thông tin đơn hàng đã được gửi thành công.");
       submit.hidden = true;
       back.hidden = true;

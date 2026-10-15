@@ -41,6 +41,10 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
         <span class="step-badge">4</span>
         <span class="step-label">Xác nhận</span>
       </li>
+      <li data-step="5">
+        <span class="step-badge">5</span>
+        <span class="step-label">Thanh toán</span>
+      </li>
     </ol>
 
     <form id="order-form" novalidate>
@@ -259,7 +263,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     </form>
 
     <!-- Trang cảm ơn -->
-    <section id="thank-you" class="thank-you-card" hidden>
+    <section id="thank-you" class="step thank-you-card" data-step="5" hidden>
       <div class="success-icon" aria-hidden="true">🏦</div>
       <h2 id="payment-step-title">Thanh toán đơn hàng</h2>
       <p id="payment-step-description" class="thank-you-sub">Chuyển khoản theo thông tin bên dưới, chọn ảnh giao dịch rồi xác nhận.</p>
@@ -336,7 +340,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
   const bankInfo = document.getElementById("bank-info") as HTMLElement;
   const bankInfoParent = bankInfo.parentElement!;
   const paymentBack = document.getElementById("payment-back") as HTMLButtonElement;
-  let checkoutOrder: { id: string; phone: string; uploadToken: string } | null = null;
+  let pendingOrderId: string | null = null;
   const bankTitle = bankInfo.querySelector(".bank-info-title") as HTMLElement;
   const bankQr = bankInfo.querySelector(".qr-code") as HTMLImageElement;
   const paymentInstructions = document.getElementById("payment-instructions") as HTMLElement;
@@ -465,6 +469,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     document.querySelectorAll<HTMLElement>(".step").forEach((el) => {
       el.hidden = el.dataset.step !== String(step);
     });
+    form.hidden = step === 5;
     stepsIndicator.querySelectorAll("li").forEach((li) => {
       const liStep = Number(li.getAttribute("data-step"));
       li.classList.toggle("active", liStep === step);
@@ -626,46 +631,32 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     };
   }
 
-  async function prepareCheckoutOrder() {
-    // A saved order is read-only when revisiting confirmation; reuse its ID and upload token.
-    if (checkoutOrder) return checkoutOrder;
-    const uploadToken = crypto.randomUUID();
-    const { data, error } = await supabase.rpc("create_order_with_receipt", {
-      upload_token: uploadToken, order_data: getCheckoutOrderData(),
-    }).single<{ id: string; phone: string }>();
-    if (error || !data) throw error ?? new Error("Không nhận được thông tin đơn hàng.");
-    checkoutOrder = { ...data, uploadToken };
-    form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLButtonElement>(
-      "input, select, textarea, button:not(.next):not(.back):not(.submit):not(.copy-btn)"
-    ).forEach((control) => { control.disabled = true; });
-    return checkoutOrder;
-  }
-
-  function showPaymentOrder(order: NonNullable<typeof checkoutOrder>) {
-    form.hidden = true;
-    stepsIndicator.hidden = true;
-    thankYou.hidden = false;
-    const code = orderCode(order.phone, order.id);
+  function showPaymentStep() {
+    // Reuse the same id across back-and-forth within a session so the displayed order
+    // code stays stable; nothing is written anywhere until the receipt is confirmed.
+    pendingOrderId ??= crypto.randomUUID();
+    const code = orderCode((document.getElementById("phone") as HTMLInputElement).value, pendingOrderId);
     document.getElementById("order-id")!.textContent = code;
     document.getElementById("copy-order-id")!.dataset.copy = code;
-    updatePaymentInstructions(code);
     const receiptForm = document.getElementById("receipt-form")!;
-    receiptForm.dataset.orderId = order.id;
-    receiptForm.dataset.uploadToken = order.uploadToken;
+    receiptForm.dataset.orderId = pendingOrderId;
+    // getCheckoutOrderData() itself calls updatePaymentInstructions() with no code to
+    // build shipping_fee_note — call it before the one below so the code-bearing call
+    // (which sets the QR/transfer content shown to the customer) isn't reset afterward.
+    receiptForm.dataset.orderData = JSON.stringify(getCheckoutOrderData());
+    updatePaymentInstructions(code);
     thankYou.insertBefore(bankInfo, receiptForm);
+    goToStep(5);
   }
 
   paymentBack.addEventListener("click", () => {
     if (paymentBack.disabled) return;
-    thankYou.hidden = true;
-    form.hidden = false;
-    stepsIndicator.hidden = false;
     bankInfoParent.append(bankInfo);
     goToStep(4);
     form.querySelector<HTMLButtonElement>('button[type="submit"]')!.focus();
   });
 
-  form.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", (e) => {
     e.preventDefault();
     if (cart.length === 0) return;
     // Phòng trường hợp người dùng tới được bước 4 mà chưa qua kiểm tra ở bước 2/3
@@ -679,18 +670,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
       goToStep(3);
       return;
     }
-
-    const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
-    if (button.disabled) return;
-    button.disabled = true;
-    try {
-      showPaymentOrder(await prepareCheckoutOrder());
-    } catch (error) {
-      console.error("Không tạo được đơn hàng", { error });
-      alert("Có lỗi khi đặt hàng, vui lòng thử lại: " + ((error as { message?: string })?.message ?? String(error)));
-    } finally {
-      button.disabled = false;
-    }
+    showPaymentStep();
   });
 
   // Load danh sách sản phẩm + đọc query string ?product=slug
