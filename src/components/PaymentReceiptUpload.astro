@@ -66,7 +66,7 @@ import ImageUpload from "./ImageUpload.astro";
       document.getElementById("payment-step-title")!.textContent = "Cảm ơn bạn đã đặt hàng!";
       document.getElementById("payment-step-description")!.textContent = "Tiệm sẽ liên hệ qua Zalo/hotline để xác nhận đơn hàng.";
       document.getElementById("payment-followup-note")!.hidden = true;
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0, behavior: "instant" });
     } catch (error) {
       showMessage(error instanceof Error ? error.message : "Chưa gửi được ảnh. Vui lòng thử lại.", true);
       input.disabled = false;
