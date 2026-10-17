@@ -17,7 +17,7 @@ let allOrders: OrderRow[] = [];
 // Khách "quen" = đã có từ 2 đơn trở lên tính đến thời điểm đơn này (kể cả đơn này) — dựa theo
 // toàn bộ đơn trong hệ thống (allOrders), không phải chỉ danh sách đang hiển thị sau khi lọc.
 let customerCounts = new Map<string, number>();
-const DISPLAY_PAGE_SIZE = 50;
+const DISPLAY_PAGE_SIZE = 12;
 let currentPage = 0;
 let allProducts: ProductRow[] = [];
 let activeStatus = "all";
