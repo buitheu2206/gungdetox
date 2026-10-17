@@ -213,6 +213,14 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
                   </span>
                 </label>
               </div>
+              <label class="option-card">
+                <input type="radio" name="payment-method" value="zalo" />
+                <span class="option-icon">💬</span>
+                <span class="option-text">
+                  <span class="option-title">Liên hệ qua Zalo</span>
+                  <span class="option-subtitle">Nhắn tiệm để được hướng dẫn thanh toán</span>
+                </span>
+              </label>
             </fieldset>
 
             <div class="bank-info" id="bank-info">
@@ -268,7 +276,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
       <h2 id="payment-step-title">Thanh toán đơn hàng</h2>
       <p id="payment-step-description" class="thank-you-sub">Chuyển khoản theo thông tin bên dưới, chọn ảnh giao dịch rồi xác nhận.</p>
 
-      <div class="order-id-box">
+      <div class="order-id-box" id="payment-order-code">
         <span class="order-id-label">Mã đơn của bạn</span>
         <div class="order-id-row">
           <strong id="order-id"></strong>
@@ -278,11 +286,26 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
 
       <p id="payment-followup-note" class="thank-you-note">📞 Tiệm sẽ liên hệ qua Zalo/hotline để xác nhận và báo phí ship cụ thể.</p>
 
+      <div id="zalo-contact" hidden>
+        <a href="https://zalo.me/0888267009" target="_blank" rel="noopener" aria-label="Mở Zalo của GỪNG DETOX">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=https%3A%2F%2Fzalo.me%2F0888267009"
+            width="240" height="240" alt="Mã QR liên hệ Zalo GỪNG DETOX" loading="lazy" />
+        </a>
+        <p>Quét mã QR bằng điện thoại hoặc bấm nút bên dưới để nhắn tiệm.</p>
+        <strong>GỪNG DETOX · 088 826 7009</strong>
+        <div class="zalo-message-box">
+          <p id="zalo-message-label">Sao chép lời nhắn rồi dán vào cuộc trò chuyện với tiệm:</p>
+          <p id="zalo-message" aria-labelledby="zalo-message-label"></p>
+          <button type="button" class="copy-btn" id="copy-zalo-message">Sao chép lời nhắn</button>
+        </div>
+      </div>
+
       <PaymentReceiptUpload />
 
       <div class="thank-you-actions">
         <button type="button" id="payment-back" class="thank-you-btn back">Quay lại</button>
         <button type="submit" form="receipt-form" id="receipt-submit" class="thank-you-btn thank-you-btn-primary" disabled>Xác nhận đặt hàng</button>
+        <a href="https://zalo.me/0888267009" id="payment-zalo" class="thank-you-btn thank-you-btn-primary" target="_blank" rel="noopener" hidden>Nhắn tiệm qua Zalo</a>
         <a href="/" id="payment-home" class="thank-you-btn thank-you-btn-primary" hidden>Về trang chủ</a>
       </div>
     </section>
@@ -350,9 +373,13 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
   const paymentMethodInputs =
     document.querySelectorAll<HTMLInputElement>('input[name="payment-method"]');
 
+  function isZaloPayment() {
+    return form.querySelector<HTMLInputElement>('input[name="payment-method"]:checked')?.value === "zalo";
+  }
+
   function updatePaymentInstructions(code?: string) {
     const payment = getPaymentInstructions(depositInput.checked, code);
-    bankInfo.hidden = false;
+    bankInfo.hidden = isZaloPayment();
     bankTitle.textContent = payment.title;
     paymentInstructions.textContent = payment.instructions;
     bankQr.src = payment.qrUrl;
@@ -631,9 +658,44 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     };
   }
 
+  function setContactMode(isZalo: boolean) {
+    document.getElementById("zalo-contact")!.hidden = !isZalo;
+    document.getElementById("payment-zalo")!.hidden = !isZalo;
+    document.getElementById("payment-order-code")!.hidden = isZalo;
+    document.getElementById("payment-followup-note")!.hidden = isZalo;
+    document.getElementById("receipt-form")!.hidden = isZalo;
+    document.getElementById("receipt-submit")!.hidden = isZalo;
+    bankInfo.hidden = isZalo;
+    thankYou.querySelector<HTMLElement>(".success-icon")!.textContent = isZalo ? "💬" : "🏦";
+    document.getElementById("payment-step-title")!.textContent = isZalo ? "Nhắn tiệm qua Zalo" : "Thanh toán đơn hàng";
+    document.getElementById("payment-step-description")!.textContent = isZalo
+      ? "Tiệm sẽ tư vấn, xác nhận thông tin đặt hàng và hướng dẫn bạn thanh toán trực tiếp qua Zalo."
+      : "Chuyển khoản theo thông tin bên dưới, chọn ảnh giao dịch rồi xác nhận.";
+  }
+
   function showPaymentStep() {
+    const isZalo = isZaloPayment();
+    setContactMode(isZalo);
+    if (isZalo) {
+      const selectedProducts = cart.map((item) =>
+        `- ${findProduct(item.slug)?.name ?? item.slug}: số lượng ${item.quantity}`
+      ).join("\n");
+      const address = (document.getElementById("address") as HTMLInputElement).value.trim();
+      const note = deliveryNoteInput.value.trim();
+      const deliveryDetails = [
+        `Địa chỉ giao: ${address}, ${districtSelect.value}`,
+        `Ngày giao: ${formatDeliveryDate(deliveryDateInput.value)}`,
+        `Giờ giao: ${deliveryTimeRangeText()}`,
+        ...(note ? [`Ghi chú: ${note}`] : []),
+      ].join("\n");
+      const message = `Chào tiệm GỪNG DETOX, mình đang muốn mua:\n${selectedProducts}\n\n${deliveryDetails}\n\nNhờ tiệm tư vấn thêm và hướng dẫn mình đặt hàng, thanh toán nhé. Cảm ơn tiệm!`;
+      document.getElementById("zalo-message")!.textContent = message;
+      document.getElementById("copy-zalo-message")!.dataset.copy = message;
+      goToStep(5);
+      return;
+    }
     // Reuse the same id across back-and-forth within a session so the displayed order
-    // code stays stable; nothing is written anywhere until the receipt is confirmed.
+    // code stays stable; the order is only written after explicit confirmation.
     pendingOrderId ??= crypto.randomUUID();
     const code = orderCode((document.getElementById("phone") as HTMLInputElement).value, pendingOrderId);
     document.getElementById("order-id")!.textContent = code;
@@ -646,6 +708,8 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     receiptForm.dataset.orderData = JSON.stringify(getCheckoutOrderData());
     updatePaymentInstructions(code);
     thankYou.insertBefore(bankInfo, receiptForm);
+    const receiptInput = document.getElementById("payment-receipt") as HTMLInputElement;
+    (document.getElementById("receipt-submit") as HTMLButtonElement).disabled = !receiptInput.files?.length;
     goToStep(5);
   }
 
@@ -719,6 +783,12 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
 </script>
 
 <style>
+  .zalo-message-box { margin: 1.5rem auto 0; padding: 1.25rem; max-width: 560px; text-align: left; background: white; border: 1px solid #e8e2d7; border-radius: var(--radius-md); }
+  #zalo-contact #zalo-message { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--color-text); }
+  #zalo-contact { margin: 1.5rem auto 2rem; }
+  #zalo-contact img { display: block; max-width: 100%; height: auto; margin: 0 auto; padding: 12px; background: white; border-radius: var(--radius-md); }
+  #zalo-contact p { color: var(--color-text-muted); font-size: .9rem; }
+
   .order-page {
     max-width: 880px;
     margin: 0 auto;

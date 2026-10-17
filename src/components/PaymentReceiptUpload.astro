@@ -51,7 +51,7 @@ import ImageUpload from "./ImageUpload.astro";
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (submit.disabled || !input.files?.[0]) return;
+    if (form.hidden || submit.disabled || !input.files?.[0]) return;
     submit.disabled = true;
     input.disabled = true;
     back.disabled = true;
