@@ -1,5 +1,5 @@
 // Xuất toàn bộ đơn (không theo bộ lọc đang chọn) ra file CSV để mở bằng Excel/Sheets.
-import { escapeHtml as esc, csvCell } from "../output.ts";
+import { csvCell } from "../output.ts";
 import { orderCode, type ProductRow } from "../templates.ts";
 import { ORDER_STATUS_LABELS as statusLabel, getOrderDelivery, type OrderRow } from "../order-details.ts";
 import { paymentMethodLabel, itemsSummary, unitPricesSummary, quantitiesSummary, amountSummary } from "./format.ts";
@@ -16,7 +16,7 @@ export function orderToCsvRow(o: OrderRow, products: ProductRow[]): string[] {
     new Date(o.created_at).toLocaleString("vi-VN"),
     o.customer_name,
     o.phone,
-    `${esc(o.address)}, ${esc(o.district)}`,
+    `${o.address}, ${o.district}`,
     getOrderDelivery(o).date,
     getOrderDelivery(o).time,
     getOrderDelivery(o).note,

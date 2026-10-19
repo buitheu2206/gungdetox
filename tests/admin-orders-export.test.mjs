@@ -52,3 +52,8 @@ test("should download every supplied order as UTF-8 CSV with safe formula and qu
     URL.revokeObjectURL = originalRevoke;
   }
 });
+
+test("should preserve address punctuation and newlines in CSV fields", () => {
+  const address = 'A & B <Block>, "Floor 2"\nDoor 3';
+  assert.equal(orderToCsvRow({ ...order, address, district: "Q '1'" }, products)[4], `${address}, Q '1'`);
+});
