@@ -152,11 +152,10 @@ Kiểm tra lại sau khi deploy: `/`, `/dat-hang/`, `/san-pham/`.
 
 ## Kiểm tra trước deploy
 
-Migration database có workflow thủ công **Deploy database migrations**, mặc định dry-run.
-Cần thêm secret `SUPABASE_DB_PASSWORD` bên cạnh token/project ref đang dùng cho email.
-Trước lần chạy đầu, đồng bộ lịch sử migration của project theo
-[hướng dẫn CI database](supabase/README.md#github-actions-migrations).
-Workflow chỉ chạy SQL trong `supabase/migrations/`, không chạy lại các file bootstrap ở thư mục gốc.
+Migration database chạy thủ công bằng Supabase CLI hoặc MCP theo
+[hướng dẫn migration](supabase/README.md#manual-migrations-cli-or-mcp).
+Không có workflow GitHub Actions cho migration; workflow email vẫn deploy riêng.
+Kiểm tra lịch sử trước khi áp dụng SQL trong `supabase/migrations/`, không chạy lại toàn bộ bootstrap.
 
 `npm run check` chạy ESLint, Astro typecheck và unit test; `npm run build` kiểm tra build tĩnh.
 CI website chạy các bước này trước upload. Deno entrypoint được kiểm tra trong môi trường

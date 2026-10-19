@@ -44,15 +44,17 @@ The historical verification scripts now require `VERIFY_ADMIN_PASSWORD`. Use a s
 
 Image uploads are cached for retries while an editor remains open. Cancelling/reloading an editor can leave an unreferenced image. `scripts/audit-orphan-images.mjs` lists root-level images older than 24 hours that are not referenced by content rows. Run with `node --experimental-strip-types --env-file=.env.production scripts/audit-orphan-images.mjs` after setting `SUPABASE_SERVICE_ROLE_KEY` for the intended project. It is read-only by default; review candidates, stop editor activity and explicitly add `--delete` to remove them. No cleanup was executed during this change. Do not delete recent uploads or files while editors are actively saving.
 
-## GitHub Actions migrations
+## Manual migrations (CLI or MCP)
 
-`.github/workflows/deploy-database.yml` runs manually on `main`. It validates source/tests, links the project, lists migration history and previews pending SQL. The `dry_run` input defaults to true; uncheck it to apply the pending migrations. `db push` records applied versions and skips them on subsequent runs. SQL files outside `supabase/migrations/` are not deployed by this workflow.
+Database migrations are applied manually using the Supabase CLI or MCP. There is no database deployment workflow in GitHub Actions. CLI `db push` records applied versions and skips them on subsequent runs; it only applies files in `supabase/migrations/`.
 
-Configure these repository Actions secrets:
+For CLI deployment, supply these environment variables locally without committing their values:
 
-- `SUPABASE_ACCESS_TOKEN`: Supabase personal access token, also used by the email workflow.
-- `SUPABASE_PROJECT_REF`: the target project's reference, also used by the email workflow.
+- `SUPABASE_ACCESS_TOKEN`: Supabase personal access token.
+- `SUPABASE_PROJECT_REF`: the target project's reference.
 - `SUPABASE_DB_PASSWORD`: the target database password, not the anon/service-role API key.
+
+The machine running the CLI must be permitted by the project's database network restrictions. Keep the repository Actions secrets `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_REF` for email deployment; the remaining workflows do not use `SUPABASE_DB_PASSWORD`.
 
 ### One-time setup for the existing project
 
@@ -74,13 +76,24 @@ supabase db push --linked --dry-run
 
 Review every fetched file, including untracked files, before committing the history. Historical webhook SQL can contain secrets: do not commit credentials; reconcile those files deliberately. Fetch retrieves recorded migration statements, not unrecorded SQL Editor changes and not a full schema baseline. Compare the recorded history with the live schema when manual changes are missing. Do not invent applied versions or automatically run `migration repair` to suppress a mismatch.
 
-The ordering fix is `migrations/20261019110000_order_lookup_newest_first.sql`. The checked project has its required flexible lookup contract but still limits before sorting. If an equivalent fix is later applied manually, reconcile its version rather than assuming the new file is pending. The workflow stops on history mismatches; it does not reset the database or rerun the root-level bootstrap scripts. A CLI dry-run still needs to run in Actions with the configured database password; the MCP comparison does not test that connection.
+The ordering fix is `migrations/20261019110000_order_lookup_newest_first.sql`. At the history check above, the project had its required flexible lookup contract but still limited before sorting. Check the current state before applying it. If an equivalent fix was applied manually, reconcile its version rather than assuming the new file is pending. Resolve history mismatches before deployment; do not reset the database or rerun root-level bootstrap scripts. An MCP history comparison does not verify the CLI database connection.
 
 ### Subsequent changes and deployment order
 
 Create future changes with `supabase migration new descriptive_name`, edit the generated SQL, and add regression coverage. Keep applied files unchanged; fixes use a new migration. The current in-memory test explicitly loads the ordering migration after the legacy bootstrap. Add new migration files to the tested sequence as they are introduced; it does not automatically test arbitrary SQL files.
 
-After the workflow is on `main`, open Actions → Deploy database migrations → Run workflow. Run with `dry_run` checked, inspect the pending versions, then run with it unchecked. A dry-run checks the pending list; it does not execute SQL to prove it will succeed.
+Run `npm run check`, then use the CLI to preview and apply reviewed migrations:
+
+```sh
+supabase link --project-ref "$SUPABASE_PROJECT_REF"
+supabase migration list --linked
+supabase db push --linked --dry-run
+# Review the pending versions before running this command.
+supabase db push --linked
+supabase migration list --linked
+```
+
+A dry-run checks the pending list; it does not execute SQL to prove it will succeed. Alternatively, use the authenticated Supabase MCP connection to inspect migration history and the live schema, then apply only the reviewed pending SQL with its migration tool. Verify the resulting history and schema afterward. If MCP assigns a different version, reconcile the local filename with the recorded remote version before using CLI deployment again; do not apply the same SQL twice.
 
 Website and email workflows remain independent. For changes requiring a new schema, deploy a backward-compatible database migration before merging the dependent frontend/email change. Pushing all changes together does not guarantee the database runs first. The current CSV fix is independent of the lookup ordering migration.
 
