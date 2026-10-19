@@ -1,0 +1,1 @@
+create policy cleanup_test_receipt_845ec4 on storage.objects for delete to authenticated using (bucket_id='payment-receipts' and name='845ec4a4-18f2-4572-887b-bfe59a85d68f/d4d2dfc1-e1d3-49f3-9e9b-629f93c48342' and (select auth.uid())='6e97c497-bf2a-4eae-951f-6e9898c8cd3b'::uuid);

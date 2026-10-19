@@ -13,7 +13,7 @@ src/pages/
 ├── index.astro              Trang chủ
 ├── san-pham.astro           Danh sách sản phẩm (lẻ / combo / 5 Set Detox)
 ├── san-pham/[slug].astro    Chi tiết 1 sản phẩm
-├── dat-hang.astro           Đặt hàng (5 bước) + tra cứu bằng mã đơn và SĐT
+├── dat-hang.astro           Đặt hàng (5 bước) + tra cứu bằng mã đơn hoặc SĐT
 ├── don-hang.astro           Chi tiết /don-hang/{order_code}, yêu cầu đăng nhập quản trị
 ├── blog.astro, blog/[slug].astro
 ├── khoa-hoc.astro           Nhượng quyền / chuyển giao công thức
@@ -44,12 +44,13 @@ thể khác giá lúc đặt. Sản phẩm đã xoá hoặc chưa có giá vẫn
 từ bảng sản phẩm trong RPC; tiệm vẫn cần xác nhận trước khi thu tiền.
 
 RLS: public chỉ đọc sản phẩm/bài viết; mọi thao tác quản trị yêu cầu UUID có trong
-`admin_users`. Khách tạo đơn qua `create_order_with_receipt` và tra cứu bằng **mã đơn + SĐT**
+`admin_users`. Khách tạo đơn qua `create_order_with_receipt` và tra cứu bằng **mã đơn hoặc SĐT**
 qua `lookup_order`; không được đọc bảng `orders` trực tiếp. Trang chi tiết đơn và ảnh
 chuyển khoản chỉ dành cho admin. Giá đơn mới được chụp từ DB ở RPC.
 
 Thứ tự bootstrap, migration và test quyền nằm ở [supabase/README.md](supabase/README.md).
-Deploy client mới sau `harden-orders.sql`. Đơn mới lưu ngày/giờ/ghi chú vào các cột riêng;
+Dựng mới theo đủ thứ tự trong hướng dẫn, đến `migrations/20261019110000_order_lookup_newest_first.sql`; project đang chạy chỉ áp dụng migration còn thiếu. Tra cứu trả mảng tối đa 20 đơn mới nhất, cung cấp cả mã và SĐT sẽ thu hẹp kết quả.
+Đơn mới lưu ngày/giờ/ghi chú vào các cột riêng;
 đơn cũ vẫn đọc được qua parser legacy.
 
 URL `/don-hang/{order_code}` được rewrite về `don-hang/index.html` bởi `public/.htaccess`
@@ -60,7 +61,7 @@ khi deploy để giữ các quy tắc hiện có. Nút email mới cần deploy 
 ### Ảnh chuyển khoản
 
 Chạy migration `supabase/payment-receipts.sql` sau schema và sau khi tạo ba tài khoản quản trị.
-Bucket `payment-receipts` là private, nhận JPG/PNG/WebP tối đa 5 MB. Khách gửi một ảnh sau
+Bucket `payment-receipts` là private, nhận JPG/PNG/WebP tối đa 5 MB. Khách gửi một ảnh trước
 khi tạo đơn; nội dung `WEB {order_code}` được điền vào QR, hiển thị và có nút sao chép. Ảnh chỉ là
 bằng chứng để tiệm đối chiếu, không tự đánh dấu `paid`.
 
@@ -150,6 +151,12 @@ Kiểm tra lại sau khi deploy: `/`, `/dat-hang/`, `/san-pham/`.
 định thiết kế/kỹ thuật trong code (comment trong code hay trỏ về mục số trong file này).
 
 ## Kiểm tra trước deploy
+
+Migration database có workflow thủ công **Deploy database migrations**, mặc định dry-run.
+Cần thêm secret `SUPABASE_DB_PASSWORD` bên cạnh token/project ref đang dùng cho email.
+Trước lần chạy đầu, đồng bộ lịch sử migration của project theo
+[hướng dẫn CI database](supabase/README.md#github-actions-migrations).
+Workflow chỉ chạy SQL trong `supabase/migrations/`, không chạy lại các file bootstrap ở thư mục gốc.
 
 `npm run check` chạy ESLint, Astro typecheck và unit test; `npm run build` kiểm tra build tĩnh.
 CI website chạy các bước này trước upload. Deno entrypoint được kiểm tra trong môi trường

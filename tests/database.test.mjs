@@ -43,6 +43,7 @@ test("should bootstrap a fresh database and enforce admin, lookup and order-writ
     // lookup_order's contract changes here (array return, either credential alone works),
     // so this runs after tests/harden-orders.sql, which still exercises the prior contract.
     await database.exec(await readSql("flexible-order-lookup.sql"));
+    await database.exec(await readSql("migrations/20261019110000_order_lookup_newest_first.sql"));
     await database.exec(await readSql("tests/flexible-order-lookup.sql"));
     assert.equal((await database.query("select count(*)::int as count from public.orders")).rows[0].count, 0);
   } finally {
@@ -69,6 +70,7 @@ test("should preserve receipt permissions and convert the legacy webhook to one 
     await database.exec(await readSql("defer-order-until-payment.sql"));
     await database.exec(await readSql("tests/defer-order-until-payment.sql"));
     await database.exec(await readSql("flexible-order-lookup.sql"));
+    await database.exec(await readSql("migrations/20261019110000_order_lookup_newest_first.sql"));
     assert.equal((await database.query("select count(*)::int as count from net.http_request_queue")).rows[0].count, 0);
   } finally {
     await database.close();

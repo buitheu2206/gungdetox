@@ -8,6 +8,14 @@ values
   ('f2222222-2222-4222-8222-222222222222', '0909876543', 'Lookup A second order', 'Addr', 'District',
    '[{"productSlug":"lookup-fixture","quantity":2}]', 'glass', 'delivered', now());
 
+-- Insert older rows first so limiting before sorting omits the newest order.
+insert into public.orders(id, phone, customer_name, address, district, items, bottle_type, created_at)
+select (lpad(to_hex(n), 6, '0') || '00' || '-0000-4000-8000-000000000001')::uuid,
+  '0907654321', 'Lookup limit fixture', 'Addr', 'District',
+  '[{"productSlug":"lookup-fixture","quantity":1}]'::jsonb, 'glass',
+  '2026-01-01'::timestamptz + (n / 2) * interval '1 day'
+from generate_series(1, 24) n;
+
 set local role anon;
 do $$
 declare
@@ -30,5 +38,22 @@ begin
   end if;
 end;
 $$;
+reset role;
+-- Exercise a sequential plan too; correctness must not depend on an index scan.
+set local enable_indexscan = off;
+set local enable_indexonlyscan = off;
+set local enable_bitmapscan = off;
+do $$
+declare expected jsonb; actual jsonb;
+begin
+  select jsonb_agg(code order by created_at desc, id) into expected from (
+    select id, created_at, right(phone, 6) || '-' || upper(left(replace(id::text, '-', ''), 6)) as code
+    from public.orders where phone = '0907654321' order by created_at desc, id limit 20
+  ) latest;
+  set local role anon;
+  select jsonb_agg(entry->>'code' order by position) into actual
+  from jsonb_array_elements(public.lookup_order(null, '0907654321')) with ordinality as results(entry, position);
+  if actual is distinct from expected then raise exception 'Lookup must select the newest 20 orders with deterministic ties.'; end if;
+end $$;
 rollback;
 select 'Flexible order lookup checks passed' as result;

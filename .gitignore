@@ -34,3 +34,6 @@ DEPLOY.md
 
 # Local audit reports
 /reports/
+
+# Supabase CLI link state (project connection metadata)
+/supabase/.temp/
