@@ -14,7 +14,7 @@ Run these files in order in the SQL Editor, with transaction rollback on any err
 5. `harden-orders.sql` — admin allowlist, protected order table, customer lookup RPC and structured delivery fields.
 6. `defer-order-until-payment.sql` — orders are only created once their payment receipt already exists in storage; the id becomes client-chosen.
 7. `flexible-order-lookup.sql` — lookup accepts a code or phone and returns an array of summaries.
-8. `migrations/20261019110000_order_lookup_newest_first.sql` — select the newest 20 matches before limiting, with stable ordering for equal timestamps.
+8. `migrations/20261019100129_order_lookup_newest_first.sql` — select the newest 20 matches before limiting, with stable ordering for equal timestamps.
 
 Then configure the receipt email webhook and deploy `resend-email` following `functions/resend-email/README.md`. For a fresh database, configure `notify_new_order_email` for INSERT on `orders`, no condition needed — every inserted order already has a confirmed receipt by the time it's written. Keep the webhook secret and API keys in Supabase secrets/Dashboard, outside SQL committed to Git.
 
@@ -22,7 +22,7 @@ Then configure the receipt email webhook and deploy `resend-email` following `fu
 
 Check the migration history and current RPC definitions first. Apply only missing migrations in the numbered order above; do not replay the whole bootstrap against a running database. The receipt and deferred-order migrations contain one-time changes.
 
-For a project already using `flexible-order-lookup.sql`, apply only `migrations/20261019110000_order_lookup_newest_first.sql` in its transaction. It replaces `lookup_order` without changing its parameters, array response, access rules or stored orders. Existing clients remain compatible. Deploy the frontend CSV fix separately; the lookup correction takes effect immediately at the database.
+For a project already using `flexible-order-lookup.sql`, apply only `migrations/20261019100129_order_lookup_newest_first.sql` in its transaction. It replaces `lookup_order` without changing its parameters, array response, access rules or stored orders. Existing clients remain compatible. Deploy the frontend CSV fix separately; the lookup correction takes effect immediately at the database.
 
 For an older project, coordinate the database, frontend and email deployment. `defer-order-until-payment.sql` renames the creation RPC parameter from `upload_token` to `order_id`, requires an uploaded receipt and removes the old receipt capability table/functions. Clients using the old signature must reload after the new frontend is deployed. The email handler must match the INSERT notification flow. `flexible-order-lookup.sql` changes lookup from a single object/null to an array; deploy a matching frontend rather than treating these versions as interchangeable.
 
@@ -58,7 +58,7 @@ The machine running the CLI must be permitted by the project's database network 
 
 ### One-time setup for the existing project
 
-On 2026-10-19, the six recorded migrations for project `bjenawwpxwivocsmsmzd` were retrieved through MCP into `supabase/migrations/`, preserving their versions, names and SQL (apart from trailing whitespace). Their contents were reviewed for embedded credentials. No remote history or application data was changed. The only local version absent from remote history at that check was `20261019110000_order_lookup_newest_first`.
+On 2026-10-19, the six recorded migrations for project `bjenawwpxwivocsmsmzd` were retrieved through MCP into `supabase/migrations/`, preserving their versions, names and SQL (apart from trailing whitespace). Their contents were reviewed for embedded credentials. No remote history or application data was changed. The ordering fix was initially local-only as `20261019110000_order_lookup_newest_first`. MCP subsequently applied it as `20261019100129_order_lookup_newest_first`; the local filename now matches that recorded remote version. The function definition, execution grants and empty/invalid-input behavior were verified through MCP after deployment.
 
 The live database already has the `order_id` creation parameter, no `order_receipt_uploads` table, and the flexible array-returning lookup function. These later changes are not recorded in its migration history. Do not rerun the deferred-order migration or invent historical versions. The imported files reconcile recorded history for deployment to this existing project; they are not a complete fresh-database baseline. Use the numbered bootstrap above for a new project, not `supabase db reset` with this history folder.
 
@@ -76,7 +76,7 @@ supabase db push --linked --dry-run
 
 Review every fetched file, including untracked files, before committing the history. Historical webhook SQL can contain secrets: do not commit credentials; reconcile those files deliberately. Fetch retrieves recorded migration statements, not unrecorded SQL Editor changes and not a full schema baseline. Compare the recorded history with the live schema when manual changes are missing. Do not invent applied versions or automatically run `migration repair` to suppress a mismatch.
 
-The ordering fix is `migrations/20261019110000_order_lookup_newest_first.sql`. At the history check above, the project had its required flexible lookup contract but still limited before sorting. Check the current state before applying it. If an equivalent fix was applied manually, reconcile its version rather than assuming the new file is pending. Resolve history mismatches before deployment; do not reset the database or rerun root-level bootstrap scripts. An MCP history comparison does not verify the CLI database connection.
+The ordering fix is `migrations/20261019100129_order_lookup_newest_first.sql`. At the history check above, the project had its required flexible lookup contract but still limited before sorting. Check the current state before applying it. If an equivalent fix was applied manually, reconcile its version rather than assuming the new file is pending. Resolve history mismatches before deployment; do not reset the database or rerun root-level bootstrap scripts. An MCP history comparison does not verify the CLI database connection.
 
 ### Subsequent changes and deployment order
 
