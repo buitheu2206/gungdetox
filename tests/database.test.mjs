@@ -1,27 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { PGlite } from "@electric-sql/pglite";
+import { platformSchema, readSql } from "./helpers/database.mjs";
 
-// PostgreSQL in memory: emulate only Supabase's auth/storage schema, never contact a project.
-const platformSchema = `
-  create role anon;
-  create role authenticated;
-  create schema auth;
-  create schema storage;
-  create table auth.users(id uuid primary key default gen_random_uuid(), email text);
-  create function auth.uid() returns uuid language sql stable as
-    $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-  create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
-  create table storage.objects(id uuid primary key default gen_random_uuid(), bucket_id text, name text, metadata jsonb);
-  alter table storage.objects enable row level security;
-  grant usage on schema public, auth, storage to anon, authenticated;
-  grant all on storage.objects to anon, authenticated;
-  alter default privileges in schema public grant all on tables to anon, authenticated;
-  insert into auth.users(email) values ('buitheu698@gmail.com'), ('chubaohong2206@gmail.com'), ('hoabachhop79@gmail.com');
-`;
-
-const readSql = (path) => readFile(new URL(`../supabase/${path}`, import.meta.url), "utf8");
 
 test("should bootstrap a fresh database and enforce admin, lookup and order-write boundaries", async () => {
   const database = new PGlite();
@@ -38,6 +19,7 @@ test("should bootstrap a fresh database and enforce admin, lookup and order-writ
     // to be rerun, so applied once here, after harden-orders.sql's own reapply check.
     await database.exec(await readSql("defer-order-until-payment.sql"));
     await database.exec(await readSql("tests/harden-orders.sql"));
+    await database.exec(await readSql("migrations/20261020021257_version_payment_receipts.sql"));
     // The SQL test must clean up its fixtures.
     assert.equal((await database.query("select count(*)::int as count from public.orders")).rows[0].count, 0);
     // lookup_order's contract changes here (array return, either credential alone works),
@@ -69,6 +51,7 @@ test("should preserve receipt permissions and convert the legacy webhook to one 
     await database.exec(await readSql("harden-orders.sql"));
     await database.exec(await readSql("defer-order-until-payment.sql"));
     await database.exec(await readSql("tests/defer-order-until-payment.sql"));
+    await database.exec(await readSql("migrations/20261020021257_version_payment_receipts.sql"));
     await database.exec(await readSql("flexible-order-lookup.sql"));
     await database.exec(await readSql("migrations/20261019100129_order_lookup_newest_first.sql"));
     assert.equal((await database.query("select count(*)::int as count from net.http_request_queue")).rows[0].count, 0);

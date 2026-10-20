@@ -68,32 +68,41 @@ bằng chứng để tiệm đối chiếu, không tự đánh dấu `paid`.
 Quản trị tích ô `Đã thanh toán` trong chi tiết đơn hoặc bảng đơn sau khi đối chiếu tiền nhận.
 Bỏ tích để sửa xác nhận nhầm; chỉ cập nhật `paid`, không đổi trạng thái hay lịch sử giao hàng.
 
-Nút `Tiếp tục` ở bước 4 chỉ sinh một UUID trên trình duyệt (không gọi mạng) và mở bước 5 —
+Nút `Tiếp tục` ở bước 4 kiểm tra lại `in_stock = true`, sinh một UUID trên trình duyệt và mở bước 5 —
 màn thanh toán. Đơn **chưa được ghi vào DB** ở bước này; mã đơn/QR hiển thị được vì đã tính
 trước từ UUID đó. Nút `Quay lại` ở bước 5 về đúng bước 4, mọi trường vẫn giữ nguyên dữ liệu
 và vẫn sửa được — không có gì để dọn vì chưa có đơn nào được tạo. Quay lại bước 5 lần nữa
 dùng lại đúng UUID cũ nên mã đơn không đổi.
 
-Nút cuối `Xác nhận đặt hàng` upload ảnh lên Storage theo đường dẫn `{order_id}/receipt`, sau
+Nút cuối `Xác nhận đặt hàng` upload ảnh lên Storage theo đường dẫn `{order_id}/receipt-{sha256}`, sau
 đó gọi RPC `create_order_with_receipt(order_data, order_id)` — RPC này **bắt buộc ảnh đã có
 sẵn trong Storage** mới cho tạo đơn, và tạo đơn với `payment_receipt_submitted_at` được set
 ngay lập tức (không còn bước xác nhận riêng). Gọi lại khi mất response là an toàn: RPC tạo
-đơn theo kiểu idempotent, trả về đơn đã tạo thay vì tạo trùng hoặc báo lỗi. Webhook email
+đơn theo kiểu idempotent, chỉ trả mã định danh và đường dẫn ảnh thay vì thông tin cá nhân. Webhook email
 cấu hình trên trigger INSERT của `orders`, không cần điều kiện — mọi đơn vừa insert đều đã
 có ảnh xác nhận. Sau khi xác nhận thành công, màn hình hiển thị lời cảm ơn và thông báo tiệm
 sẽ liên hệ xác nhận đơn hàng; hai nút hành động được thay bằng `Về trang chủ`.
 
 Bucket `payment-receipts` private, chỉ nhận JPG/PNG/WebP tối đa 5 MB; policy insert chỉ kiểm
-tra đường dẫn đúng định dạng `{uuid}/receipt`, không cần bảng quyền riêng (khác bản trước đây
+tra đường dẫn đúng định dạng `{uuid}/receipt-{sha256}` (vẫn hỗ trợ `{uuid}/receipt` cho client cũ), không cần bảng quyền riêng (khác bản trước đây
 dùng `order_receipt_uploads` — bảng này đã bị xoá). Ba quản trị hiện tại xem ảnh trong trang
 chi tiết đơn qua signed URL có hiệu lực một giờ. Nếu rời trang trước khi upload, không có gì
 phát sinh trong DB; nếu upload thành công nhưng mất response ở bước tạo đơn, bấm lại
 `Xác nhận đặt hàng` để thử lại an toàn. Đổi trạng thái ở cả hai màn quản trị dùng chung luồng
-ghi lịch sử.
+ghi lịch sử. Nếu ảnh đã upload nhưng tạo đơn chưa thành công, khách vẫn được chọn ảnh khác:
+ảnh mới có đường dẫn khác, mã chuyển khoản giữ nguyên và đơn lưu đường dẫn ảnh được xác nhận.
+Trang quản trị đọc đường dẫn này thay vì lấy ảnh đầu tiên trong thư mục. Nếu đơn thực tế đã
+được tạo nhưng response bị mất, hệ thống không đổi ảnh của đơn đó khi khách thử gửi ảnh mới.
+Ảnh upload chưa gắn vào đơn có thể còn lại trong Storage; thay đổi này không tự xoá chúng.
+
+Áp dụng `supabase/migrations/20261020021257_version_payment_receipts.sql` trước khi deploy
+frontend mới. RPC tạo đơn vẫn public; danh sách, chi tiết đầy đủ và ảnh biên lai yêu cầu quyền admin.
 
 Kiểm tra toàn bộ luồng (RPC, storage policy, thời điểm email) bằng
 `supabase/tests/defer-order-until-payment.sql`; dữ liệu và hàng đợi pg_net đều được rollback,
 không gửi email thật trong quá trình kiểm tra.
+`tests/checkout-integration.test.mjs` nối helper checkout, Storage adapter, SQL/RLS, hàng đợi webhook
+và handler email thật trong PGlite; HTTP đến Resend được giả lập, không gửi email ra ngoài.
 
 ## Cài đặt & chạy local
 

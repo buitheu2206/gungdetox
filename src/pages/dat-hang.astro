@@ -318,6 +318,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
   import { supabase } from "../lib/supabase";
   import { orderCode, type ProductRow } from "../lib/templates";
   import { getPaymentInstructions } from "../lib/payment";
+  import { getCheckoutProducts, assertCheckoutAvailable } from "../lib/checkout-products";
   import { getProductUnitPrice as unitPrice, snapshotOrderItems, getOrderAmount } from "../lib/order-pricing";
 
   interface CartItem {
@@ -720,9 +721,10 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     form.querySelector<HTMLButtonElement>('button[type="submit"]')!.focus();
   });
 
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (cart.length === 0) return;
+    const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    if (cart.length === 0 || button.disabled) return;
     // Phòng trường hợp người dùng tới được bước 4 mà chưa qua kiểm tra ở bước 2/3
     // (vd. bấm lùi/tiến bằng nút back của trình duyệt) — quay lại đúng bước để field
     // lỗi hiển thị đúng chỗ thay vì để nút "Đặt hàng" im lặng không phản hồi.
@@ -734,22 +736,27 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
       goToStep(3);
       return;
     }
-    showPaymentStep();
+    button.disabled = true;
+    try {
+      await assertCheckoutAvailable(supabase, cart);
+      showPaymentStep();
+    } catch (error) {
+      console.error("Không mở được bước thanh toán", { slugs: cart.map((item) => item.slug), error });
+      alert(error instanceof Error ? error.message : "Không kiểm tra được sản phẩm. Vui lòng thử lại.");
+    } finally {
+      button.disabled = false;
+    }
   });
 
   // Load danh sách sản phẩm + đọc query string ?product=slug
-  const { data: allProducts, error: productsError } = await supabase
-    .from("products")
-    .select("slug, type, name, price, price_retail, bottle_options, image_url")
-    .order("sort_order");
-
-  if (productsError) {
-    console.error("Không tải được danh mục checkout", { error: productsError });
+  try {
+    products = await getCheckoutProducts(supabase);
+  } catch (error) {
+    console.error("Không tải được danh mục checkout", { error });
     cartEmptyHint.textContent = "Không tải được sản phẩm. Vui lòng tải lại trang để thử lại.";
     addToCartBtn.disabled = true;
-    throw new Error("Không tải được sản phẩm checkout.", { cause: productsError });
+    throw error;
   }
-  products = allProducts ?? [];
 
   const typeGroupLabel: Record<ProductRow["type"], string> = {
     single: "Đồ uống lẻ",
