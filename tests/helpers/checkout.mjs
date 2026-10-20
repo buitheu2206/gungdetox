@@ -25,6 +25,7 @@ export async function createCheckoutDatabase() {
       await database.exec(await readSql(file));
     }
     await database.exec(await readSql("migrations/20261020021257_version_payment_receipts.sql"));
+    await database.exec(await readSql("migrations/20261020032123_cleanup_receipts_and_validate_retries.sql"));
     await database.exec(`insert into public.products(slug,type,name,price_retail,in_stock) values
       ('ginger-shot','single','Ginger shot',42000,true), ('sold-out','single','Sold out',42000,false);`);
     return database;
@@ -75,6 +76,10 @@ export function createCheckoutClient(database) {
   async function rpcResult(name, args) {
     state.calls.push(name);
     try {
+      if (name === "is_payment_receipt_retired") {
+        const { rows } = await queryAsCustomer(database, "select public.is_payment_receipt_retired($1) as retired", [args.receipt_path]);
+        return { data: rows[0].retired, error: null };
+      }
       if (name === "has_payment_receipt") {
         const { rows } = await queryAsCustomer(database, "select public.has_payment_receipt($1,$2) as uploaded", [args.order_id, args.receipt_path]);
         return { data: rows[0].uploaded, error: null };
@@ -84,13 +89,15 @@ export function createCheckoutClient(database) {
       const { rows } = await queryAsCustomer(database, "select * from public.create_order_with_receipt($1::jsonb,$2::uuid)",
         [JSON.stringify(args.order_data), args.order_id]);
       return { data: state.loseOrderResponse ? null : rows[0], error: state.loseOrderResponse ? new Error("Order response lost") : null };
-    } catch (error) { return { data: null, error }; }
+    } catch (error) {
+      return { data: null, error: { message: error.message, code: error.code, details: error.detail ?? null } };
+    }
   }
   const client = {
     from(table) { assert.equal(table, "products"); return productsQuery(database); },
     storage: { from(bucket) { assert.equal(bucket, "payment-receipts"); return { upload }; } },
     rpc(name, args) {
-      return name === "has_payment_receipt" ? rpcResult(name, args) : { single: () => rpcResult(name, args) };
+      return ["has_payment_receipt", "is_payment_receipt_retired"].includes(name) ? rpcResult(name, args) : { single: () => rpcResult(name, args) };
     },
   };
   return { client, state };

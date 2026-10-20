@@ -1,3 +1,7 @@
 [functions.resend-email]
 # Authentication is checked inside the handler using ORDER_WEBHOOK_SECRET.
 verify_jwt = false
+
+[functions.cleanup-payment-receipts]
+# The privileged claim RPC validates x-cleanup-token against Supabase Vault before deleting.
+verify_jwt = false

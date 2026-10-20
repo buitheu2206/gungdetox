@@ -13,7 +13,7 @@ import ImageUpload from "./ImageUpload.astro";
 
 <script>
   import { supabase } from "../lib/supabase";
-  import { uploadPaymentReceipt, validateReceipt } from "../lib/payment-receipt";
+  import { ExistingOrderDetailsError, uploadPaymentReceipt, validateReceipt } from "../lib/payment-receipt";
 
   const form = document.getElementById("receipt-form") as HTMLFormElement;
   const input = document.getElementById("payment-receipt") as HTMLInputElement;
@@ -70,6 +70,17 @@ import ImageUpload from "./ImageUpload.astro";
       window.scrollTo({ top: 0, behavior: "instant" });
     } catch (error) {
       showMessage(error instanceof Error ? error.message : "Chưa gửi được ảnh. Vui lòng thử lại.", true);
+      if (error instanceof ExistingOrderDetailsError) {
+        document.getElementById("payment-step-title")!.textContent = "Đơn đã được ghi nhận trước đó";
+        document.getElementById("payment-step-description")!.textContent = "Thông tin vừa sửa chưa được lưu. Tiệm sẽ hỗ trợ điều chỉnh qua Zalo/hotline.";
+        document.getElementById("bank-info")!.hidden = true;
+        document.getElementById("payment-order-code")!.hidden = true;
+        submit.hidden = true;
+        back.hidden = true;
+        home.hidden = false;
+        home.focus({ preventScroll: true });
+        return;
+      }
       input.disabled = false;
       submit.disabled = false;
     } finally {

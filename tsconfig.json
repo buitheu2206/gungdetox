@@ -6,6 +6,7 @@
   ],
   "exclude": [
     "dist",
-    "supabase/functions/resend-email/index.ts"
+    "supabase/functions/resend-email/index.ts",
+    "supabase/functions/cleanup-payment-receipts/index.ts"
   ]
 }

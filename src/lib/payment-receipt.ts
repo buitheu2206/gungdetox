@@ -5,7 +5,16 @@ export const RECEIPT_BUCKET = "payment-receipts";
 export const MAX_RECEIPT_SIZE = 5 * 1024 * 1024;
 export const RECEIPT_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const SIGNED_URL_SECONDS = 60 * 60;
+const RECEIPT_VERSION_BYTES = 32;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const receiptVersions = new WeakMap<SupabaseClient, Map<string, string>>();
+
+export class ExistingOrderDetailsError extends Error {
+  constructor() {
+    super("Đơn hàng đã được ghi nhận trước đó. Thông tin vừa sửa chưa được lưu. Vui lòng liên hệ tiệm qua Zalo hoặc hotline để điều chỉnh.");
+    this.name = "ExistingOrderDetailsError";
+  }
+}
 
 export function validateReceipt(file: Pick<File, "size" | "type">) {
   if (!RECEIPT_TYPES.includes(file.type)) throw new Error("Vui lòng chọn ảnh JPG, PNG hoặc WebP.");
@@ -30,12 +39,13 @@ export async function uploadPaymentReceipt(client: SupabaseClient, orderId: stri
   try {
     const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
     const fingerprint = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-    const path = getReceiptPath(orderId, fingerprint);
+    const path = await getUploadPath(client, orderId, fingerprint);
     await storeReceipt(client, orderId, path, file);
     const { data: order, error: createError } = await client.rpc("create_order_with_receipt", {
       order_data: { ...orderData, payment_receipt_path: path }, order_id: orderId,
     }).single<{ id: string }>();
     if (createError || !order) {
+      if (createError?.details === "ORDER_ALREADY_CREATED_WITH_DIFFERENT_DETAILS") throw new ExistingOrderDetailsError();
       if (createError?.message.includes("Đơn hàng đã được ghi nhận với ảnh khác")) {
         throw new Error(createError.message, { cause: createError });
       }
@@ -45,6 +55,22 @@ export async function uploadPaymentReceipt(client: SupabaseClient, orderId: stri
     console.error("Không gửi được ảnh chuyển khoản", { orderId, error });
     throw error;
   }
+}
+
+async function getUploadPath(client: SupabaseClient, orderId: string, fingerprint: string) {
+  const versions = receiptVersions.get(client) ?? new Map<string, string>();
+  receiptVersions.set(client, versions);
+  const key = `${orderId}:${fingerprint}`;
+  let path = versions.get(key) ?? getReceiptPath(orderId, fingerprint);
+  const { data: retired, error } = await client.rpc("is_payment_receipt_retired", { receipt_path: path });
+  if (error || typeof retired !== "boolean") throw new Error("Không kiểm tra được ảnh chuyển khoản. Vui lòng thử lại.", { cause: error });
+  if (retired) {
+    // Never reuse a deleted name: a delayed cleanup request could still target it.
+    const version = Array.from(crypto.getRandomValues(new Uint8Array(RECEIPT_VERSION_BYTES)), (byte) => byte.toString(16).padStart(2, "0")).join("");
+    path = getReceiptPath(orderId, version);
+  }
+  versions.set(key, path);
+  return path;
 }
 
 async function storeReceipt(client: SupabaseClient, orderId: string, path: string, file: File) {

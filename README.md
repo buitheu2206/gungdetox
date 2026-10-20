@@ -93,7 +93,14 @@ ghi lịch sử. Nếu ảnh đã upload nhưng tạo đơn chưa thành công, 
 ảnh mới có đường dẫn khác, mã chuyển khoản giữ nguyên và đơn lưu đường dẫn ảnh được xác nhận.
 Trang quản trị đọc đường dẫn này thay vì lấy ảnh đầu tiên trong thư mục. Nếu đơn thực tế đã
 được tạo nhưng response bị mất, hệ thống không đổi ảnh của đơn đó khi khách thử gửi ảnh mới.
-Ảnh upload chưa gắn vào đơn có thể còn lại trong Storage; thay đổi này không tự xoá chúng.
+Ảnh chưa gắn vào đơn được dọn tự động sau 24 giờ bằng job Supabase chạy mỗi giờ,
+tối đa 100 ảnh/lần. Job bảo vệ đường dẫn biên lai đang dùng và phối hợp với RPC tạo đơn,
+không yêu cầu tạm dừng checkout. Xem [hướng dẫn cleanup](supabase/functions/cleanup-payment-receipts/README.md).
+
+Nếu đơn đã lưu nhưng trình duyệt mất response, retry giữ nguyên thông tin sẽ xác nhận đơn cũ.
+Nếu khách sửa địa chỉ, sản phẩm hoặc thông tin đặt hàng rồi retry cùng UUID, hệ thống báo rõ
+đơn đã được ghi nhận và phần sửa chưa được lưu; khách liên hệ tiệm để điều chỉnh. Không tạo
+UUID mới tự động hoặc cho khách chưa đăng nhập ghi đè đơn đã tồn tại.
 
 Áp dụng `supabase/migrations/20261020021257_version_payment_receipts.sql` trước khi deploy
 frontend mới. RPC tạo đơn vẫn public; danh sách, chi tiết đầy đủ và ảnh biên lai yêu cầu quyền admin.
