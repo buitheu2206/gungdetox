@@ -1,4 +1,5 @@
 # Configure SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF in repository Actions secrets.
+# SUPABASE_ACCESS_TOKEN must be a deploy token with edge_functions_write permission.
 name: Deploy order email
 
 on:
@@ -57,4 +58,13 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-        run: supabase functions deploy resend-email --project-ref "$SUPABASE_PROJECT_REF" --use-api
+        run: |
+          set +e
+          deploy_output="$(supabase functions deploy resend-email --project-ref "$SUPABASE_PROJECT_REF" --use-api 2>&1)"
+          deploy_status=$?
+          set -e
+          echo "$deploy_output"
+          if [[ $deploy_status -ne 0 && "$deploy_output" == *"edge_functions_write"* ]]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN is missing edge_functions_write permission. Regenerate the Supabase personal access token with Edge Functions write access and update the repository secret."
+          fi
+          exit $deploy_status

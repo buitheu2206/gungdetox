@@ -141,7 +141,8 @@ Site host trên **Web Hosting iNET** (shared hosting, FTP), domain `gungdetox.co
 
 Mẫu email có workflow riêng `.github/workflows/deploy-order-email.yml`: sửa HTML hoặc mã function
 rồi push lên `main` sẽ tự tạo mẫu, chạy tests và deploy `resend-email` lên Supabase. Cấu hình thêm
-hai repo secret `SUPABASE_ACCESS_TOKEN` và `SUPABASE_PROJECT_REF` một lần; xem hướng dẫn trong
+hai repo secret `SUPABASE_ACCESS_TOKEN` và `SUPABASE_PROJECT_REF` một lần (`SUPABASE_ACCESS_TOKEN`
+cần quyền `edge_functions_write` để deploy function); xem hướng dẫn trong
 [`supabase/functions/resend-email/README.md`](supabase/functions/resend-email/README.md#deploy-tự-động).
 
 **Thủ công:** cần file `.env.production` (không có trong repo, xin riêng chủ dự án) chứa

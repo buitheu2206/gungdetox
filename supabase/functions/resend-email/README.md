@@ -17,7 +17,8 @@ từ HTML, chạy tests rồi deploy riêng `resend-email`. Có thể chạy l�
 Cấu hình một lần trong **GitHub → Settings → Secrets and variables → Actions → Repository secrets**:
 
 - `SUPABASE_ACCESS_TOKEN`: personal access token tạo tại https://supabase.com/dashboard/account/tokens;
-  đây là token deploy, không phải anon key, service role key hay Resend API key.
+  đây là token deploy, không phải anon key, service role key hay Resend API key. Token này cần
+  quyền `edge_functions_write`, nếu thiếu workflow sẽ báo lỗi `Missing required permission(s): edge_functions_write`.
 - `SUPABASE_PROJECT_REF`: project ref hiện tại `bjenawwpxwivocsmsmzd`.
 
 Sau đó chỉ sửa `email-template.html` rồi commit/push lên `main`; không cần chạy script tạo mẫu
