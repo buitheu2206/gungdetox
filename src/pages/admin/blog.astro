@@ -72,6 +72,7 @@ import CustomInput from "../../components/CustomInput.astro";
   import { initMainImagePreview } from "../../lib/image-preview";
   import { supabase } from "../../lib/supabase";
   import { renderPostBodyHtml, type PostRow } from "../../lib/templates";
+  import { slugify } from "../../lib/slug";
 
   const form = document.getElementById("post-form") as HTMLFormElement;
   const editIdInput = document.getElementById("edit-id") as HTMLInputElement;
@@ -222,7 +223,7 @@ import CustomInput from "../../components/CustomInput.astro";
     const cleanTag = field("f-tag").value.trim().replace(/,+$/, "").trim();
 
     const payload = {
-      slug: field("f-slug").value.trim(),
+      slug: slugify(field("f-slug").value),
       title: field("f-title").value.trim(),
       tag: cleanTag || null,
       read_time: field("f-read-time").value.trim() || null,

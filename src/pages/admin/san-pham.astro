@@ -118,6 +118,7 @@ import ImageUpload from "../../components/ImageUpload.astro";
   import { getAstroScopeHtml } from "../../lib/astro-scope";
   import { initMainImagePreview } from "../../lib/image-preview";
   import { supabase } from "../../lib/supabase";
+  import { slugify } from "../../lib/slug";
 
   const form = document.getElementById("product-form") as HTMLFormElement;
   const editIdInput = document.getElementById("edit-id") as HTMLInputElement;
@@ -294,7 +295,7 @@ import ImageUpload from "../../components/ImageUpload.astro";
     });
 
     const payload = {
-      slug: field("f-slug").value,
+      slug: slugify(field("f-slug").value),
       type: (document.getElementById("f-type") as HTMLSelectElement).value,
       name: field("f-name").value,
       category: field("f-category").value || null,
