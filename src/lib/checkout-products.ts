@@ -2,6 +2,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ProductRow } from "./templates";
 
+export function getInitialCheckoutItem(search: string, products: Pick<ProductRow, "slug">[]) {
+  const params = new URLSearchParams(search);
+  const product = products.find((item) => item.slug === params.get("product"));
+  if (!product) return null;
+  const requestedQuantity = Number(params.get("quantity") ?? 1);
+  const quantity = Number.isSafeInteger(requestedQuantity) && requestedQuantity > 0 ? requestedQuantity : 1;
+  return { slug: product.slug, quantity };
+}
+
 export async function getCheckoutProducts(client: SupabaseClient): Promise<ProductRow[]> {
   const { data, error } = await client.from("products")
     .select("slug, type, name, price, price_retail, bottle_options, image_url, in_stock")

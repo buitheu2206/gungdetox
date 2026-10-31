@@ -1,13 +1,15 @@
 // Shared behavior for static forms and dynamically rendered order rows.
-function closeMenusOnViewportChange(event: Event) {
-  document.querySelectorAll<HTMLElement>(".custom-select-list:popover-open").forEach((list) => {
+function positionMenusOnViewportChange(event: Event) {
+  document.querySelectorAll<HTMLUListElement>(".custom-select-list:popover-open").forEach((list) => {
     if (event.target instanceof Node && list.contains(event.target)) return;
-    list.hidePopover();
+    // Trackpad scrolling can reach the page while the user is choosing an option.
+    const trigger = list.closest("[data-custom-select]")?.querySelector<HTMLButtonElement>(".custom-select-trigger");
+    if (trigger) positionOptions(trigger, list);
   });
 }
 
-document.addEventListener("scroll", closeMenusOnViewportChange, true);
-window.addEventListener("resize", closeMenusOnViewportChange);
+document.addEventListener("scroll", positionMenusOnViewportChange, true);
+window.addEventListener("resize", positionMenusOnViewportChange);
 
 export function syncCustomSelect(select: HTMLSelectElement) {
   const root = select.closest("[data-custom-select]")!;

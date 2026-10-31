@@ -5,14 +5,15 @@
 // giữ nguyên các <option> bên trong làm slot.
 interface Props {
   id: string;
+  name?: string;
   required?: boolean;
 }
 
-const { id, required = false } = Astro.props;
+const { id, name, required = false } = Astro.props;
 ---
 
 <span class="custom-select" data-custom-select>
-  <select id={id} required={required} tabindex="-1">
+  <select id={id} name={name} required={required} tabindex="-1">
     <slot />
   </select>
   <button type="button" class="custom-select-trigger" aria-haspopup="listbox" aria-expanded="false" aria-controls={`${id}-options`}>
@@ -93,6 +94,8 @@ const { id, required = false } = Astro.props;
     box-shadow: var(--shadow-md);
     max-height: 240px;
     overflow-y: auto;
+    /* Prevent scrolling at the list edges from reaching the page and closing it. */
+    overscroll-behavior-y: contain;
   }
 
   .custom-select-trigger:disabled {

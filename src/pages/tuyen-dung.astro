@@ -1,0 +1,41 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PurchaseLink from "../components/PurchaseLink.astro";
+---
+
+<BaseLayout
+  title="Tuyển dụng — GỪNG DETOX"
+  description="Kết nối với GỪNG DETOX để tìm hiểu cơ hội làm việc tại tiệm và ứng tuyển qua Zalo."
+>
+  <main class="recruitment-page">
+    <p class="eyebrow">ĐỒNG HÀNH CÙNG GỪNG</p>
+    <h1>Tuyển dụng</h1>
+    <p>Bạn muốn trở thành một phần của GỪNG? Kết nối với tiệm để trao đổi về cơ hội làm việc nhé!</p>
+
+    <section class="surface-card">
+      <h2>Ứng tuyển qua Zalo</h2>
+      <p>Nhắn GỪNG qua Zalo để tìm hiểu vị trí đang tuyển, công việc và thời gian làm việc phù hợp.</p>
+      <p>Bạn có thể giới thiệu ngắn về bản thân và thời gian có thể làm việc để tiệm hỗ trợ trao đổi.</p>
+      <PurchaseLink href="https://zalo.me/0888267009" label="Ứng tuyển qua Zalo" />
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .recruitment-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+
+  .eyebrow {
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+
+  section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: var(--color-primary-light);
+  }
+</style>

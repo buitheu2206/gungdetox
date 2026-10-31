@@ -318,7 +318,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
   import { supabase } from "../lib/supabase";
   import { orderCode, type ProductRow } from "../lib/templates";
   import { getPaymentInstructions } from "../lib/payment";
-  import { getCheckoutProducts, assertCheckoutAvailable } from "../lib/checkout-products";
+  import { getCheckoutProducts, assertCheckoutAvailable, getInitialCheckoutItem } from "../lib/checkout-products";
   import { getProductUnitPrice as unitPrice, snapshotOrderItems, getOrderAmount } from "../lib/order-pricing";
 
   interface CartItem {
@@ -774,12 +774,11 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     })
     .join("");
 
-  const preselectedSlug = new URLSearchParams(location.search).get("product");
-  const initial = products.find((p) => p.slug === preselectedSlug) ?? null;
+  const initial = getInitialCheckoutItem(location.search, products);
 
   if (initial) {
     productSelect.value = initial.slug;
-    cart.push({ slug: initial.slug, quantity: 1 });
+    cart.push(initial);
   }
   // Refresh the custom label after fetching options and applying the URL selection.
   productSelect.dispatchEvent(new Event("change"));

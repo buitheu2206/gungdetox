@@ -1,6 +1,8 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import SocialIcon from "../components/SocialIcon.astro";
+import PurchaseLink from "../components/PurchaseLink.astro";
+import FermentedOrderPicker from "../components/FermentedOrderPicker.astro";
 
 const shopPhotos = [
   { name: "quay-tiem-gung", width: 960, height: 1280, caption: "Một góc tiệm GỪNG", alt: "Quầy tiệm với đồ uống, trái cây và gừng tươi" },
@@ -60,6 +62,24 @@ const shopPhotos = [
         <li class="surface-card"><span aria-hidden="true">⚡</span>Một shot nhỏ, tiện lợi – dễ bổ sung vào routine buổi sáng.</li>
         <li class="surface-card"><span aria-hidden="true">💚</span>Duy trì đều đặn cùng chế độ ăn uống cân bằng để chăm sóc sức khỏe từ bên trong.</li>
       </ul>
+      <PurchaseLink href="/dat-hang?product=combo-3-thang-ginger-shot" label="Đặt Ginger Shot" />
+    </section>
+
+    <section class="set-detox-promo">
+      <img src="/images/brand/cover-5-set-detox.jpg" alt="5 Set Detox Tự Nhiên" />
+      <div class="promo-text">
+        <p class="eyebrow eyebrow-purple">🎁 Ưu đãi trọn set</p>
+        <h2>Chọn set phù hợp với mục tiêu của bạn</h2>
+        <p>Giao 7 chai thủy tinh — thanh lọc cơ thể — tươi sạch mỗi ngày.</p>
+        <ul class="set-legend">
+          <li><span class="dot" style="background:var(--c-green)"></span>Xanh Thanh Lọc</li>
+          <li><span class="dot" style="background:var(--c-yellow)"></span>Ginger Thơm Tái Tạo</li>
+          <li><span class="dot" style="background:var(--c-red)"></span>Đỏ Giảm Cân</li>
+          <li><span class="dot" style="background:var(--c-orange)"></span>Ginger Cam Tiêu Hóa Tốt</li>
+          <li><span class="dot" style="background:var(--c-purple)"></span>Mix Cân Bằng</li>
+        </ul>
+        <a class="btn-primary" href="/san-pham#combo">Xem các gói</a>
+      </div>
     </section>
 
     <section class="detox-intro" aria-labelledby="detox-title">
@@ -70,6 +90,7 @@ const shopPhotos = [
         <p>✨ Khi duy trì đều đặn, bạn có thể cảm nhận cơ thể nhẹ nhàng hơn, tiêu hóa thoải mái hơn và dễ duy trì một lối sống lành mạnh hơn.</p>
         <p><strong>Bắt đầu đơn giản – uống lành mỗi ngày.</strong></p>
       </div>
+      <PurchaseLink href="/san-pham?category=set-detox#detox-packages" label="Chọn gói Detox" />
     </section>
 
     <section class="fermented-drinks" aria-labelledby="fermented-title">
@@ -82,6 +103,7 @@ const shopPhotos = [
         <p>✨ Dùng vừa đủ, lựa chọn sản phẩm có nguồn gốc rõ ràng và kết hợp chế độ ăn cân bằng để xây dựng thói quen uống lành mạnh mỗi ngày.</p>
         <p><strong>GỪNG – lên men tự nhiên, gas nhẹ, uống lành mỗi ngày. 💚</strong></p>
       </div>
+      <FermentedOrderPicker />
     </section>
 
     <section class="why">
@@ -132,6 +154,7 @@ const shopPhotos = [
           </div>
         </div>
       </div>
+      <PurchaseLink label="Chọn đồ uống và đặt hàng" />
     </section>
 
     <section class="shop-gallery" aria-labelledby="shop-gallery-title">
@@ -148,6 +171,7 @@ const shopPhotos = [
           </figure>
         ))}
       </div>
+      <PurchaseLink label="Đặt đồ uống từ tiệm" />
     </section>
 
     <section class="quality-check">
@@ -164,6 +188,7 @@ const shopPhotos = [
         alt="8 dấu hiệu nhận biết Ginger Shot còn dùng tốt hay đã hỏng"
         loading="lazy"
       />
+      <PurchaseLink href="/dat-hang?product=combo-3-thang-ginger-shot" label="Đặt Ginger Shot" />
     </section>
 
     <section class="process-section">
@@ -209,22 +234,27 @@ const shopPhotos = [
           trước khi tái sử dụng, đảm bảo an toàn cho lần đóng chai tiếp theo.
         </p>
       </div>
+      <PurchaseLink label="Đặt đồ uống làm mới mỗi ngày" />
     </section>
 
-    <section class="set-detox-promo">
-      <img src="/images/brand/cover-5-set-detox.jpg" alt="5 Set Detox Tự Nhiên" />
-      <div class="promo-text">
-        <p class="eyebrow eyebrow-purple">🎁 Ưu đãi trọn set</p>
-        <h2>Chọn set phù hợp với mục tiêu của bạn</h2>
-        <p>Giao 7 chai thủy tinh — thanh lọc cơ thể — tươi sạch mỗi ngày.</p>
-        <ul class="set-legend">
-          <li><span class="dot" style="background:var(--c-green)"></span>Xanh Thanh Lọc</li>
-          <li><span class="dot" style="background:var(--c-yellow)"></span>Ginger Thơm Tái Tạo</li>
-          <li><span class="dot" style="background:var(--c-red)"></span>Đỏ Giảm Cân</li>
-          <li><span class="dot" style="background:var(--c-orange)"></span>Ginger Cam Tiêu Hóa Tốt</li>
-          <li><span class="dot" style="background:var(--c-purple)"></span>Mix Cân Bằng</li>
-        </ul>
-        <a class="btn-primary" href="/san-pham#combo">Xem các gói</a>
+    <section class="featured" aria-labelledby="featured-title">
+      <p class="eyebrow eyebrow-red">🔥 Được yêu thích nhất</p>
+      <h2 id="featured-title">Sản phẩm nổi bật</h2>
+      <div class="featured-grid">
+        <a class="featured-card surface-card" href="/san-pham/combo-3-thang-ginger-shot">
+          <img src="/images/homepage/ginger-shot-4-thang.webp" alt="Combo Ginger Shot 4 tháng: Cam, Xanh, Đỏ, Thơm — 112 chai, giá 2.000.000đ" width="1200" height="1200" loading="lazy" />
+          <div class="featured-body">
+            <h3>Ginger Shot — Combo 4 tháng</h3>
+            <span>Xem sản phẩm →</span>
+          </div>
+        </a>
+        <a class="featured-card surface-card" href="/san-pham/bia-gung">
+          <img src="/images/homepage/bia-gung-noi-bat.webp" alt="Bia Gừng Ginger Beer — lốc 6 lon, giá 210k" width="1200" height="848" loading="lazy" />
+          <div class="featured-body">
+            <h3>Bia Gừng (Ginger Beer)</h3>
+            <span>Xem sản phẩm →</span>
+          </div>
+        </a>
       </div>
     </section>
 
@@ -235,6 +265,7 @@ const shopPhotos = [
           được duy trì mỗi ngày, để cơ thể khỏe hơn từng chút một." 💚
         </blockquote>
       </div>
+      <PurchaseLink label="Bắt đầu với đồ uống của bạn" />
     </section>
 
     <section class="quick-contact">
@@ -243,6 +274,7 @@ const shopPhotos = [
       <a class="btn-primary" href="https://zalo.me/0888267009" target="_blank" rel="noopener">
         Chat Zalo
       </a>
+      <PurchaseLink />
     </section>
   </main>
 </BaseLayout>
@@ -773,6 +805,50 @@ const shopPhotos = [
     border-left: 4px solid var(--color-accent);
   }
 
+  .featured {
+    background: linear-gradient(160deg, #fdf1e6, #fff 60%);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+  }
+
+  .eyebrow-red {
+    color: var(--c-red);
+    background: color-mix(in srgb, var(--c-red) 14%, #fff);
+  }
+
+  .featured-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .featured-card {
+    overflow: hidden;
+    text-decoration: none;
+  }
+
+  .featured-card img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1200 / 848;
+    object-fit: fill;
+  }
+
+  .featured-body {
+    padding: 1.25rem;
+  }
+
+  .featured-body h3 {
+    margin: 0 0 0.75rem;
+  }
+
+  .featured-body span {
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+
   .set-detox-promo {
     position: relative;
     display: grid;
@@ -843,6 +919,14 @@ const shopPhotos = [
   }
 
   @media (max-width: 700px) {
+    .featured {
+      padding: 1.25rem;
+    }
+
+    .featured-grid {
+      grid-template-columns: 1fr;
+    }
+
     .set-detox-promo {
       grid-template-columns: 1fr;
     }

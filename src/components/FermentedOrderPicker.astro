@@ -1,0 +1,133 @@
+---
+import CustomSelect from "./CustomSelect.astro";
+import CustomInput from "./CustomInput.astro";
+---
+
+<div class="drink-picker" id="fermented-order">
+  <img id="fermented-order-image" src="/images/homepage/bia-gung-noi-bat.webp" alt="Lốc Bia Gừng 6 lon" width="1200" height="848" loading="lazy" />
+  <form action="/dat-hang" method="get">
+    <p class="eyebrow">🌿 Chọn đồ uống của bạn</p>
+    <h3>Đặt Bia Gừng &amp; Kombucha</h3>
+    <label for="fermented-product">Sản phẩm · quy cách · đơn giá</label>
+    <CustomSelect id="fermented-product" name="product" required>
+      <option value="">Đang tải sản phẩm…</option>
+    </CustomSelect>
+    <CustomInput id="fermented-quantity" name="quantity" label="Số lượng lốc" type="number" min="1" step="1" value="1" required />
+    <p>Tạm tính: <output id="fermented-total" aria-live="polite">Đang tải…</output></p>
+    <p id="fermented-error" role="alert" hidden></p>
+    <button type="submit" id="fermented-buy" disabled>Đặt hàng</button>
+  </form>
+</div>
+
+<script>
+  import { supabase } from "../lib/supabase";
+  import { getCheckoutProducts } from "../lib/checkout-products";
+  import { getProductUnitPrice } from "../lib/order-pricing";
+
+  const select = document.getElementById("fermented-product") as HTMLSelectElement;
+  const quantity = document.getElementById("fermented-quantity") as HTMLInputElement;
+  const total = document.getElementById("fermented-total")!;
+  const button = document.getElementById("fermented-buy") as HTMLButtonElement;
+  const errorMessage = document.getElementById("fermented-error")!;
+  const image = document.getElementById("fermented-order-image") as HTMLImageElement;
+  const packageImages: Record<string, { src: string; alt: string }> = {
+    "combo-loc-bia-gung": { src: "/images/homepage/bia-gung-noi-bat.webp", alt: "Lốc Bia Gừng 6 lon" },
+    "combo-loc-kombucha-bia-gung": { src: "/images/products/kombucha.webp", alt: "Lốc Kombucha + Bia Gừng 6 lon" },
+  };
+
+  try {
+    const products = (await getCheckoutProducts(supabase)).filter((product) => product.slug in packageImages);
+    if (!products.length) throw new Error("Các lốc Bia Gừng và Kombucha hiện chưa có sẵn.");
+    select.replaceChildren(...products.map((product) => {
+      const price = getProductUnitPrice(product);
+      if (price === null) throw new Error(`Chưa có giá cho ${product.name}.`);
+      return new Option(`${product.name} — ${price.toLocaleString("vi-VN")}đ/lốc`, product.slug);
+    }));
+
+    function updateSelection() {
+      const product = products.find((item) => item.slug === select.value);
+      const price = product ? getProductUnitPrice(product) : null;
+      const count = Number(quantity.value);
+      const valid = price !== null && Number.isSafeInteger(count) && count > 0 && Number.isSafeInteger(price * count);
+      button.disabled = !valid;
+      total.textContent = valid ? `${(price * count).toLocaleString("vi-VN")}đ` : "Vui lòng chọn sản phẩm và số lượng hợp lệ.";
+      const photo = packageImages[select.value];
+      if (photo) {
+        image.src = photo.src;
+        image.alt = photo.alt;
+      }
+    }
+
+    select.addEventListener("change", updateSelection);
+    quantity.addEventListener("input", updateSelection);
+    select.dispatchEvent(new Event("change"));
+  } catch (error) {
+    console.error("Không tải được các lốc đồ uống lên men", { error });
+    errorMessage.textContent = "Không tải được sản phẩm và giá. Vui lòng tải lại trang để thử lại.";
+    errorMessage.hidden = false;
+    total.textContent = "Chưa có giá";
+    button.disabled = true;
+  }
+</script>
+
+<style>
+  .drink-picker {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 1.5rem;
+    overflow: hidden;
+    border-top: 5px solid var(--color-primary);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-alt);
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+    align-self: center;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    background: linear-gradient(160deg, var(--color-primary-light), #fff 65%);
+  }
+
+  h3, p {
+    margin: 0;
+  }
+
+  label, output {
+    font-weight: 600;
+  }
+
+  .eyebrow {
+    color: var(--color-primary-dark);
+    font-weight: 600;
+  }
+
+  button {
+    padding: 0.85rem 1.25rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-primary);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 700px) {
+    .drink-picker {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

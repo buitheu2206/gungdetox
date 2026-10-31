@@ -42,12 +42,24 @@ const { pkg } = Astro.props;
       </div>
     </div>
 
+    <p class="package-introduction">{pkg.introduction}</p>
+
     <section class="detail-section">
       <h2>📦 Bạn nhận được gì</h2>
       <ul class="highlight-list">
         {pkg.highlights.map((item) => <li>{item}</li>)}
       </ul>
     </section>
+
+    {pkg.sections.map((section) => (
+      <section class="detail-section course-content">
+        <h2>{section.title}</h2>
+        <p>{section.description}</p>
+        <ul class="highlight-list">
+          {section.items.map((item) => <li>{item}</li>)}
+        </ul>
+      </section>
+    ))}
 
     <section class="detail-section">
       <h2>🤍 Phù hợp với</h2>
@@ -56,7 +68,32 @@ const { pkg } = Astro.props;
       </ul>
     </section>
 
-    <p class="detail-note">📌 {pkg.note}</p>
+    <section class="detail-section detail-note">
+      <h2>Thời gian hoàn thiện và thanh toán</h2>
+      <p><strong>Thời gian hoàn thiện:</strong> {pkg.completionTime}</p>
+      <ul class="highlight-list">
+        {pkg.paymentTerms.map((term) => <li>{term}</li>)}
+      </ul>
+    </section>
+
+    <section class="detail-section">
+      <h2>Phạm vi hỗ trợ và lưu ý</h2>
+      <ul class="highlight-list">
+        {pkg.conditions.map((condition) => <li>{condition}</li>)}
+      </ul>
+    </section>
+
+    <section class="detail-section">
+      <h2>Trao đổi với GỪNG về gói học</h2>
+      <p>Nhắn GỪNG để trao đổi nhu cầu, lịch triển khai và nội dung chuyển giao trước khi đăng ký.</p>
+      <a class="package-cta" href="https://zalo.me/0888267009" target="_blank" rel="noopener">Tư vấn gói học qua Zalo</a>
+    </section>
+
+    {pkg.slug === "cong-thuc" && (
+      <p class="detail-note">
+        Bạn cần thêm hệ thống bán hàng online? <a href="/khoa-hoc/khoi-dong-online">Xem gói Khởi động Online 15.000.000đ</a>, gồm phần chuyển giao 5 triệu đồng và phần thiết lập online 10 triệu đồng.
+      </p>
+    )}
 
     <p class="back"><a href="/khoa-hoc">← Xem tất cả các gói</a></p>
   </main>
@@ -178,6 +215,19 @@ const { pkg } = Astro.props;
 
   .detail-section {
     margin-bottom: 2rem;
+  }
+
+  .package-introduction {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    margin-bottom: 2rem;
+  }
+
+  .course-content {
+    padding: 1.5rem;
+    border: 1px solid var(--color-bg-alt);
+    border-radius: var(--radius-md);
+    background: #fff;
   }
 
   .detail-section h2 {

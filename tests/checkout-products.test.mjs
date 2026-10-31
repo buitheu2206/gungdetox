@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { assertCheckoutAvailable, getCheckoutProducts } from "../src/lib/checkout-products.ts";
+import { assertCheckoutAvailable, getCheckoutProducts, getInitialCheckoutItem } from "../src/lib/checkout-products.ts";
 
 function productsClient(result) {
   const calls = [];
@@ -12,6 +12,24 @@ function productsClient(result) {
   };
   return { calls, from(table) { assert.equal(table, "products"); return query; } };
 }
+
+test("should preselect the chosen product and pack quantity from a purchase link", () => {
+  const products = [{ slug: "combo-loc-bia-gung" }];
+  assert.deepEqual(getInitialCheckoutItem("?product=combo-loc-bia-gung&quantity=3", products), {
+    slug: "combo-loc-bia-gung", quantity: 3,
+  });
+  assert.equal(getInitialCheckoutItem("?product=unknown&quantity=3", products), null);
+  assert.equal(getInitialCheckoutItem("", products), null);
+});
+
+test("should default invalid purchase link quantities to one pack", () => {
+  const products = [{ slug: "combo-loc-bia-gung" }];
+  for (const value of ["", "0", "-1", "1.5", "abc", "Infinity", "9007199254740992"]) {
+    const item = getInitialCheckoutItem(`?product=combo-loc-bia-gung&quantity=${value}`, products);
+    assert.equal(item.quantity, 1);
+  }
+  assert.equal(getInitialCheckoutItem("?product=combo-loc-bia-gung", products).quantity, 1);
+});
 
 test("should request only products explicitly available for checkout", async () => {
   const products = [{ slug: "ginger", in_stock: true }];

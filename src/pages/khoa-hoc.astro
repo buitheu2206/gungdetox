@@ -7,7 +7,7 @@ const features = [
   { icon: "🌿", title: "Công thức độc quyền", desc: "Chuẩn vị GỪNG DETOX" },
   { icon: "📋", title: "Quy trình vận hành", desc: "Dễ học – Dễ làm" },
   { icon: "📣", title: "Đồng hành marketing", desc: "Hỗ trợ quảng cáo, nội dung, khai trương" },
-  { icon: "🤝", title: "Đào tạo tận tâm", desc: "Hướng dẫn chi tiết 3 ngày tại tiệm" },
+  { icon: "🤝", title: "Đào tạo tận tâm", desc: "Gói 3–5 có 3 ngày học trực tiếp tại tiệm" },
 ];
 
 const includedGroups = [
@@ -15,21 +15,21 @@ const includedGroups = [
     title: "Công thức & vận hành",
     icon: "📖",
     items: [
-      "Chuyển giao toàn bộ menu & công thức",
-      "Hướng dẫn pha chế trực tiếp tại GỪNG DETOX (03 ngày)",
+      "Công thức, định lượng và tài liệu chuyển giao theo gói đã chọn",
+      "Gói 3–5: học và thực hành trực tiếp tại GỪNG DETOX trong 03 ngày",
       "Hướng dẫn sơ chế & bảo quản nguyên liệu",
       "Tài liệu công thức & định lượng",
-      "Quyền sử dụng thương hiệu GỪNG DETOX",
+      "Tặng 08 công thức Matcha",
     ],
   },
   {
-    title: "Thương hiệu & kênh online",
+    title: "Kênh online — Gói 2, 4 và 5",
     icon: "🎨",
     items: [
       "Thiết lập Fanpage Facebook",
       "Thiết lập Instagram",
       "Thiết lập Threads",
-      "Thiết lập bộ nhận diện thương hiệu cơ bản",
+      "Thống nhất thông tin và hệ thống tài khoản bán hàng",
       "Hỗ trợ setup Google Maps",
     ],
   },
@@ -37,10 +37,10 @@ const includedGroups = [
     title: "Marketing & hỗ trợ sau chuyển giao",
     icon: "📢",
     items: [
-      "Hỗ trợ chạy quảng cáo Facebook",
-      "Tối ưu quảng cáo trong 01 tháng (không bao gồm ngân sách ads)",
-      "Tư vấn nội dung đăng bài trong 01 tháng",
-      "Hỗ trợ online sau chuyển giao",
+      "Gói 2: hỗ trợ chạy quảng cáo 10 ngày",
+      "Gói 5: thêm 01 tháng đồng hành chạy quảng cáo sau khóa học",
+      "Ngân sách quảng cáo thực tế do khách hàng chi trả",
+      "Giải đáp online trong phạm vi nội dung chuyển giao",
     ],
   },
 ];
@@ -172,12 +172,12 @@ const includedGroups = [
 
       <div class="location-notes">
         <div class="surface-card location-note">
-          <strong>📍 Áp dụng tại Sài Gòn</strong>
-          <p>Đã bao gồm chi phí đi lại đào tạo tận nơi.</p>
+          <strong>💻 Gói 1 và 2 — Chuyển giao online</strong>
+          <p>Nhận công thức, tài liệu và hỗ trợ từ xa. Gói 2 có thêm phần thiết lập hệ thống bán hàng online.</p>
         </div>
         <div class="surface-card location-note">
-          <strong>📍 Tại các tỉnh thành</strong>
-          <p>Giá nhượng quyền chưa bao gồm chi phí đi lại đào tạo tận nơi.</p>
+          <strong>📍 Gói 3–5 — Học trực tiếp tại TP.HCM</strong>
+          <p>Có 03 ngày học tại tiệm và hỗ trợ 03 bữa trưa. Học viên chủ động chi phí đi lại và lưu trú.</p>
         </div>
       </div>
     </section>
@@ -209,7 +209,7 @@ const includedGroups = [
 
     <section class="included-section">
       <p class="eyebrow eyebrow-yellow">📦 Chuyển giao trọn gói</p>
-      <h2>Bạn sẽ nhận được gì</h2>
+      <h2>Quyền lợi theo từng gói</h2>
       <div class="included-groups">
         {
           includedGroups.map((group) => (
@@ -230,8 +230,9 @@ const includedGroups = [
     <section class="franchise-cta">
       <h2>Liên hệ ngay để được tư vấn</h2>
       <p class="deposit-note">
-        💳 Đặt cọc <strong>10.000.000đ</strong> để bắt đầu triển khai — phần còn lại thanh toán sau
-        15 ngày triển khai online, trước khi vào học thực tế 3 ngày tại tiệm.
+        💳 <strong>Gói 1 và 2:</strong> thanh toán trước khi nhận file.
+        <strong>Gói 3–5:</strong> đợt 1 thanh toán 10.000.000đ khi chốt gói;
+        phần còn lại lần lượt là 19.000.000đ, 29.000.000đ hoặc 40.000.000đ trước khi học thực tế.
       </p>
       <div class="cta-btn-row">
         <a class="register-btn" href="https://zalo.me/0888267009" target="_blank" rel="noopener">💬 Liên hệ tư vấn qua Zalo</a>

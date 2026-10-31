@@ -1,0 +1,27 @@
+---
+interface Props {
+  href?: string;
+  label?: string;
+}
+
+const { href = "/dat-hang", label = "Đặt hàng ngay" } = Astro.props;
+---
+
+<a href={href}>{label}</a>
+
+<style>
+  a {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.8rem 1.6rem;
+    border-radius: 999px;
+    background: var(--color-primary);
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  a:hover {
+    background: var(--color-primary-dark);
+  }
+</style>

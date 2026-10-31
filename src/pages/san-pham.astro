@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { detoxPackages, DETOX_BOTTLES_PER_DAY, DETOX_PACKAGE_IMAGE } from "../lib/detox-packages";
 ---
 
 <BaseLayout
@@ -185,6 +186,27 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <aside class="detox-nutrition-note" aria-label="Lưu ý dinh dưỡng">
           <p><strong>Lưu ý:</strong> Chế độ chỉ uống trong nhiều ngày không phù hợp với tất cả mọi người; không nên xem đây là phương pháp “thải độc” hay thay thế hoàn toàn chế độ ăn đầy đủ dinh dưỡng.</p>
         </aside>
+        <div class="detox-package-picker" id="detox-packages">
+          <div class="detox-package-image">
+            <img src={DETOX_PACKAGE_IMAGE} alt="Các chai Juice, Smoothie và Sữa hạt GỪNG được chuẩn bị theo lịch uống mỗi ngày" width="722" height="1284" loading="lazy" />
+          </div>
+          <form action="/dat-hang" method="get" class="detox-package-form">
+            <p class="detox-package-label">🌿 Chọn gói phù hợp với bạn</p>
+            <h3>DETOX 5 chai/ngày</h3>
+            <p>Juice + Smoothie + Sữa hạt, menu thay đổi theo ngày và theo mùa.</p>
+            <fieldset>
+              <legend>Chọn số ngày</legend>
+              {detoxPackages.map((packageOption, index) => (
+                <label class="detox-package-option">
+                  <input type="radio" name="product" value={packageOption.slug} checked={index === 0} required />
+                  <span>{packageOption.days} ngày · {packageOption.days * DETOX_BOTTLES_PER_DAY} chai</span>
+                  <strong>{packageOption.price.toLocaleString("vi-VN")}đ</strong>
+                </label>
+              ))}
+            </fieldset>
+            <button type="submit">Đặt hàng</button>
+          </form>
+        </div>
       </div>
     </section>
 
@@ -269,6 +291,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   import { escapeHtml as esc } from "../lib/output";
   import { getAstroScopeHtml } from "../lib/astro-scope";
   import { supabase } from "../lib/supabase";
+  import { detoxPackages } from "../lib/detox-packages";
   import {
     productCardHtml,
     comboCardHtml,
@@ -321,13 +344,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   const cid = getAstroScopeHtml(singleGrid);
 
   let allProducts: ProductRow[] = [];
+  const detoxPackageSlugs = new Set(detoxPackages.map((packageOption) => packageOption.slug));
 
   function render(products: ProductRow[], filter = "all") {
     const singles = products.filter((p) => p.type === "single");
     const sets = products
       .filter((p) => p.type === "set")
       ;
-    const combos = products.filter((p) => p.type === "combo");
+    const combos = products.filter((p) => p.type === "combo" && !detoxPackageSlugs.has(p.slug));
 
     singleGrid.innerHTML = singles.length
       ? singles.map(productCardHtml).join("")
@@ -445,7 +469,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     singleGrid.innerHTML = `<p class="error">Không tải được sản phẩm: ${esc(error.message)}</p>`;
   } else {
     allProducts = data ?? [];
-    render(allProducts);
+    const requestedCategory = new URLSearchParams(location.search).get("category");
+    const initialChip = Array.from(chips).find((chip) => chip.dataset.filter === requestedCategory);
+    if (initialChip) {
+      initialChip.click();
+      if (location.hash === "#detox-packages") document.getElementById("detox-packages")?.scrollIntoView();
+    } else {
+      render(allProducts);
+    }
   }
 </script>
 
@@ -623,8 +654,102 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     margin: 0;
   }
 
+  .detox-package-picker {
+    clear: both;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow: hidden;
+    margin-top: 1.5rem;
+    border-top: 5px solid var(--color-primary);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-alt);
+  }
+
+  .detox-package-image {
+    position: relative;
+    min-height: 0;
+  }
+
+  .detox-package-image img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .detox-package-form {
+    padding: 1.5rem;
+    background: linear-gradient(160deg, var(--color-primary-light), #fff 65%);
+  }
+
+  .detox-package-label {
+    color: var(--color-primary-dark);
+    font-weight: 600;
+  }
+
+  .detox-package-form fieldset {
+    display: grid;
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .detox-package-form legend {
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+  }
+
+  .detox-package-option {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid var(--color-primary-light);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    cursor: pointer;
+  }
+
+  .detox-package-option:has(input:checked) {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
+  }
+
+  .detox-package-option input {
+    accent-color: var(--color-primary);
+  }
+
+  .detox-package-option strong {
+    margin-left: auto;
+    color: var(--color-secondary);
+  }
+
+  .detox-package-form button {
+    width: 100%;
+    padding: 0.85rem 1.25rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-primary);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .detox-package-form button:hover {
+    background: var(--color-primary-dark);
+  }
+
   @media (max-width: 640px) {
-    .detox-menu-gallery {
+    .detox-package-image {
+      aspect-ratio: 4 / 3;
+    }
+
+    .detox-menu-gallery, .detox-package-picker {
       grid-template-columns: 1fr;
     }
   }
