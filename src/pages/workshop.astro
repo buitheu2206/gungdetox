@@ -8,11 +8,27 @@ const workshops = [
     poster: "ginger-shot-poster",
     width: 1086,
     height: 1448,
-    description: "Tự làm những shot gừng từ gừng tươi, chanh vàng, nghệ và mật ong ngay tại nhà.",
-    lessons: [
-      "Shot Wake Up: gừng, chanh vàng và cam.",
-      "Shot Glow Skin: gừng, thơm và nghệ.",
-      "Video hướng dẫn chi tiết và công thức để thực hành tại nhà.",
+    details: [
+      {
+        title: "🌿 1. Nơi giải tỏa stress",
+        description: "Tạm gác lại những bộn bề, dành cho mình một khoảng thời gian thư giãn, nạp năng lượng và tìm lại sự cân bằng.",
+      },
+      {
+        title: "🫶 2. Nơi gặp gỡ và kết nối chị em",
+        description: "Giao lưu, trò chuyện, chia sẻ lối sống lành mạnh, gặp gỡ những người có cùng sở thích và năng lượng tích cực.",
+      },
+      {
+        title: "🥤 3. Nơi học làm đồ uống healthy",
+        description: "Cùng GỪNG khám phá công thức Ginger Shot, Juice, Smoothies, Kombucha và sữa hạt – tự tay làm những thức uống tốt cho sức khỏe.",
+      },
+      {
+        title: "🏡 4. Mang lối sống healthy về cho gia đình",
+        description: "Học cách lựa chọn nguyên liệu, tự làm đồ uống lành mạnh để chăm sóc bản thân, người thân và cả gia đình mỗi ngày.",
+      },
+    ],
+    closing: [
+      "GỪNG – Không chỉ bán nước, GỪNG muốn lan tỏa một lối sống lành mạnh từ những điều giản dị nhất. 💚",
+      "Sống lành, uống xanh – gặp nhau ở WORKSHOP GỪNG nhé!",
     ],
   },
   {
@@ -20,37 +36,64 @@ const workshops = [
     poster: "bia-gung-poster",
     width: 1024,
     height: 1536,
-    description: "Khám phá cách làm thức uống lên men từ gừng với nguyên liệu tự nhiên, dễ tìm.",
-    lessons: [
-      "Hướng dẫn làm bia gừng qua video, có thể xem lại.",
-      "Công thức và tỷ lệ nguyên liệu để thực hành.",
-      "Hỗ trợ giải đáp thắc mắc trong quá trình làm.",
+    introTitle: "WORKSHOP BIA GỪNG – TỰ TAY Ủ, TỰ TIN SỐNG LÀNH 🫚💛",
+    description: "Không chỉ là một buổi học làm đồ uống, Workshop Bia Gừng tại GỪNG là dịp để bạn khám phá nghệ thuật lên men tự nhiên, trải nghiệm làm bia gừng thủ công và mang những công thức thú vị về nhà.",
+    details: [
+      {
+        title: "🫚 1. Khám phá thế giới bia gừng",
+        description: "Tìm hiểu về gừng tươi, nguyên liệu lên men, cách tạo nên hương vị bia gừng thơm nồng, chua nhẹ và sảng khoái.",
+      },
+      {
+        title: "🍹 2. Tự tay thực hành làm bia gừng",
+        description: "Trực tiếp trải nghiệm các công đoạn chuẩn bị nguyên liệu, pha chế, ủ và hoàn thiện một mẻ bia gừng handmade.",
+      },
+      {
+        title: "🫶 3. Gặp gỡ và kết nối những người cùng sở thích",
+        description: "Cùng chị em trò chuyện, chia sẻ kinh nghiệm, học hỏi và tận hưởng một buổi workshop thật vui tại GỪNG.",
+      },
+      {
+        title: "🏡 4. Mang công thức về chăm sóc gia đình",
+        description: "Biết cách tự làm, bảo quản và sáng tạo các phiên bản bia gừng tại nhà để cùng gia đình thưởng thức.",
+      },
+    ],
+    closing: [
+      "GỪNG – Không chỉ dạy bạn làm một thức uống, mà còn truyền cảm hứng để bạn tự tay tạo nên những điều lành mạnh cho cuộc sống. 💛",
+      "Sống lành, uống xanh – trải nghiệm một ngày thật khác tại GỪNG!",
     ],
   },
 ];
 const benefits = [
-  { icon: "🎬", title: "Video dễ theo dõi", description: "Hướng dẫn chi tiết, dễ hiểu, xem lại để thực hành từng bước." },
-  { icon: "📖", title: "Công thức rõ ràng", description: "Công thức và tỷ lệ nguyên liệu giúp bạn tự làm tại nhà." },
-  { icon: "🤝", title: "Hỗ trợ trọn đời", description: "Giải đáp thắc mắc của học viên trong quá trình làm." },
-  { icon: "🕒", title: "Chủ động thời gian", description: "Học online 100%, học mọi lúc, mọi nơi theo lịch của bạn." },
+  { image: "anh-xinh-mang-ve", alt: "Chị em chụp ảnh cùng thành phẩm Ginger Shot tại GỪNG", title: "Ảnh xinh mang về", description: "Lưu lại những khoảnh khắc vui vẻ và đáng nhớ tại GỪNG." },
+  { image: "tieng-cuoi-ket-noi", alt: "Chị em trò chuyện và cùng thưởng thức Ginger Shot", title: "Tiếng cười & kết nối", description: "Gặp gỡ chị em, cùng học hỏi và chia sẻ năng lượng tích cực." },
+  { image: "thanh-pham-tu-tay-lam", alt: "Những chai Ginger Shot thành phẩm bên gừng và nghệ tươi", title: "Thành phẩm tự tay làm", description: "Hoàn thành mẻ Ginger Shot của riêng bạn sau buổi thực hành." },
+  { image: "bay-ngay-cham-soc-ban-than", alt: "Hộp bảy chai Ginger Shot mang về chăm sóc bản thân", title: "7 ngày chăm sóc bản thân", description: "Mang về thành phẩm dùng trong 1 tuần, duy trì thói quen sống lành." },
 ];
 ---
 
 <BaseLayout
   title="Workshop Ginger Shot & Bia Gừng — GỪNG DETOX"
-  description="Học làm Ginger Shot và Bia Gừng tại nhà qua video, công thức và hỗ trợ học viên. Ưu đãi 360.000đ/khóa."
+  description="Học làm Ginger Shot và Bia Gừng tại nhà qua video, công thức và hỗ trợ học viên. Ưu đãi 550.000đ/người."
   image="/images/workshop/gung-detox-workshop.webp"
 >
   <main class="workshop-page">
+    <section class="registration">
+      <h2>Bắt đầu với workshop bạn yêu thích</h2>
+      <p>Nhắn GỪNG để đăng ký Ginger Shot hoặc Bia Gừng và nhận thông tin ưu đãi.</p>
+      <div class="actions">
+        <a class="button" href={registrationUrl} target="_blank" rel="noopener">Đăng ký qua Zalo</a>
+        <a class="text-link" href="tel:0888267009">Gọi 0888 267 009</a>
+      </div>
+    </section>
+
     <section class="workshop-hero">
       <div>
         <p class="eyebrow">WORKSHOP · GỪNG DETOX</p>
         <h1>Tự tay làm<br /><span>Ginger Shot & Bia Gừng</span></h1>
         <p class="lead">Từ nguyên liệu quen thuộc đến thức uống tự làm tại nhà. Cùng GỪNG học công thức, thực hành và kết nối với những người yêu lối sống lành mạnh.</p>
-        <p class="hero-note">Học online 100% · Video hướng dẫn · Hỗ trợ học viên</p>
+        <p class="hero-note">Học offline 100% · Video hướng dẫn · Hỗ trợ học viên</p>
         <div class="actions">
-          <a class="button" href="#cac-workshop">Khám phá workshop</a>
-          <a class="text-link" href={registrationUrl} target="_blank" rel="noopener">Đăng ký qua Zalo</a>
+          <a class="text-link" href="#cac-workshop">Khám phá workshop</a>
+          <a class="button" href={registrationUrl} target="_blank" rel="noopener">Đăng ký qua Zalo</a>
         </div>
       </div>
       <img src="/images/workshop/gung-detox-workshop.webp" alt="Hình minh họa workshop Ginger Shot GỪNG DETOX: cùng thực hành và pha chế" width="1024" height="1536" fetchpriority="high" />
@@ -63,13 +106,26 @@ const benefits = [
         {workshops.map((workshop) => (
           <article class="workshop-card surface-card">
             <a href={`/images/workshop/${workshop.poster}.webp`} target="_blank" rel="noopener" aria-label={`Xem đầy đủ poster ${workshop.name}`}>
-              <img src={`/images/workshop/${workshop.poster}.webp`} alt={`Poster workshop ${workshop.name}, học online, ưu đãi 360.000đ/khóa`} width={workshop.width} height={workshop.height} loading="lazy" />
+              <img src={`/images/workshop/${workshop.poster}.webp`} alt={`Poster workshop ${workshop.name}, học online, ưu đãi 550.000đ/người`} width={workshop.width} height={workshop.height} loading="lazy" />
             </a>
             <div class="card-body">
               <h3>{workshop.name}</h3>
-              <p>{workshop.description}</p>
-              <ul>{workshop.lessons.map((lesson) => <li>{lesson}</li>)}</ul>
-              <div class="price-row"><strong>360.000đ <small>/ khóa</small></strong><span>Ưu đãi giảm 40%</span></div>
+              <div class="workshop-details">
+                {workshop.introTitle && (
+                  <div>
+                    <h4>{workshop.introTitle}</h4>
+                    <p>{workshop.description}</p>
+                  </div>
+                )}
+                {workshop.details.map((detail) => (
+                  <div>
+                    <h4>{detail.title}</h4>
+                    <p>{detail.description}</p>
+                  </div>
+                ))}
+                {workshop.closing.map((paragraph) => <p>{paragraph}</p>)}
+              </div>
+              <div class="price-row"><strong>550k <small>/ người</small></strong><span>Ưu đãi giảm 40%</span></div>
               <a class="button" href={registrationUrl} target="_blank" rel="noopener">Đăng ký {workshop.name.replace("Học làm ", "")}</a>
             </div>
           </article>
@@ -77,14 +133,16 @@ const benefits = [
       </div>
     </section>
 
-    <section>
-      <h2>Bạn nhận được gì?</h2>
+    <section class="workshop-benefits">
+      <h2>Bạn mang về điều gì?</h2>
       <div class="benefit-grid">
         {benefits.map((benefit) => (
           <article class="surface-card benefit-card">
-            <span class="benefit-icon" aria-hidden="true">{benefit.icon}</span>
-            <h3>{benefit.title}</h3>
-            <p>{benefit.description}</p>
+            <img src={`/images/workshop/${benefit.image}.webp`} alt={benefit.alt} width="960" height="720" loading="lazy" />
+            <div class="benefit-body">
+              <h3>{benefit.title}</h3>
+              <p>{benefit.description}</p>
+            </div>
           </article>
         ))}
       </div>
@@ -105,7 +163,7 @@ const benefits = [
         <p><strong>Online:</strong> học qua video, chủ động thời gian và địa điểm.</p>
         <p><strong>Ginger Shot:</strong> giao lưu tại Cần Thơ, Hà Nội.</p>
         <p><strong>Bia Gừng:</strong> giao lưu tại Cần Thơ.</p>
-        <p>Nhắn GỪNG để nhận lịch, địa điểm cụ thể và tư vấn hình thức tham gia.</p>
+        <p><a href={registrationUrl} target="_blank" rel="noopener">Nhắn GỪNG qua Zalo</a> để nhận lịch, địa điểm cụ thể và tư vấn hình thức tham gia.</p>
       </div>
     </section>
 
@@ -123,14 +181,6 @@ const benefits = [
       </div>
     </section>
 
-    <section class="registration">
-      <h2>Bắt đầu với workshop bạn yêu thích</h2>
-      <p>Nhắn GỪNG để đăng ký Ginger Shot hoặc Bia Gừng và nhận thông tin ưu đãi.</p>
-      <div class="actions">
-        <a class="button" href={registrationUrl} target="_blank" rel="noopener">Đăng ký qua Zalo</a>
-        <a class="text-link" href="tel:0888267009">Gọi 0888 267 009</a>
-      </div>
-    </section>
   </main>
 </BaseLayout>
 
@@ -233,6 +283,11 @@ const benefits = [
     flex-direction: column;
   }
 
+  .workshop-card > a img {
+    aspect-ratio: 3 / 4;
+    object-fit: fill;
+  }
+
   .card-body {
     padding: 1.5rem;
     display: flex;
@@ -247,6 +302,16 @@ const benefits = [
 
   .card-body p {
     margin: 0;
+  }
+
+  .workshop-details {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .workshop-details h4 {
+    margin: 0 0 0.5rem;
   }
 
   ul {
@@ -291,22 +356,57 @@ const benefits = [
     gap: 1rem;
   }
 
-  .benefit-card, .info-card {
+  .info-card {
     padding: 1.5rem;
   }
 
-  .benefit-icon {
-    display: block;
-    font-size: 1.8rem;
-    margin-bottom: 0.7rem;
+  .workshop-benefits {
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-warm);
+  }
+
+  .workshop-benefits > h2 {
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+
+  .workshop-benefits > h2::after {
+    margin-inline: auto;
+  }
+
+  .benefit-card {
+    overflow: hidden;
+  }
+
+  .benefit-card img {
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+  }
+
+  .benefit-body {
+    padding: 1rem;
   }
 
   .benefit-card h3 {
     font-size: 1.05rem;
+    margin: 0 0 0.75rem;
+  }
+
+  .benefit-card h3::after {
+    content: "";
+    display: block;
+    width: 2rem;
+    height: 3px;
+    margin-top: 0.5rem;
+    border-radius: 999px;
+    background: var(--color-accent);
   }
 
   .benefit-card p {
-    margin-bottom: 0;
+    margin: 0;
     color: var(--color-text-muted);
     font-size: 0.9rem;
   }
@@ -328,7 +428,6 @@ const benefits = [
     background: var(--color-primary-light);
     border-radius: var(--radius-lg);
     padding: 2rem;
-    margin-bottom: 0;
   }
 
   @media (max-width: 900px) {

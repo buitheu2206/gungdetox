@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import SocialIcon from "../components/SocialIcon.astro";
 
 const shopPhotos = [
   { name: "quay-tiem-gung", width: 960, height: 1280, caption: "Một góc tiệm GỪNG", alt: "Quầy tiệm với đồ uống, trái cây và gừng tươi" },
@@ -34,8 +35,8 @@ const shopPhotos = [
             <a class="btn-secondary" href="/dat-hang">Đặt hàng ngay</a>
           </div>
           <div class="socials">
-            <a href="https://facebook.com/gungdetox" target="_blank" rel="noopener">Facebook</a>
-            <a href="https://instagram.com/gungdetox.saigon" target="_blank" rel="noopener">Instagram</a>
+            <a href="https://facebook.com/gungdetox" target="_blank" rel="noopener"><SocialIcon platform="facebook" />Facebook</a>
+            <a href="https://instagram.com/gungdetox.saigon" target="_blank" rel="noopener"><SocialIcon platform="instagram" />Instagram</a>
           </div>
         </div>
         <div class="hero-photo">
@@ -210,14 +211,6 @@ const shopPhotos = [
       </div>
     </section>
 
-    <section class="featured">
-      <p class="eyebrow eyebrow-red">🔥 Được yêu thích nhất</p>
-      <h2>Sản phẩm nổi bật</h2>
-      <div class="grid" id="featured-grid">
-        <p class="loading">Đang tải...</p>
-      </div>
-    </section>
-
     <section class="set-detox-promo">
       <img src="/images/brand/cover-5-set-detox.jpg" alt="5 Set Detox Tự Nhiên" />
       <div class="promo-text">
@@ -253,34 +246,6 @@ const shopPhotos = [
     </section>
   </main>
 </BaseLayout>
-
-<script>
-  import { supabase } from "../lib/supabase";
-  import { productCardHtml, setDetoxCardHtml, comboCardHtml } from "../lib/templates";
-
-  const grid = document.getElementById("featured-grid")!;
-  const slugs = ["ginger-shot", "set-2-ginger-thom-tai-tao", "combo-loc-kombucha-bia-gung"];
-
-  const { data, error } = await supabase.from("products").select("*").in("slug", slugs);
-
-  if (error || !data) {
-    grid.innerHTML = `<p class="error">Không tải được sản phẩm nổi bật.</p>`;
-  } else {
-    // Giữ đúng thứ tự đã định, không theo thứ tự trả về từ Supabase
-    const ordered = slugs
-      .map((slug) => data.find((p) => p.slug === slug))
-      .filter(Boolean);
-    grid.innerHTML = ordered
-      .map((p) =>
-        p!.type === "set"
-          ? setDetoxCardHtml(p!, 2)
-          : p!.type === "combo"
-            ? comboCardHtml(p!)
-            : productCardHtml(p!)
-      )
-      .join("");
-  }
-</script>
 
 <style>
   .home-page {
@@ -392,11 +357,6 @@ const shopPhotos = [
     background: color-mix(in srgb, var(--c-yellow) 20%, #fff);
   }
 
-  .eyebrow-red {
-    color: var(--c-red);
-    background: color-mix(in srgb, var(--c-red) 14%, #fff);
-  }
-
   .eyebrow-purple {
     color: var(--c-purple);
     background: color-mix(in srgb, var(--c-purple) 16%, #fff);
@@ -472,6 +432,9 @@ const shopPhotos = [
   }
 
   .socials a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
     color: var(--color-text);
     text-decoration: none;
   }
@@ -808,22 +771,6 @@ const shopPhotos = [
   .hygiene-note {
     background: #fff;
     border-left: 4px solid var(--color-accent);
-  }
-
-  .featured {
-    background: linear-gradient(160deg, #fdf1e6, #fff 60%);
-    border-radius: var(--radius-lg);
-    padding: 2.5rem;
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1rem;
-  }
-
-  .loading {
-    color: #6b7280;
   }
 
   .set-detox-promo {

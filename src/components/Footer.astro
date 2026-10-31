@@ -1,4 +1,6 @@
 ---
+import SocialIcon from "./SocialIcon.astro";
+
 const year = new Date().getFullYear();
 ---
 
@@ -8,8 +10,14 @@ const year = new Date().getFullYear();
       <strong>GỪNG DETOX</strong>
       <p>SỐNG XANH - SỐNG KHỎE</p>
       <div class="socials">
-        <a href="https://facebook.com/gungdetox" target="_blank" rel="noopener">Facebook</a>
-        <a href="https://instagram.com/gungdetox.saigon" target="_blank" rel="noopener">Instagram</a>
+        <a href="https://facebook.com/gungdetox" target="_blank" rel="noopener">
+          <SocialIcon platform="facebook" />
+          Facebook
+        </a>
+        <a href="https://instagram.com/gungdetox.saigon" target="_blank" rel="noopener">
+          <SocialIcon platform="instagram" />
+          Instagram
+        </a>
       </div>
     </div>
 
@@ -82,7 +90,14 @@ const year = new Date().getFullYear();
 
   .socials {
     display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
+  }
+
+  .socials a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
   }
 
   .payment-note {
