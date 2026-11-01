@@ -5,8 +5,8 @@ const { id, label, required = false } = Astro.props;
 ---
 
 <div class="date-picker" data-date-picker>
-  <label for={`${id}-trigger`}>{label}</label>
-  <input id={id} type="date" required={required} data-date-input tabindex="-1" aria-label={label} />
+  <label for={`${id}-trigger`}>{label}{required && <span class="required-mark" aria-hidden="true"> *</span>}</label>
+  <input id={id} type="date" required={required} data-date-input tabindex="-1" aria-label={label} aria-describedby={`${id}-error`} />
   <button id={`${id}-trigger`} type="button" class="date-trigger" aria-haspopup="dialog" aria-expanded="false" aria-controls={`${id}-calendar`} aria-describedby={`${id}-error`}>
     <span data-date-label>Chọn ngày giao hàng</span>
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M16 3v4M8 3v4M3 11h18" /></svg>
@@ -44,7 +44,9 @@ const { id, label, required = false } = Astro.props;
   .calendar-days :global(button:disabled) { opacity: 0.3; cursor: default; }
   .calendar button:focus-visible, .calendar-days :global(button:focus-visible) { outline: 1px solid var(--color-primary); }
   .calendar-footer { margin-top: 0.6rem; border-top: 1px solid var(--color-bg-alt); padding-top: 0.4rem; font-size: 0.8rem; }
-  .date-error { color: var(--color-accent); font-size: 0.8rem; }
+  .date-error { color: var(--color-error); font-size: 0.8rem; }
+  .required-mark { color: var(--color-error); }
+  .date-trigger[aria-invalid="true"] { border-color: var(--color-error); }
 </style>
 
 <script>
@@ -101,6 +103,7 @@ const { id, label, required = false } = Astro.props;
     input.addEventListener("invalid", (event) => {
       event.preventDefault();
       root.querySelector<HTMLElement>(".date-error")!.hidden = false;
+      trigger.setAttribute("aria-invalid", "true");
       trigger.focus();
     });
     input.addEventListener("focus", () => trigger.focus());
@@ -129,6 +132,7 @@ const { id, label, required = false } = Astro.props;
     function syncLabel() {
       label.textContent = input.value ? input.value.split("-").reverse().join("/") : "Chọn ngày giao hàng";
       error.hidden = input.validity.valid;
+      if (input.validity.valid) trigger.removeAttribute("aria-invalid");
     }
 
 

@@ -5,6 +5,7 @@ import CustomInput from "../components/CustomInput.astro";
 import DatePicker from "../components/DatePicker.astro";
 import { BANK_QR_URL, DEPOSIT_LABEL } from "../lib/payment";
 import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
+import { VIETNAMESE_MOBILE_PATTERN } from "../lib/input-validation";
 ---
 
 <BaseLayout
@@ -72,8 +73,8 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
         <div class="form-row">
           <DatePicker id="delivery-date" label="Ngày giao mong muốn" required />
         </div>
-        <fieldset id="delivery-slot-fieldset" class="delivery-slot-fieldset">
-          <legend>Khung giờ giao mong muốn</legend>
+        <fieldset id="delivery-slot-fieldset" class="delivery-slot-fieldset" aria-describedby="delivery-slot-error">
+          <legend>Khung giờ giao mong muốn <span class="required-mark" aria-hidden="true">*</span></legend>
           <div class="option-grid">
             <label class="option-card">
               <input type="radio" name="delivery-slot" value="8h-12h" required />
@@ -100,6 +101,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
               </span>
             </label>
           </div>
+          <span id="delivery-slot-error" class="field-error" aria-live="polite" hidden>Vui lòng chọn khung giờ giao</span>
         </fieldset>
         <label>
           Ghi chú giao hàng (không bắt buộc)
@@ -119,25 +121,20 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
       <section class="step" data-step="3" hidden>
         <h2>📍 Bước 3 — Thông tin giao hàng</h2>
         <div class="form-row">
-          <label>
-            Họ tên
-            <input type="text" id="customer-name" required />
-          </label>
-          <label>
-            Số điện thoại
-            <input
-              type="tel"
-              id="phone"
-              pattern="0[0-9]{9}"
-              title="Số điện thoại Việt Nam hợp lệ: đúng 10 số, bắt đầu bằng 0, không có khoảng trắng/dấu gạch"
-              required
-            />
-          </label>
+          <CustomInput label="Họ tên" id="customer-name" autocomplete="name" required requiredMessage="Vui lòng nhập họ tên" />
+          <CustomInput
+            label="Số điện thoại"
+            type="tel"
+            id="phone"
+            autocomplete="tel"
+            inputmode="tel"
+            pattern={VIETNAMESE_MOBILE_PATTERN}
+            title="Số điện thoại không hợp lệ"
+            required
+            requiredMessage="Vui lòng nhập số điện thoại"
+          />
         </div>
-        <label>
-          Địa chỉ
-          <input type="text" id="address" required />
-        </label>
+        <CustomInput label="Địa chỉ" id="address" autocomplete="street-address" required requiredMessage="Vui lòng nhập địa chỉ" />
         <div class="form-row">
           <label>
             Quận
@@ -320,6 +317,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
   import { getPaymentInstructions } from "../lib/payment";
   import { getCheckoutProducts, assertCheckoutAvailable, getInitialCheckoutItem } from "../lib/checkout-products";
   import { getProductUnitPrice as unitPrice, snapshotOrderItems, getOrderAmount } from "../lib/order-pricing";
+  import { normalizeVietnamesePhone } from "../lib/input-validation";
 
   interface CartItem {
     slug: string;
@@ -524,72 +522,45 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     `;
   }
 
-  // reportValidity() hiện bubble lỗi mặc định của trình duyệt, nhưng nội dung bubble đó
-  // ("Please fill out this field"...) theo NGÔN NGỮ TRÌNH DUYỆT/hệ điều hành, không theo
-  // lang="vi" của trang — nên máy set tiếng Anh vẫn hiện tiếng Anh dù toàn trang tiếng Việt.
-  // Fix: tự set thông báo lỗi tiếng Việt qua setCustomValidity() trước khi gọi reportValidity().
-  function vietnameseValidityMessage(input: HTMLInputElement, requiredMessage: string): string {
-    if (input.validity.valueMissing) return requiredMessage;
-    if (input.validity.patternMismatch) return input.title || "Giá trị không đúng định dạng";
-    if (input.validity.typeMismatch) return "Giá trị không hợp lệ";
-    return "";
-  }
-
-  function useVietnameseValidation(input: HTMLInputElement, requiredMessage: string) {
-    input.addEventListener("invalid", () => {
-      input.setCustomValidity(vietnameseValidityMessage(input, requiredMessage));
-    });
-    // Xoá thông báo cũ mỗi khi người dùng sửa lại, để lần kiểm tra tiếp theo tính toán lại
-    // từ đầu (không thì trình duyệt coi field vẫn invalid với message cũ dù đã nhập đúng).
-    input.addEventListener("input", () => input.setCustomValidity(""));
-  }
-
-  useVietnameseValidation(deliveryDateInput, "Vui lòng chọn ngày giao hàng");
-
-  // Radio "required" chỉ gắn trên ô đầu tiên (theo chuẩn HTML, required trên 1 radio là
-  // áp dụng cho cả nhóm cùng name) nhưng người dùng có thể bấm chọn bất kỳ ô nào trong 3
-  // ô — phải lắng nghe "change" trên CẢ 3 ô để xoá customValidity của ô đầu, nếu không dù
-  // đã chọn ô 2/3 thì ô đầu vẫn giữ nguyên lỗi cũ (customValidity không tự hết).
   const deliverySlotRadios = document.querySelectorAll<HTMLInputElement>('input[name="delivery-slot"]');
   const firstDeliverySlotRadio = deliverySlotRadios[0];
-  firstDeliverySlotRadio.addEventListener("invalid", () => {
-    firstDeliverySlotRadio.setCustomValidity(
-      vietnameseValidityMessage(firstDeliverySlotRadio, "Vui lòng chọn khung giờ giao")
-    );
+  const deliverySlotFieldset = document.getElementById("delivery-slot-fieldset")!;
+  const deliverySlotError = document.getElementById("delivery-slot-error")!;
+  firstDeliverySlotRadio.addEventListener("invalid", (event) => {
+    event.preventDefault();
+    deliverySlotFieldset.setAttribute("aria-invalid", "true");
+    deliverySlotError.hidden = false;
   });
   deliverySlotRadios.forEach((radio) => {
-    radio.addEventListener("change", () => firstDeliverySlotRadio.setCustomValidity(""));
+    radio.addEventListener("change", () => {
+      deliverySlotFieldset.removeAttribute("aria-invalid");
+      deliverySlotError.hidden = true;
+    });
   });
-  useVietnameseValidation(
-    document.getElementById("customer-name") as HTMLInputElement,
-    "Vui lòng nhập họ tên"
-  );
-  useVietnameseValidation(
-    document.getElementById("phone") as HTMLInputElement,
-    "Vui lòng nhập số điện thoại"
-  );
-  useVietnameseValidation(
-    document.getElementById("address") as HTMLInputElement,
-    "Vui lòng nhập địa chỉ"
-  );
 
-  // Cả 4 bước nằm trong 1 <form> duy nhất (chỉ ẩn/hiện qua CSS), nên nếu để trình duyệt
-  // tự validate lúc bấm "Đặt hàng" ở bước 4, các input required của bước 3 (đã ẩn) sẽ
-  // fail validation nhưng trình duyệt KHÔNG focus/hiện được lỗi trên field đang ẩn — kết
-  // quả là nút "Đặt hàng" trông như không phản hồi gì cả, không có thông báo lỗi nào.
-  // Fix: tắt validate tự động của form (novalidate) và tự gọi reportValidity() ngay lúc
-  // rời bước 3 (khi field vẫn đang hiển thị, để lỗi hiện đúng chỗ) trước khi cho qua bước 4.
+  // Validate each step explicitly because required fields in other steps are hidden.
   function validateStep2(): boolean {
-    return deliveryDateInput.reportValidity() && firstDeliverySlotRadio.reportValidity();
+    const dateValid = deliveryDateInput.checkValidity();
+    const slotValid = firstDeliverySlotRadio.checkValidity();
+    if (!dateValid || !slotValid) {
+      goToStep(2);
+      if (!dateValid) document.getElementById("delivery-date-trigger")!.focus();
+      else firstDeliverySlotRadio.focus();
+    }
+    return dateValid && slotValid;
   }
 
   function validateStep3(): boolean {
-    const nameEl = document.getElementById("customer-name") as HTMLInputElement;
-    const phoneEl = document.getElementById("phone") as HTMLInputElement;
-    const addressEl = document.getElementById("address") as HTMLInputElement;
-    // && ngắn mạch: nếu field đầu invalid thì field sau không bị gọi reportValidity()
-    // chồng lên nhau (trình duyệt chỉ hiện được 1 bubble lỗi tại 1 thời điểm).
-    return nameEl.reportValidity() && phoneEl.reportValidity() && addressEl.reportValidity();
+    const inputs = ["customer-name", "phone", "address"].map((id) => document.getElementById(id) as HTMLInputElement);
+    inputs.forEach((input) => {
+      input.value = input.id === "phone" ? normalizeVietnamesePhone(input.value) : input.value.trim();
+    });
+    const invalidInputs = inputs.filter((input) => !input.checkValidity());
+    if (invalidInputs.length) {
+      goToStep(3);
+      invalidInputs[0].focus();
+    }
+    return invalidInputs.length === 0;
   }
 
   document.querySelectorAll<HTMLButtonElement>("[data-next]").forEach((btn) => {
@@ -681,9 +652,11 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
       const selectedProducts = cart.map((item) =>
         `- ${findProduct(item.slug)?.name ?? item.slug}: số lượng ${item.quantity}`
       ).join("\n");
+      const phone = (document.getElementById("phone") as HTMLInputElement).value.trim();
       const address = (document.getElementById("address") as HTMLInputElement).value.trim();
       const note = deliveryNoteInput.value.trim();
       const deliveryDetails = [
+        `Số điện thoại: ${phone}`,
         `Địa chỉ giao: ${address}, ${districtSelect.value}`,
         `Ngày giao: ${formatDeliveryDate(deliveryDateInput.value)}`,
         `Giờ giao: ${deliveryTimeRangeText()}`,
@@ -728,14 +701,7 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
     // Phòng trường hợp người dùng tới được bước 4 mà chưa qua kiểm tra ở bước 2/3
     // (vd. bấm lùi/tiến bằng nút back của trình duyệt) — quay lại đúng bước để field
     // lỗi hiển thị đúng chỗ thay vì để nút "Đặt hàng" im lặng không phản hồi.
-    if (!validateStep2()) {
-      goToStep(2);
-      return;
-    }
-    if (!validateStep3()) {
-      goToStep(3);
-      return;
-    }
+    if (!validateStep2() || !validateStep3()) return;
     button.disabled = true;
     try {
       await assertCheckoutAvailable(supabase, cart);
@@ -899,6 +865,16 @@ import PaymentReceiptUpload from "../components/PaymentReceiptUpload.astro";
 
   .step :global(.custom-input label) {
     font-size: 0.9rem;
+  }
+
+  .required-mark, .field-error {
+    color: var(--color-error);
+  }
+
+  .field-error {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.75rem;
   }
 
   .step input:not([data-custom-input-control]):not([data-date-input]),

@@ -1,20 +1,21 @@
 ---
-// Shared text and number input with a label and native validation feedback.
+// Shared input with required labels and inline validation feedback.
 import type { HTMLAttributes } from "astro/types";
 
 interface Props extends HTMLAttributes<"input"> {
   id: string;
   label: string;
+  requiredMessage?: string;
 }
 
-const { id, label, type = "text", ...attributes } = Astro.props;
+const { id, label, type = "text", requiredMessage, ...attributes } = Astro.props;
 const errorId = `${id}-error`;
 const describedBy = [attributes["aria-describedby"], errorId].filter(Boolean).join(" ");
 ---
 
 <div class="custom-input" data-custom-input>
-  <label for={id}>{label}</label>
-  <input {...attributes} id={id} type={type} aria-describedby={describedBy} data-custom-input-control />
+  <label for={id}>{label}{attributes.required && <span class="required-mark" aria-hidden="true"> *</span>}</label>
+  <input {...attributes} id={id} type={type} aria-describedby={describedBy} data-required-message={requiredMessage} data-custom-input-control />
   <span id={errorId} class="input-error" aria-live="polite" hidden></span>
 </div>
 
@@ -47,41 +48,26 @@ const describedBy = [attributes["aria-describedby"], errorId].filter(Boolean).jo
     border-color: var(--color-primary);
   }
 
-  input[aria-invalid="true"] {
-    border-color: var(--color-accent);
+  .custom-input input[aria-invalid="true"] {
+    border-color: var(--color-error);
+  }
+
+  .required-mark {
+    color: var(--color-error);
   }
 
   .input-error {
-    color: var(--color-accent);
+    color: var(--color-error);
     font-size: 0.75rem;
   }
 </style>
 
 <script>
+  import { initInputValidation } from "../lib/input-validation";
+
   document.querySelectorAll<HTMLElement>("[data-custom-input]").forEach((root) => {
     const input = root.querySelector("input")!;
     const error = root.querySelector<HTMLElement>(".input-error")!;
-
-    function clearError() {
-      input.removeAttribute("aria-invalid");
-      error.textContent = "";
-      error.hidden = true;
-    }
-
-    function showError() {
-      input.setAttribute("aria-invalid", "true");
-      error.textContent = input.validity.valueMissing
-        ? "Vui lòng nhập trường này."
-        : input.validationMessage;
-      error.hidden = false;
-    }
-
-    input.addEventListener("invalid", showError);
-    input.addEventListener("input", () => {
-      if (!input.hasAttribute("aria-invalid")) return;
-      if (input.validity.valid) clearError();
-      else showError();
-    });
-    input.form?.addEventListener("reset", clearError);
+    initInputValidation(input, error);
   });
 </script>
