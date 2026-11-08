@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { escapeHtml, csvCell, safeMediaUrl } from "../src/lib/output.ts";
 import { sanitizePostHtml } from "../src/lib/post-html.ts";
 import { productCardHtml, comboVariantGroupCardHtml } from "../src/lib/templates.ts";
-import { loadAllRows, countOrdersByCustomer } from "../src/lib/load-rows.ts";
+import { loadAllRows } from "../src/lib/load-rows.ts";
 import { resolveOrderItems } from "../src/lib/order-pricing.ts";
 import { getDeliveryDetails, getOrderDelivery } from "../src/lib/order-details.ts";
 import { lookupCustomerOrder } from "../src/lib/order-lookup.ts";
@@ -52,18 +52,6 @@ test("should fail rather than publish a partial dataset when a later page query 
   await assert.rejects(loadAllRows(async (from) => from === 0
     ? { data: [{ id: 1 }], error: null }
     : { data: null, error: { message: "offline" } }), /offline/);
-});
-
-test("should count customer orders including equal timestamps without changing input order", () => {
-  const orders = [
-    { id: "new", phone: "1", created_at: "2026-10-14" },
-    { id: "old", phone: "1", created_at: "2026-10-13" },
-    { id: "twin", phone: "1", created_at: "2026-10-14" },
-    { id: "other", phone: "2", created_at: "2026-10-14" },
-  ];
-  const counts = countOrdersByCustomer(orders);
-  assert.deepEqual(orders.map((order) => counts.get(order.id)), [3, 1, 3, 1]);
-  assert.equal(orders[0].id, "new");
 });
 
 test("should isolate malformed order items instead of crashing the entire admin table", () => {

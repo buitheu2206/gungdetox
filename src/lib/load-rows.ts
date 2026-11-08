@@ -12,19 +12,3 @@ export async function loadAllRows<T>(
     rows.push(...data);
   }
 }
-
-export function countOrdersByCustomer(orders: { id: string; phone: string; created_at: string }[]) {
-  const counts = new Map<string, number>();
-  const byPhone = new Map<string, number>();
-  const sorted = [...orders].sort((a, b) => a.created_at.localeCompare(b.created_at));
-  for (let start = 0; start < sorted.length;) {
-    let end = start;
-    while (end < sorted.length && sorted[end].created_at === sorted[start].created_at) {
-      const phone = sorted[end++].phone;
-      byPhone.set(phone, (byPhone.get(phone) ?? 0) + 1);
-    }
-    for (let index = start; index < end; index++) counts.set(sorted[index].id, byPhone.get(sorted[index].phone)!);
-    start = end;
-  }
-  return counts;
-}

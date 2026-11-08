@@ -72,6 +72,7 @@ async function createMigratedDatabase() {
     "migrations/20261020032123_cleanup_receipts_and_validate_retries.sql",
     "migrations/20261108120000_storage_policies_use_admin_users.sql",
     "migrations/20261108120100_limit_anonymous_order_creation.sql",
+    "migrations/20261108120200_admin_order_list_view.sql",
   ]) await database.exec(await readSql(file));
   return database;
 }
@@ -113,6 +114,28 @@ test("should reject orders that exceed the rate limit, size limits or delivery d
     await assert.rejects(insertOrder(database, { customer_name: `'${"a".repeat(101)}'` }), /quá dài/);
     await assert.rejects(insertOrder(database, { delivery_date: "current_date - 2" }), /Ngày giao đã qua/);
     await insertOrder(database, { delivery_date: "(now() at time zone 'Asia/Ho_Chi_Minh')::date" });
+  } finally {
+    await database.close();
+  }
+});
+
+test("should count each customer's orders up to the row, including equal timestamps, for admins only", async () => {
+  const database = await createMigratedDatabase();
+  try {
+    for (const [phone, createdAt] of [["0900000001", "2026-10-14"], ["0900000001", "2026-10-13"], ["0900000001", "2026-10-14"], ["0900000002", "2026-10-14"]]) {
+      await insertOrder(database, { phone: `'${phone}'`, created_at: `'${createdAt}'` });
+    }
+    const adminId = (await database.query("select user_id::text as id from public.admin_users limit 1")).rows[0].id;
+    const countsAs = async (userId) => {
+      await database.exec(`select set_config('request.jwt.claim.sub', '${userId}', false); set role authenticated;`);
+      const { rows } = await database.query("select phone, created_at::date::text as day, customer_order_count::int as count from public.admin_order_list order by phone, created_at");
+      await database.exec("reset role");
+      return rows.map((row) => `${row.phone} ${row.day} ${row.count}`);
+    };
+    assert.deepEqual(await countsAs(adminId), [
+      "0900000001 2026-10-13 1", "0900000001 2026-10-14 3", "0900000001 2026-10-14 3", "0900000002 2026-10-14 1",
+    ]);
+    assert.deepEqual(await countsAs("00000000-0000-4000-8000-000000000001"), [], "Non-admins must not see orders through the view");
   } finally {
     await database.close();
   }
