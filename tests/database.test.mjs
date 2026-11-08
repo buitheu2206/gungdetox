@@ -61,3 +61,36 @@ test("should preserve receipt permissions and convert the legacy webhook to one 
     await database.close();
   }
 });
+
+
+async function createMigratedDatabase() {
+  const database = new PGlite();
+  await database.exec(platformSchema);
+  for (const file of [
+    "schema.sql", "secure-storage-policies.sql", "payment-receipts.sql", "payment-receipt-confirmation.sql", "harden-orders.sql",
+    "defer-order-until-payment.sql", "migrations/20261020021257_version_payment_receipts.sql",
+    "migrations/20261020032123_cleanup_receipts_and_validate_retries.sql",
+    "migrations/20261108120000_storage_policies_use_admin_users.sql",
+  ]) await database.exec(await readSql(file));
+  return database;
+}
+
+test("should limit storage access to the current admin_users list", async () => {
+  const database = await createMigratedDatabase();
+  try {
+    const adminId = (await database.query("select user_id::text as id from public.admin_users limit 1")).rows[0].id;
+    await database.exec(`insert into storage.objects(bucket_id, name) values ('product-images', 'a.jpg'), ('payment-receipts', 'r.jpg')`);
+    const visibleFiles = async () => {
+      await database.exec(`select set_config('request.jwt.claim.sub', '${adminId}', false); set role authenticated;`);
+      const { rows } = await database.query("select count(*)::int as count from storage.objects");
+      await database.exec("reset role");
+      return rows[0].count;
+    };
+    assert.equal(await visibleFiles(), 2);
+    await database.exec(`delete from public.admin_users where user_id = '${adminId}'`);
+    assert.equal(await visibleFiles(), 0, "A removed admin must lose image and receipt access");
+  } finally {
+    await database.close();
+  }
+});
+
