@@ -6,6 +6,8 @@ interface NotificationConfig {
   from: string;
   recipients: string;
   emailTemplate: string;
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
 }
 
 interface Order extends DeliveryFields {
@@ -22,6 +24,8 @@ interface Order extends DeliveryFields {
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const ORDER_DETAILS_ORIGIN = "https://gungdetox.com/don-hang/";
 const EMAIL_TIMEOUT_MS = 15_000;
+// Lookup + Resend (15s) must finish inside the 20s database webhook timeout.
+const PRODUCT_LOOKUP_TIMEOUT_MS = 3_000;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_PATTERN = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i;
 
@@ -49,9 +53,40 @@ function parseOrder(payload: unknown): Order | null {
   return order;
 }
 
+// Orders store only productSlug; the customer-facing name lives in products.
+// Falls back to the slug so a lookup failure never blocks the notification.
+async function fetchProductNames(items: Order["items"], config: NotificationConfig): Promise<Map<string, string>> {
+  const names = new Map<string, string>();
+  if (!config.supabaseUrl || !config.supabaseAnonKey) {
+    console.warn("Product names unavailable in order email: set SUPABASE_URL and SUPABASE_ANON_KEY for the function.");
+    return names;
+  }
+  try {
+    const slugs = items.map((item) => `"${item.productSlug.replace(/(["\\])/g, "\\$1")}"`).join(",");
+    const response = await fetch(`${config.supabaseUrl}/rest/v1/products?select=slug,name&slug=in.(${encodeURIComponent(slugs)})`, {
+      headers: { apikey: config.supabaseAnonKey, Authorization: `Bearer ${config.supabaseAnonKey}` },
+      signal: AbortSignal.timeout(PRODUCT_LOOKUP_TIMEOUT_MS),
+    });
+    if (!response.ok) throw new Error(`Products lookup returned ${response.status}`);
+    const products = await response.json();
+    if (!Array.isArray(products)) throw new Error("Products lookup did not return a list");
+    for (const product of products) {
+      if (typeof product?.slug === "string" && typeof product.name === "string") names.set(product.slug, product.name);
+    }
+  } catch (error) {
+    console.error("Could not load product names for order email; showing product slugs instead", { error });
+  }
+  return names;
+}
+
 function escapeHtml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+interface EmailProduct {
+  name: string;
+  quantity: number;
 }
 
 interface EmailDetails {
@@ -61,7 +96,7 @@ interface EmailDetails {
   deliveryTime: string;
 }
 
-function buildEmailHtml(template: string, code: string, details: EmailDetails, items: Order["items"]): string {
+function buildEmailHtml(template: string, code: string, details: EmailDetails, products: EmailProduct[]): string {
   const values: Record<string, string> = {
     order_code: escapeHtml(code),
     customer_name: escapeHtml(details.customerName),
@@ -69,9 +104,9 @@ function buildEmailHtml(template: string, code: string, details: EmailDetails, i
     delivery_address: escapeHtml(details.deliveryAddress),
     delivery_time: escapeHtml(details.deliveryTime),
     order_details_url: `${ORDER_DETAILS_ORIGIN}${encodeURIComponent(code)}`,
-    product_rows: items.map((item) => `<tr>
-      <td style="padding:14px 16px;border-bottom:1px solid #f5f0e6;overflow-wrap:anywhere;">${escapeHtml(item.productSlug)}</td>
-      <td align="center" style="padding:14px 16px;border-bottom:1px solid #f5f0e6;font-weight:600;color:#4e6735;">${item.quantity}</td>
+    product_rows: products.map((product) => `<tr>
+      <td style="padding:14px 16px;border-bottom:1px solid #f5f0e6;overflow-wrap:anywhere;">${escapeHtml(product.name)}</td>
+      <td align="center" style="padding:14px 16px;border-bottom:1px solid #f5f0e6;font-weight:600;color:#4e6735;">${product.quantity}</td>
     </tr>`).join(""),
   };
   return template.replace(/\{\{([a-z_]+)\}\}/g, (_, key: string) => {
@@ -80,7 +115,7 @@ function buildEmailHtml(template: string, code: string, details: EmailDetails, i
   });
 }
 
-function buildEmail(order: Order, config: NotificationConfig) {
+function buildEmail(order: Order, config: NotificationConfig, names: Map<string, string>) {
   const recipients = config.recipients.split(",").map((email) => email.trim());
   if (recipients.some((email) => !EMAIL_PATTERN.test(email))) {
     throw new Error("Set ORDER_NOTIFICATION_TO to valid comma-separated email addresses.");
@@ -93,11 +128,12 @@ function buildEmail(order: Order, config: NotificationConfig) {
     deliveryAddress: [order.address, order.district].filter(Boolean).join(", ") || "Chưa có thông tin",
     deliveryTime,
   };
+  const products = order.items.map((item) => ({ name: names.get(item.productSlug) ?? item.productSlug, quantity: item.quantity }));
   return {
     from: config.from,
     to: recipients,
     subject: `[GỪNG DETOX] Đơn hàng mới ${code}`,
-    html: buildEmailHtml(config.emailTemplate, code, details, order.items),
+    html: buildEmailHtml(config.emailTemplate, code, details, products),
     text: [
       `Có đơn hàng mới: ${code}`,
       `Tên khách hàng: ${details.customerName}`,
@@ -105,7 +141,7 @@ function buildEmail(order: Order, config: NotificationConfig) {
       `Địa chỉ giao hàng: ${details.deliveryAddress}`,
       `Thời điểm nhận hàng: ${details.deliveryTime}`,
       "Sản phẩm:",
-      ...order.items.map((item) => `- ${item.productSlug} × ${item.quantity}`),
+      ...products.map((product) => `- ${product.name} × ${product.quantity}`),
       `Thông tin giao hàng: ${order.shipping_fee_note || "—"}`,
       `Chi tiết đơn hàng: ${ORDER_DETAILS_ORIGIN}${encodeURIComponent(code)}`,
     ].join("\n"),
@@ -113,6 +149,7 @@ function buildEmail(order: Order, config: NotificationConfig) {
 }
 
 async function sendEmail(order: Order, config: NotificationConfig): Promise<string> {
+  const names = await fetchProductNames(order.items, config);
   const response = await fetch(RESEND_ENDPOINT, {
     method: "POST",
     headers: {
@@ -120,7 +157,7 @@ async function sendEmail(order: Order, config: NotificationConfig): Promise<stri
       "Content-Type": "application/json",
       "Idempotency-Key": `order-receipt-notification/${order.id}`,
     },
-    body: JSON.stringify(buildEmail(order, config)),
+    body: JSON.stringify(buildEmail(order, config, names)),
     signal: AbortSignal.timeout(EMAIL_TIMEOUT_MS),
   });
   const result = await response.json();

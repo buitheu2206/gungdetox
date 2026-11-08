@@ -4,7 +4,7 @@ Function nhận webhook `UPDATE` của `public.orders` sau khi khách lưu ảnh
 
 ## Mẫu email HTML
 
-Sửa `email-template.html`; toàn bộ CSS nằm trong file này (inline cho khả năng tương thích email và `<style>` cho màn hình nhỏ). Mẫu gồm thông báo, tên khách, số điện thoại, sản phẩm/số lượng, địa chỉ và thời điểm khách chọn nhận hàng. Thời điểm nhận hàng được trích từ `shipping_fee_note` theo định dạng hiện có của trang đặt hàng; đơn cũ thiếu thông tin sẽ hiển thị rõ. Sản phẩm hiển thị bằng `productSlug` được lưu trong đơn, giống bảng quản trị.
+Sửa `email-template.html`; toàn bộ CSS nằm trong file này (inline cho khả năng tương thích email và `<style>` cho màn hình nhỏ). Mẫu gồm thông báo, tên khách, số điện thoại, sản phẩm/số lượng, địa chỉ và thời điểm khách chọn nhận hàng. Thời điểm nhận hàng được trích từ `shipping_fee_note` theo định dạng hiện có của trang đặt hàng; đơn cũ thiếu thông tin sẽ hiển thị rõ. Sản phẩm hiển thị bằng `name` tra từ bảng `products` theo `productSlug` của đơn (dùng `SUPABASE_URL` và `SUPABASE_ANON_KEY` do Supabase tự cấp cho function); nếu không tra được thì hiển thị `productSlug` và ghi log lỗi.
 
 Sau khi sửa mẫu, chạy `node scripts/build-order-email-function.mjs` từ thư mục gốc repo để cập nhật `email-template.ts`. File này chứa HTML dễ đọc dưới dạng template literal; `index.ts` chỉ import mẫu, không nhúng HTML. Dashboard không đóng gói file HTML tĩnh, nên dùng module riêng để giữ mẫu tách khỏi handler mà không cần đọc file ở runtime. Dữ liệu động được escape trước khi đưa vào HTML; email cũng kèm bản văn bản thuần.
 

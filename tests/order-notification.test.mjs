@@ -97,3 +97,38 @@ test("should use the receipt event as its idempotency key and report delivery se
     assert.equal(key, `order-receipt-notification/${submittedOrder.id}`);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+async function sendWithProductLookup(lookupResponse) {
+  const originalFetch = globalThis.fetch;
+  let sentEmail;
+  globalThis.fetch = async (url, options) => {
+    if (String(url).startsWith("https://project.supabase.co/rest/v1/products")) return lookupResponse(url);
+    sentEmail = JSON.parse(options.body);
+    return Response.json({ id: "test-email-id" });
+  };
+  try {
+    const event = { type: "INSERT", schema: "public", table: "orders", record: submittedOrder };
+    const response = await handleOrderNotification(notificationRequest(event), {
+      ...config, supabaseUrl: "https://project.supabase.co", supabaseAnonKey: "anon-key",
+    });
+    assert.equal(response.status, 200);
+    return sentEmail;
+  } finally { globalThis.fetch = originalFetch; }
+}
+
+test("should show the product name instead of the slug in HTML and text emails", async () => {
+  let lookupUrl;
+  const email = await sendWithProductLookup((url) => {
+    lookupUrl = decodeURIComponent(url);
+    return Response.json([{ slug: "ginger-shot", name: "Shot gừng detox" }]);
+  });
+  assert.ok(lookupUrl.endsWith('slug=in.("ginger-shot")'));
+  assert.ok(email.html.includes("Shot gừng detox") && !email.html.includes("ginger-shot"));
+  assert.ok(email.text.includes("- Shot gừng detox × 2"));
+});
+
+test("should fall back to the slug when product names cannot be loaded", async () => {
+  const email = await sendWithProductLookup(() => new Response("down", { status: 500 }));
+  assert.ok(email.html.includes("ginger-shot"));
+  assert.ok(email.text.includes("- ginger-shot × 2"));
+});

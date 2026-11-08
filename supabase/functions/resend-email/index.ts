@@ -7,4 +7,6 @@ Deno.serve((request) => handleOrderNotification(request, {
   from: Deno.env.get("ORDER_NOTIFICATION_FROM") ?? "",
   recipients: Deno.env.get("ORDER_NOTIFICATION_TO") ?? "",
   emailTemplate: EMAIL_TEMPLATE,
+  supabaseUrl: Deno.env.get("SUPABASE_URL") ?? "",
+  supabaseAnonKey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
 }));
