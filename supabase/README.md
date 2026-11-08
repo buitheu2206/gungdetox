@@ -18,6 +18,7 @@ Run these files in order in the SQL Editor, with transaction rollback on any err
 9. `migrations/20261020021257_version_payment_receipts.sql` — version receipt images by content, bind the chosen path to the order and return only a public creation acknowledgment.
 10. `migrations/20261020032123_cleanup_receipts_and_validate_retries.sql` — coordinate receipt cleanup with creation and reject retries that change saved checkout details.
 11. `migrations/20261108120000_storage_policies_use_admin_users.sql` — storage image and receipt policies follow `admin_users` through `is_admin()` instead of fixed UUIDs.
+12. `migrations/20261108120100_limit_anonymous_order_creation.sql` — trigger caps field lengths, 30 cart lines, past delivery dates and 5 orders per phone per hour.
 
 Deploy and schedule `cleanup-payment-receipts` using its [setup instructions](functions/cleanup-payment-receipts/README.md). The scheduler migration requires the target project URL in Vault and the deployed function; do not run it before those prerequisites.
 

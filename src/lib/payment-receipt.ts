@@ -8,6 +8,8 @@ const SIGNED_URL_SECONDS = 60 * 60;
 const RECEIPT_VERSION_BYTES = 32;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const receiptVersions = new WeakMap<SupabaseClient, Map<string, string>>();
+// Order limits raised by the limit_order_creation trigger; their messages tell the customer what to change.
+const CUSTOMER_FACING_ORDER_ERRORS = new Set(["ORDER_TOO_LARGE", "ORDER_PAST_DELIVERY_DATE", "ORDER_RATE_LIMITED"]);
 
 export class ExistingOrderDetailsError extends Error {
   constructor() {
@@ -46,7 +48,7 @@ export async function uploadPaymentReceipt(client: SupabaseClient, orderId: stri
     }).single<{ id: string }>();
     if (createError || !order) {
       if (createError?.details === "ORDER_ALREADY_CREATED_WITH_DIFFERENT_DETAILS") throw new ExistingOrderDetailsError();
-      if (createError?.message.includes("Đơn hàng đã được ghi nhận với ảnh khác")) {
+      if (createError?.message.includes("Đơn hàng đã được ghi nhận với ảnh khác") || CUSTOMER_FACING_ORDER_ERRORS.has(createError?.details ?? "")) {
         throw new Error(createError.message, { cause: createError });
       }
       throw new Error("Ảnh đã lưu nhưng chưa ghi nhận được đơn hàng. Vui lòng bấm Xác nhận đặt hàng để thử lại.", { cause: createError });

@@ -108,6 +108,7 @@ import { VIETNAMESE_MOBILE_PATTERN } from "../lib/input-validation";
           <textarea
             id="delivery-note"
             rows="2"
+            maxlength="1000"
             placeholder="VD: gọi trước khi giao, để ở cổng, giao giờ hành chính..."
           ></textarea>
         </label>
@@ -121,7 +122,7 @@ import { VIETNAMESE_MOBILE_PATTERN } from "../lib/input-validation";
       <section class="step" data-step="3" hidden>
         <h2>📍 Bước 3 — Thông tin giao hàng</h2>
         <div class="form-row">
-          <CustomInput label="Họ tên" id="customer-name" autocomplete="name" required requiredMessage="Vui lòng nhập họ tên" />
+          <CustomInput label="Họ tên" id="customer-name" autocomplete="name" maxlength="100" required requiredMessage="Vui lòng nhập họ tên" />
           <CustomInput
             label="Số điện thoại"
             type="tel"
@@ -134,7 +135,7 @@ import { VIETNAMESE_MOBILE_PATTERN } from "../lib/input-validation";
             requiredMessage="Vui lòng nhập số điện thoại"
           />
         </div>
-        <CustomInput label="Địa chỉ" id="address" autocomplete="street-address" required requiredMessage="Vui lòng nhập địa chỉ" />
+        <CustomInput label="Địa chỉ" id="address" autocomplete="street-address" maxlength="300" required requiredMessage="Vui lòng nhập địa chỉ" />
         <div class="form-row">
           <label>
             Quận

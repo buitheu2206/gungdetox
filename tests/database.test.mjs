@@ -71,8 +71,18 @@ async function createMigratedDatabase() {
     "defer-order-until-payment.sql", "migrations/20261020021257_version_payment_receipts.sql",
     "migrations/20261020032123_cleanup_receipts_and_validate_retries.sql",
     "migrations/20261108120000_storage_policies_use_admin_users.sql",
+    "migrations/20261108120100_limit_anonymous_order_creation.sql",
   ]) await database.exec(await readSql(file));
   return database;
+}
+
+// Column values are SQL expressions so tests can pass dates relative to the database clock.
+function insertOrder(database, overrides = {}) {
+  const columns = {
+    phone: "'0901234567'", customer_name: "'Khách'", address: "'Địa chỉ'", district: "'Quận 1'",
+    items: "'[]'", bottle_type: "'glass'", payment_method: "'bank_transfer'", ...overrides,
+  };
+  return database.exec(`insert into public.orders (${Object.keys(columns).join(", ")}) values (${Object.values(columns).join(", ")})`);
 }
 
 test("should limit storage access to the current admin_users list", async () => {
@@ -94,3 +104,16 @@ test("should limit storage access to the current admin_users list", async () => 
   }
 });
 
+test("should reject orders that exceed the rate limit, size limits or delivery date", async () => {
+  const database = await createMigratedDatabase();
+  try {
+    for (let i = 0; i < 5; i++) await insertOrder(database);
+    await assert.rejects(insertOrder(database), /vừa đặt nhiều đơn/);
+    await database.exec("delete from public.orders");
+    await assert.rejects(insertOrder(database, { customer_name: `'${"a".repeat(101)}'` }), /quá dài/);
+    await assert.rejects(insertOrder(database, { delivery_date: "current_date - 2" }), /Ngày giao đã qua/);
+    await insertOrder(database, { delivery_date: "(now() at time zone 'Asia/Ho_Chi_Minh')::date" });
+  } finally {
+    await database.close();
+  }
+});
