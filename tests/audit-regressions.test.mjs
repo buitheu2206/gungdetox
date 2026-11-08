@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { escapeHtml, csvCell, sanitizePostHtml, safeMediaUrl } from "../src/lib/output.ts";
+import { escapeHtml, csvCell, safeMediaUrl } from "../src/lib/output.ts";
+import { sanitizePostHtml } from "../src/lib/post-html.ts";
 import { productCardHtml, comboVariantGroupCardHtml } from "../src/lib/templates.ts";
 import { loadAllRows, countOrdersByCustomer } from "../src/lib/load-rows.ts";
 import { resolveOrderItems } from "../src/lib/order-pricing.ts";

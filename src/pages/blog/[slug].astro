@@ -3,7 +3,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import ShareButton from "../../components/ShareButton.astro";
 import { loadAllRows } from "../../lib/load-rows";
 import { supabase } from "../../lib/supabase";
-import { blogCardHtml, tagLabel, renderPostBodyHtml, type PostRow } from "../../lib/templates";
+import { blogCardHtml, tagLabel, type PostRow } from "../../lib/templates";
+import { renderPostBodyHtml } from "../../lib/post-html";
 
 // Cùng pattern với /san-pham/[slug].astro: pre-render tại build time (getStaticPaths)
 // cho URL đẹp/SEO, script phía client fetch lại đúng slug để cập nhật nội dung
@@ -95,7 +96,8 @@ const relatedPosts = allPosts
 <script>
   import { initDetailGallery } from "../../lib/detail-gallery";
   import { supabase } from "../../lib/supabase";
-  import { tagLabel, renderPostBodyHtml } from "../../lib/templates";
+  import { tagLabel } from "../../lib/templates";
+  import { renderPostBodyHtml } from "../../lib/post-html";
 
   const page = document.querySelector(".post-page") as HTMLElement;
   const slug = page?.dataset.slug;

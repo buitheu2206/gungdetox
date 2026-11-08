@@ -26,7 +26,6 @@
 </section>
 
 <script>
-  import { supabase } from "../lib/supabase";
   import { lookupCustomerOrder } from "../lib/order-lookup";
   import { ORDER_STATUS_LABELS } from "../lib/order-details";
   import { isOrderItems } from "../lib/order-pricing";
@@ -62,6 +61,8 @@
     button.disabled = true;
     result.textContent = "Đang tra cứu…";
     try {
+      // Loaded on demand: this form sits in the header of every page, most of which never query Supabase.
+      const { supabase } = await import("../lib/supabase");
       const orders = await lookupCustomerOrder(supabase, code, phone);
       if (orders.length === 0) {
         result.textContent = "Không tìm thấy đơn nào khớp.";

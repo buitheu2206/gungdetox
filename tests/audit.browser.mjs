@@ -1,6 +1,6 @@
 // Run on localhost with: await (await import('/tests/audit.browser.mjs')).runAuditBrowserTests()
 import { initContentForm } from "../src/lib/content-form.ts";
-import { sanitizePostHtml } from "../src/lib/output.ts";
+import { sanitizePostHtml } from "../src/lib/post-html.ts";
 
 function assert(value, message) {
   if (!value) throw new Error(message);

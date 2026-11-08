@@ -71,7 +71,8 @@ import CustomInput from "../../components/CustomInput.astro";
   import { uploadContentImages } from "../../lib/content-images";
   import { initMainImagePreview } from "../../lib/image-preview";
   import { supabase } from "../../lib/supabase";
-  import { renderPostBodyHtml, type PostRow } from "../../lib/templates";
+  import { type PostRow } from "../../lib/templates";
+  import { renderPostBodyHtml } from "../../lib/post-html";
   import { slugify } from "../../lib/slug";
 
   const form = document.getElementById("post-form") as HTMLFormElement;
