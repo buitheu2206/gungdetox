@@ -22,7 +22,8 @@ if (!FTP_HOST || !FTP_USER || !FTP_PASS) {
 
 const distDir = new URL("../dist", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const ftpBase = `ftp://${FTP_HOST}/`;
-const user = `${FTP_USER}:${FTP_PASS}`;
+// Credentials go to curl through a stdin config, not argv, so they never show up in `ps`.
+const curlConfig = `user = "${`${FTP_USER}:${FTP_PASS}`.replace(/[\\"]/g, "\\$&")}"\n`;
 
 function walk(dir) {
   let files = [];
@@ -53,13 +54,13 @@ files.forEach((f, i) => {
   try {
     execFileSync(
       "curl",
-      ["-s", "-T", safeLocal, url, "--user", user, "--ftp-create-dirs", "--max-time", "30"],
-      { stdio: "pipe" }
+      ["-sS", "-K", "-", "-T", safeLocal, url, "--ftp-create-dirs", "--max-time", "30"],
+      { input: curlConfig, stdio: "pipe" }
     );
     ok++;
-  } catch {
+  } catch (error) {
     fail++;
-    failed.push(rel);
+    failed.push(`${rel}: ${String(error.stderr ?? error.message).trim()}`);
   }
 });
 
