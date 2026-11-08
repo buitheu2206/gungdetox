@@ -81,7 +81,6 @@ test("should require at least one valid credential and send only the normalized 
   await lookupCustomerOrder(client, "234567-abcdef", "");
   assert.deepEqual(calls.at(-1), ["lookup_order", { order_code: "234567-ABCDEF", customer_phone: null }]);
 
-    ["234567abcdef", "+84 901 234 567"],
   await lookupCustomerOrder(client, "234567-abcdef", "0901234567");
   assert.deepEqual(calls.at(-1), ["lookup_order", { order_code: "234567-ABCDEF", customer_phone: "0901234567" }]);
 });
@@ -93,6 +92,7 @@ test("should tolerate missing separators, stray spaces and dashes when typing th
     ["234567abcdef", "0901234567"],
     ["234567 abcdef", "0901 234 567"],
     [" 234567-ABCDEF ", "0901-234-567"],
+    ["234567abcdef", "+84 901 234 567"],
   ]) {
     calls.length = 0;
     await lookupCustomerOrder(client, code, phone);
