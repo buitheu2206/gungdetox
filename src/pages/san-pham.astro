@@ -414,7 +414,7 @@ import { detoxPackages, DETOX_BOTTLES_PER_DAY, DETOX_PACKAGE_IMAGE } from "../li
       const priceEl = card.querySelector(".variant-price") as HTMLElement;
       const ctaEl = card.querySelector(".variant-cta") as HTMLAnchorElement;
       const linkEl = card.querySelector(".variant-link") as HTMLAnchorElement;
-      const shareEl = card.querySelector(".variant-share") as HTMLAnchorElement | null;
+      const shareEl = card.querySelector(".variant-share") as HTMLButtonElement | null;
       const imgEl = card.querySelector(".variant-image") as HTMLImageElement | null;
 
       function applyVariant(i: number) {
@@ -425,8 +425,8 @@ import { detoxPackages, DETOX_BOTTLES_PER_DAY, DETOX_PACKAGE_IMAGE } from "../li
         linkEl.href = `/san-pham/${encodeURIComponent(v.slug)}`;
         if (shareEl) {
           // Domain cố định, không dùng location.origin — xem comment SITE_ORIGIN trong templates.ts
-          const shareUrl = `https://gungdetox.com/san-pham/${encodeURIComponent(v.slug)}`;
-          shareEl.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+          // ShareModal reads data-share-url from the trigger button.
+          shareEl.dataset.shareUrl = `https://gungdetox.com/san-pham/${encodeURIComponent(v.slug)}`;
         }
         if (imgEl && v.image) imgEl.src = v.image;
       }

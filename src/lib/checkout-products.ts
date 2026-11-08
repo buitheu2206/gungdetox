@@ -19,6 +19,14 @@ export async function getCheckoutProducts(client: SupabaseClient): Promise<Produ
   return data ?? [];
 }
 
+// Checkout has no bottle picker: glass is the default unless no product in the cart offers it.
+export function getCartBottleType(cart: { slug: string }[], products: Pick<ProductRow, "slug" | "bottle_options">[]): "glass" | "plastic" {
+  const cartProducts = products.filter((product) => cart.some((item) => item.slug === product.slug));
+  const glassUnavailable = cartProducts.length > 0
+    && cartProducts.every((product) => product.bottle_options?.length && !product.bottle_options.includes("glass"));
+  return glassUnavailable ? "plastic" : "glass";
+}
+
 export async function assertCheckoutAvailable(client: SupabaseClient, cart: { slug: string }[]) {
   if (!cart.length) throw new Error("Vui lòng chọn sản phẩm trước khi thanh toán.");
   const { data, error } = await client.from("products").select("slug, name, in_stock")

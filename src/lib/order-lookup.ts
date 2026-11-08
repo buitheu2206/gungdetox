@@ -1,5 +1,6 @@
 // Public lookup never queries the orders table or returns customer contact details.
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { normalizeVietnamesePhone } from "./input-validation.ts";
 
 interface PublicOrderSummary {
   code: string;
@@ -14,7 +15,7 @@ interface PublicOrderSummary {
 // customer remembers. Accept whatever separators they typed (or none).
 export async function lookupCustomerOrder(client: SupabaseClient, code: string, phone: string) {
   const codeChars = code.toUpperCase().replace(/[^0-9A-F]/g, "");
-  const customerPhone = phone.replace(/\D/g, "");
+  const customerPhone = normalizeVietnamesePhone(phone).replace(/\D/g, "");
   const codeGiven = codeChars.length > 0 || code.trim().length > 0;
   const phoneGiven = customerPhone.length > 0 || phone.trim().length > 0;
   const orderCode = codeGiven ? `${codeChars.slice(0, 6)}-${codeChars.slice(6)}` : null;

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { assertCheckoutAvailable, getCheckoutProducts, getInitialCheckoutItem } from "../src/lib/checkout-products.ts";
+import { assertCheckoutAvailable, getCartBottleType, getCheckoutProducts, getInitialCheckoutItem } from "../src/lib/checkout-products.ts";
+import { localDateValue } from "../src/lib/local-date.ts";
 
 function productsClient(result) {
   const calls = [];
@@ -56,4 +57,21 @@ test("should block payment when the availability check fails or the cart is empt
   await assert.rejects(assertCheckoutAvailable(client, [{ slug: "ginger" }]), /Không kiểm tra được/);
   await assert.rejects(assertCheckoutAvailable(client, []), /chọn sản phẩm/);
   await assert.rejects(getCheckoutProducts(client), /Không tải được/);
+});
+
+test("should send plastic only when no product in the cart comes in glass", () => {
+  const products = [
+    { slug: "detox", bottle_options: ["plastic"] },
+    { slug: "shot", bottle_options: ["glass", "plastic"] },
+    { slug: "legacy", bottle_options: null },
+  ];
+  assert.equal(getCartBottleType([{ slug: "detox" }], products), "plastic");
+  assert.equal(getCartBottleType([{ slug: "detox" }, { slug: "shot" }], products), "glass");
+  assert.equal(getCartBottleType([{ slug: "legacy" }], products), "glass");
+  assert.equal(getCartBottleType([], products), "glass");
+});
+
+test("should use the local calendar day for the earliest delivery date", () => {
+  // 1am local on 5 Jan is still 4 Jan in UTC for timezones ahead of UTC, like Vietnam.
+  assert.equal(localDateValue(new Date(2026, 0, 5, 1)), "2026-01-05");
 });

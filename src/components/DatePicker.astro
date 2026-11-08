@@ -50,9 +50,7 @@ const { id, label, required = false } = Astro.props;
 </style>
 
 <script>
-  function dateValue(date: Date): string {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-  }
+  import { localDateValue as dateValue } from "../lib/local-date";
 
   function renderCalendarDays(input: HTMLInputElement, month: Date, days: HTMLElement, monthLabel: HTMLElement) {
     monthLabel.textContent = `Tháng ${month.getMonth() + 1}, ${month.getFullYear()}`;

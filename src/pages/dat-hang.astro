@@ -315,10 +315,11 @@ import { VIETNAMESE_MOBILE_PATTERN } from "../lib/input-validation";
   import { supabase } from "../lib/supabase";
   import { orderCode, type ProductRow } from "../lib/templates";
   import { getPaymentInstructions } from "../lib/payment";
-  import { getCheckoutProducts, assertCheckoutAvailable, getInitialCheckoutItem } from "../lib/checkout-products";
+  import { getCheckoutProducts, assertCheckoutAvailable, getInitialCheckoutItem, getCartBottleType } from "../lib/checkout-products";
   import { getProductUnitPrice as unitPrice, snapshotOrderItems, getOrderAmount } from "../lib/order-pricing";
   import { normalizeVietnamesePhone } from "../lib/input-validation";
 
+  import { localDateValue } from "../lib/local-date";
   interface CartItem {
     slug: string;
     quantity: number;
@@ -607,8 +608,6 @@ import { VIETNAMESE_MOBILE_PATTERN } from "../lib/input-validation";
   });
 
   function getCheckoutOrderData() {
-    const bottleType =
-      (form.querySelector('input[name="bottle-type"]:checked') as HTMLInputElement)?.value ?? "glass";
     const payment = updatePaymentInstructions();
     const orderNote = [deliveryNoteInput.value.trim() || "(không có)", payment.orderNote].filter(Boolean).join(". ");
     return {
@@ -617,7 +616,7 @@ import { VIETNAMESE_MOBILE_PATTERN } from "../lib/input-validation";
       address: (document.getElementById("address") as HTMLInputElement).value,
       district: districtSelect.value,
       items: snapshotOrderItems(cart, products),
-      bottle_type: bottleType,
+      bottle_type: getCartBottleType(cart, products),
       bottles_returned:
         Number((document.getElementById("bottles-returned") as HTMLInputElement).value) || 0,
       payment_method: payment.paymentMethod,
@@ -751,7 +750,7 @@ import { VIETNAMESE_MOBILE_PATTERN } from "../lib/input-validation";
   renderCart();
 
   // Không cho chọn ngày giao trong quá khứ.
-  deliveryDateInput.min = new Date().toISOString().slice(0, 10);
+  deliveryDateInput.min = localDateValue(new Date());
 </script>
 
 <style>
@@ -1142,20 +1141,6 @@ import { VIETNAMESE_MOBILE_PATTERN } from "../lib/input-validation";
     color: var(--color-text-muted);
     font-size: 0.85rem;
     margin: 0;
-  }
-
-  #bottle-fieldset {
-    border: none;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-  }
-
-  #bottle-fieldset legend {
-    font-weight: 600;
-    font-size: 0.9rem;
-    padding: 0;
   }
 
   .payment-method {
